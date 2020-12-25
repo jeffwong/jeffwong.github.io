@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss xmlns:atom="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/" version="2.0">
+  <channel>
+    <title>Jeffrey C. Wong</title>
+    <link>http://jeffreycwong.com/</link>
+    <atom:link href="http://jeffreycwong.com/index.xml" rel="self" type="application/rss+xml"/>
+    <description>A blog on causal inference, algorithmic decision making, and numerical computing.
+</description>
+    <generator>Distill</generator>
+    <lastBuildDate>Fri, 25 Dec 2020 00:00:00 +0000</lastBuildDate>
+    <item>
+      <title>Choose Distill for writing a Tech Blog</title>
+      <dc:creator>Jeffrey Wong</dc:creator>
+      <link>http://jeffreycwong.com/posts/2020-12-25-choose-distill-for-writing-a-tech-blog</link>
+      <description>A short description of the post.</description>
+      <guid>http://jeffreycwong.com/posts/2020-12-25-choose-distill-for-writing-a-tech-blog</guid>
+      <pubDate>Fri, 25 Dec 2020 00:00:00 +0000</pubDate>
+    </item>
+  </channel>
+</rss>

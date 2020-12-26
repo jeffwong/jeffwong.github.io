@@ -9,12 +9,13 @@
     <generator>Distill</generator>
     <lastBuildDate>Fri, 25 Dec 2020 00:00:00 +0000</lastBuildDate>
     <item>
-      <title>Choose Distill for writing a Tech Blog</title>
-      <dc:creator>Jeffrey Wong</dc:creator>
+      <title>Choose RMarkdown + Distill for writing a Tech Blog</title>
+      <dc:creator>Jeffrey C. Wong</dc:creator>
       <link>http://jeffreycwong.com/posts/2020-12-25-choose-distill-for-writing-a-tech-blog</link>
-      <description>A short description of the post.</description>
+      <description>RMarkdown and Distill are powerful tools for scientific communication.</description>
       <guid>http://jeffreycwong.com/posts/2020-12-25-choose-distill-for-writing-a-tech-blog</guid>
       <pubDate>Fri, 25 Dec 2020 00:00:00 +0000</pubDate>
+      <media:content url="http://jeffreycwong.com/posts/2020-12-25-choose-distill-for-writing-a-tech-blog/choose-distill-for-writing-a-tech-blog_files/figure-html5/unnamed-chunk-3-1.png" medium="image" type="image/png" width="1248" height="768"/>
     </item>
   </channel>
 </rss>

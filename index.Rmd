@@ -1,5 +1,5 @@
 ---
-title: "Jeffrey Wong"
+title: "A tech blog on causal inference, algorithmic decision making, and numerical computing."
 site: distill::distill_website
 listing: posts
 ---

@@ -1,19 +1,21 @@
 [
   {
     "path": "posts/2020-12-25-choose-distill-for-writing-a-tech-blog/",
-    "title": "Choose Distill for writing a Tech Blog",
-    "description": "A short description of the post.",
+    "title": "Choose RMarkdown + Distill for writing a Tech Blog",
+    "description": "RMarkdown and Distill are powerful tools for scientific communication.",
     "author": [
       {
-        "name": "Jeffrey Wong",
+        "name": "Jeffrey C. Wong",
         "url": {}
       }
     ],
     "date": "2020-12-25",
     "categories": [],
-    "contents": "\nDistill is a publication format for scientific and technical writing, native to the web.\nLearn more about using Distill at https://rstudio.github.io/distill.\n\n\n\n",
-    "preview": {},
-    "last_modified": "2020-12-25T10:56:05-08:00",
-    "input_file": {}
+    "contents": "\nRMarkdown is a Champion for Scientific Communication\nRMarkdown has had a long history in scientific communication. Using RMarkdown, you can create beautifully rendered technical documents that can be hosted online or sent as pdfs. The documents weave together the output from code, latex, as well as other web tools like html, css, and javascript. By putting data analysis code right next to text, the author can describe and discuss individual steps in analysis, and show how to reproduce it using software. RMarkdown allows authors to construct an entire scientific narrative around the spirit of the scientific method. It facilitates this approach to scientific communication by creating great development flow between code and discussion: the code you write for development is the same code that you share to others to let them read and follow along.\nHere are examples of how RMarkdown embeds essential parts of scientific communication into one environment. First, we can write latex.\n\\[ \\int_0^1 x dx = \\frac{1}{2}.\\]\nNext, we can illustrate source code for functions\n\n\nfoo = function(x, y) {\n  (x-y)^2 %>% sum() %>% sqrt()\n}\n\n\n\nFinally, we can execute code inline, and can also generate visualizations.\n\n\na = 5\nb = a^2\nprint(b)\n\n\n[1] 25\n\n\n\n\nDistill Brings RMarkdown Online\nDistill makes it easy to create a tech blog out of RMarkdown posts. This further enhances scientific communication because your development environment can also be used for online publishing and content management. Distill creates the listing page that indexes all blog posts, adds a search bar to the blog, and adds comments and share links to each blog post.\nDistill posts are formatted in a way that feels familiar to scientific writing. Contained in each Distill post are the title, authors, and date published, as well as references and an optional appendix. Each post also shows how to cite the content. You can also link to the underlying RMarkdown source code to show how the blog post was generated. In this way, the blog post turns into a technical document that embodies RMarkdown’s reproducible research features.\nA Simple End-to-End Tech Stack\nA full Distill blog can be hosted using as few as two components, that are completely free. Publishing can be done without maintaining a server or a database.\nRMarkdown, and Distill to build the blog. When the blog is built, a series of .html files are generated that can be uploaded to a webhost.\ngithub pages can host the blog online for free.\n\n\n\n",
+    "preview": "posts/2020-12-25-choose-distill-for-writing-a-tech-blog/choose-distill-for-writing-a-tech-blog_files/figure-html5/unnamed-chunk-3-1.png",
+    "last_modified": "2020-12-25T21:55:53-08:00",
+    "input_file": {},
+    "preview_width": 1248,
+    "preview_height": 768
   }
 ]

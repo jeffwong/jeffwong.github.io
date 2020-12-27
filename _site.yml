@@ -8,11 +8,15 @@ navbar:
   right:
     - text: "Home"
       href: index.html
-    - text: "About"
-      href: about.html
+    - text: "About Me"
+      href: about_me.html
+    - text: "R Weekly"
+      href: "https://rweekly.org"
+    - text: "rbind"
+      href: "https://github.com/rbind"
+    - text: "github"
+      href: "https://github.com/jeffwong/jeffwong.github.io"
 output: distill::distill_article
 collections:
   posts:
-    disqus: jeffrey-c-wong
     share: [twitter, linkedin]
-    subscribe: _subscribe.html

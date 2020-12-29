@@ -7,7 +7,15 @@
     <description>A blog on causal inference, algorithmic decision making, and numerical computing.
 </description>
     <generator>Distill</generator>
-    <lastBuildDate>Fri, 25 Dec 2020 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Sun, 27 Dec 2020 00:00:00 +0000</lastBuildDate>
+    <item>
+      <title>The Special Equivalence between Tikhonov Regularization and Gaussian Priors</title>
+      <dc:creator>Jeffrey C. Wong</dc:creator>
+      <link>http://jeffreycwong.com/posts/2020-12-27-equivalence-between-tikhonov-regularization-and-gaussian-priors</link>
+      <description>Straddling Bayesian and Frequentist Statistics.</description>
+      <guid>http://jeffreycwong.com/posts/2020-12-27-equivalence-between-tikhonov-regularization-and-gaussian-priors</guid>
+      <pubDate>Sun, 27 Dec 2020 00:00:00 +0000</pubDate>
+    </item>
     <item>
       <title>Choose RMarkdown + Distill for writing a Tech Blog</title>
       <dc:creator>Jeffrey C. Wong</dc:creator>

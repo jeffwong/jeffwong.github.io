@@ -20,7 +20,7 @@ knitr::opts_chunk$set(echo = FALSE)
 Using RMarkdown, you can  create beautifully rendered technical documents that can be hosted online or sent as pdfs.
 The documents weave together the output from code, latex, as well as other web tools like html, css, and javascript.
 By putting data analysis code right next to text, the author can describe and discuss individual steps in analysis, and show how to reproduce it using software.
-RMarkdown allows authors to construct an entire scientific narrative around the spirit of the scientific method. It facilitates this approach to scientific communication by creating great development flow between code and discussion: the code you write for development is the same code that you share to others to let them read and follow along.
+RMarkdown allows authors to construct an entire scientific narrative with the spirit of the scientific method. It facilitates this approach to scientific communication by creating great development flow between code and discussion: the code you write for development is the same code that you share to others to let them read and follow along.
 
 Here are examples of how RMarkdown embeds essential parts of scientific communication into one environment. First, we can write latex.
 
@@ -53,16 +53,22 @@ ggplot(mpg, aes(displ, hwy, colour = class)) +
   theme(legend.position = 'top')
 ```
 
-# Distill Brings RMarkdown Online
+# Distill is a Better Publishing Platform for Research
 
-[Distill](https://pkgs.rstudio.com/distill/) makes it easy to create a tech blog out of RMarkdown posts.
+[Distill](https://distill.pub/about/) is both a publishing framework and machine learning research journal.
+It is advancing scientific communication by breaking the barriers of traditional pdf documents. Distill articles
+are html pages that allow publishing new kinds of scientific narratives, including those that have
+interactive visualizations, videos, and demos. It also follows scientific writing, listing the authors, date published,
+references, footnotes, and an appendix. 
+
+Developers at RStudio have integrated Distill articles into RMarkdown with the [#rstats Distill](https://pkgs.rstudio.com/distill/) package.
+RMarkdown users can create Distill articles that can be submitted to the research journal.
+In addition, they've made it easy to collate Distill html articles into an online blog.
 This further enhances scientific communication because your development environment
-can also be used for online publishing and content management.
-Distill creates the listing page that indexes all blog posts, adds a search bar to the blog, and adds comments and share links to each blog post.
-
-Distill posts are formatted in a way that feels familiar to scientific writing.
-Contained in each Distill post are the title, authors, and date published,
-as well as references and an optional appendix. Each post also shows how to cite the content.
+can also be used for online publishing and content management, creating a single end-to-end environment for
+development, sharing, and publishing.
+The Distill package creates the listing page that indexes all blog posts, adds a search bar to the blog,
+and adds comments and share links to each blog post.
 You can also link to the underlying RMarkdown source code to show how the blog post was generated.
 In this way, the blog post turns into a technical document that embodies RMarkdown's reproducible research features.
 

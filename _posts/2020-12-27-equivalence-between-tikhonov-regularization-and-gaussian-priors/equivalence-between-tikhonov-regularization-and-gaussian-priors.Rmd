@@ -1,0 +1,73 @@
+---
+title: "The Special Equivalence between Tikhonov Regularization and Gaussian Priors"
+description: |
+  Straddling Bayesian and Frequentist Statistics.
+author:
+  - name: Jeffrey C. Wong
+    url: {}
+date: 12-27-2020
+output:
+  distill::distill_article:
+    self_contained: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+In this post we will show that the maximum a-posteriori (MAP) estimator
+of a normal-normal is equal to the estimator from Tikhonov regularization.
+
+# Introduction
+
+Throughout this post we will build on ordinary least squares. First, we will assume
+that there is a random variable, $y$, that is normally distributed and its mean is a
+linear combination of features, $x$, so that $Y \sim N(x^T\beta, \Sigma)$.
+
+Optionally, the parameter vector $\beta$ can have a prior on it, in the form
+$\beta \sim N(\mu_0, \Sigma_0)$.
+
+# Maximum Likelihood for Normally Distributed Data
+
+In frequentist statistics, we will write the likelihood of the data, then find
+an estimate of the parameters that will maximize the likelihood. The likelihood as a function
+of $\beta$ is
+
+$$ L(\beta) = \prod_i N(y_i | x_i, \beta, \Sigma) = \prod_i \frac{1}{\sqrt{(2 \pi)^k |\Sigma|}} 
+exp({-\frac{1}{2} (y_i - x_i^T \beta)^T \Sigma^{-1} (y_i - x_i^T \beta)}).$$
+The MLE estimate for $\beta$ will maximize the log-likelihood with respect to $\beta$, by differentiating it and finding its root. This produces the MLE estimate
+
+$$\hat{\beta}^{MLE} = (X^T X)^{-1} X^T y.$$
+
+# Maximum a Posteriori
+
+When there is a gaussian prior in the form $\beta \sim N(\mu_0, \Sigma_0)$,
+we use Baye's rule to multiply the likelihood with the prior to get the posterior probability of $\beta$. Since we are multiplying two normals, we can add their exponents. The posterior takes the form of another normal distribution. 
+
+\begin{align}
+p(\beta|y, x, \Sigma) &= \prod_i N(y_i | x_i, \beta, \Sigma) \cdot N(\beta | \mu_0, \Sigma_0) \\
+  &\propto
+  \prod_i \frac{1}{|\Sigma|} 
+  exp({-\frac{1}{2} \big((y_i - x_i^T \beta)^T \Sigma^{-1} (y_i - x_i^T \beta) - (\beta - \mu_0)^T \Sigma_0^{-1} (\beta - \mu_0)\big)}).
+\end{align}
+
+The posterior turns out to be another normal distribution, $N(\mu_1, \Sigma_1)$ ([wiki](https://en.wikipedia.org/wiki/Conjugate_prior)), where
+
+\begin{align}
+\Sigma_1 &= (\Sigma_0^{-1} + n \Sigma^{-1})^{-1} \\
+\mu_1 &= \Sigma_1 (\Sigma_0^{-1} \mu_0 + \Sigma^{-1} \sum_i{y_i})
+\end{align}
+
+The maximum a-posteriori estimator ([wiki](https://en.wikipedia.org/wiki/Maximum_a_posteriori_estimation)) estimates the parameter vector as the mode of the posterior distribution. This is done by differentiating the posterior and solvings its root, similar to MLE. Taking the log posterior probability and then maximizing it gives
+
+$$\hat{\beta}^{MAP} = \arg max_{\beta} 
+- (y-X\beta)^T \Sigma^{-1} (y-X\beta)
+- (\beta-\beta_0)^T \Sigma_0^{-1} (\beta-\beta_0).$$
+Recall that $\Sigma$ is fixed, and $\mu_0$ and $\Sigma_0$ are inputs for the prior.
+Differentiating and solving, we can show the MAP estimator is equal to Tikhonov regularization.
+
+$$\hat{\beta}^{MAP} = (X^T X + \Sigma_0)^{-1} (X^T y + \Sigma_0 \mu_0).$$
+
+# Equivalence between MLE and MAP
+
+When the prior is a constant everywhere, it factors out of the posterior probability as a constant. That means the MLE estimator is a special case of MAP when the prior is a uniform distribution.

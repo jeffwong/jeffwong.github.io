@@ -7,7 +7,24 @@
     <description>A blog on causal inference, algorithmic decision making, and numerical computing.
 </description>
     <generator>Distill</generator>
-    <lastBuildDate>Sun, 27 Dec 2020 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Fri, 09 Apr 2021 00:00:00 +0000</lastBuildDate>
+    <item>
+      <title>R is a great Research Environment</title>
+      <dc:creator>Jeffrey C. Wong</dc:creator>
+      <link>http://jeffreycwong.com/posts/2021-04-09-r-is-a-great-research-environment</link>
+      <description>A thoughtful exposition on how R makes data scientists more productive.</description>
+      <guid>http://jeffreycwong.com/posts/2021-04-09-r-is-a-great-research-environment</guid>
+      <pubDate>Fri, 09 Apr 2021 00:00:00 +0000</pubDate>
+      <media:content url="https://github.com/tidyverse/ggplot2/raw/master/man/figures/logo.png" medium="image" type="image/png"/>
+    </item>
+    <item>
+      <title>The Mathematics of the Elastic Net</title>
+      <dc:creator>Jeffrey C. Wong</dc:creator>
+      <link>http://jeffreycwong.com/posts/2021-04-09-the-mathematics-of-the-elastic-net</link>
+      <description>OLS with L1 and L2 penalties.</description>
+      <guid>http://jeffreycwong.com/posts/2021-04-09-the-mathematics-of-the-elastic-net</guid>
+      <pubDate>Wed, 07 Apr 2021 00:00:00 +0000</pubDate>
+    </item>
     <item>
       <title>The Special Equivalence between Tikhonov Regularization and Gaussian Priors</title>
       <dc:creator>Jeffrey C. Wong</dc:creator>

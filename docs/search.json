@@ -5,21 +5,14 @@
       "title": "About Me",
       "author": [],
       "contents": "\n\n\n\nI am a local expert in causal inference and computational methods for causal inference. I have 10+ years experience doing data science research to improve business operations, promotion, and product, as well as writing software for data science systems.\nMy two main research areas are in measuring causal effects in large systems, such as AB testing, as well as optimizing products and systems based on causal effects, for example in personalization and algorithmic decision making. My work has led to two significant changes within the promotion and experimentation industries:\n1. Promotion: Incrementality based attribution.\nIncrementality is the science of measuring the effectiveness of product promotion. This science motivates ROI analysis, audience targeting and recommendation systems. Through well designed experiments and causal effects models, we measure the effect of promotion on conversion, factoring in heterogeneous effects as well as time dynamic effects. For example, different promotions will have different causal effects on different devices, and the causal effect of a promotion can fade away over time. We are able to offer a causal effects solution to the multitouch attribution (MTA) problem that can credit a conversion to different promotion channels from a business.\n2. Experimentation: Causal effect measurement.\nCausal Effect Measurement is a series of work aimed to make the measurement of average effects (ATE), heterogeneous effects (HTE), and time-dynamic effects (DTE) scalable enough to analyze a hundred million users across a hundred different experiments. By doing so, companies can gather better insights on how users interact with products, and therefore can design and implement changes to improve user joy. The combination of ATE-HTE-DTE provides deep insights into segmentation and trend analysis, and with roots in causal effects. Causal Effect Measurement is a significant milestone for product analysis. This interdisciplinary work across software engineering, data science research, and computational methods eliminated the stereotype that causal effects models could not scale to large engineering systems.\nFeatured Presentations\nI am interested in promoting an interdisciplinary community around causal inference and software for causal inference. I have given featured presentations on the topics of causal inference and attribution for different organizations, including the World Bank, Lyft, Apple, and Instacart. Please reach out to me if there is a chance to discuss these topics with your organization:\nIncrementality Bidding and Attribution\nComputational Causal Inference\nFeatured Papers & Blog Posts\nComputational Causal Inference\nIncrementality Bidding and Attribution\nEfficient Computation for Linear Model Treatment Effects\nEngineering for a science-centric experimentation platform\nReimagining Experimentation Analysis at Netflix\nSuccess Stories from a Democratized Experimentation Platform\n\n\n\n",
-      "last_modified": "2020-12-29T10:59:25-08:00"
+      "last_modified": "2021-04-09T14:52:00-07:00"
     },
     {
       "path": "index.html",
       "title": "A tech blog on causal inference, algorithmic decision making, and numerical computing.",
       "author": [],
       "contents": "\n\n\n\n",
-      "last_modified": "2020-12-29T10:59:25-08:00"
-    },
-    {
-      "path": "reading_list.html",
-      "title": "reading_list",
-      "author": [],
-      "contents": "",
-      "last_modified": "2020-12-29T10:59:26-08:00"
+      "last_modified": "2021-04-09T14:52:01-07:00"
     }
   ],
   "collections": ["posts/posts.json"]

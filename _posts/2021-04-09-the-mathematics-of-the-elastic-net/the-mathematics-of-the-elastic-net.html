@@ -86,635 +86,39 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 </style>
 
   <!--radix_placeholder_meta_tags-->
-  <title>Jeffrey C. Wong: About Me</title>
+  <title>The Mathematics of the Elastic Net</title>
+  
+  <meta property="description" itemprop="description" content="OLS with L1 and L2 penalties."/>
   
   
-  
+  <!--  https://schema.org/Article -->
+  <meta property="article:published" itemprop="datePublished" content="2021-04-07"/>
+  <meta property="article:created" itemprop="dateCreated" content="2021-04-07"/>
+  <meta name="article:author" content="Jeffrey C. Wong"/>
   
   <!--  https://developers.facebook.com/docs/sharing/webmasters#markup -->
-  <meta property="og:title" content="Jeffrey C. Wong: About Me"/>
+  <meta property="og:title" content="The Mathematics of the Elastic Net"/>
   <meta property="og:type" content="article"/>
+  <meta property="og:description" content="OLS with L1 and L2 penalties."/>
   <meta property="og:locale" content="en_US"/>
-  <meta property="og:site_name" content="Jeffrey C. Wong"/>
   
   <!--  https://dev.twitter.com/cards/types/summary -->
   <meta property="twitter:card" content="summary"/>
-  <meta property="twitter:title" content="Jeffrey C. Wong: About Me"/>
+  <meta property="twitter:title" content="The Mathematics of the Elastic Net"/>
+  <meta property="twitter:description" content="OLS with L1 and L2 penalties."/>
   
   <!--/radix_placeholder_meta_tags-->
   <!--radix_placeholder_rmarkdown_metadata-->
   
   <script type="text/json" id="radix-rmarkdown-metadata">
-  {"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["title"]}},"value":[{"type":"character","attributes":{},"value":["About Me"]}]}
+  {"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["title","description","author","date","output"]}},"value":[{"type":"character","attributes":{},"value":["The Mathematics of the Elastic Net"]},{"type":"character","attributes":{},"value":["OLS with L1 and L2 penalties.\n"]},{"type":"list","attributes":{},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["name","url"]}},"value":[{"type":"character","attributes":{},"value":["Jeffrey C. Wong"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":[]}},"value":[]}]}]},{"type":"character","attributes":{},"value":["04-07-2021"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["distill::distill_article"]}},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["self_contained"]}},"value":[{"type":"logical","attributes":{},"value":[false]}]}]}]}
   </script>
   <!--/radix_placeholder_rmarkdown_metadata-->
+  
+  <script type="text/json" id="radix-resource-manifest">
+  {"type":"character","attributes":{},"value":["the-mathematics-of-the-elastic-net_files/anchor-4.2.2/anchor.min.js","the-mathematics-of-the-elastic-net_files/bowser-1.9.3/bowser.min.js","the-mathematics-of-the-elastic-net_files/distill-2.2.21/template.v2.js","the-mathematics-of-the-elastic-net_files/jquery-1.11.3/jquery.min.js","the-mathematics-of-the-elastic-net_files/popper-2.6.0/popper.min.js","the-mathematics-of-the-elastic-net_files/tippy-6.2.7/tippy-bundle.umd.min.js","the-mathematics-of-the-elastic-net_files/tippy-6.2.7/tippy-light-border.css","the-mathematics-of-the-elastic-net_files/tippy-6.2.7/tippy.css","the-mathematics-of-the-elastic-net_files/tippy-6.2.7/tippy.umd.min.js","the-mathematics-of-the-elastic-net_files/webcomponents-2.0.0/webcomponents.js"]}
+  </script>
   <!--radix_placeholder_navigation_in_header-->
-  <meta name="distill:offset" content=""/>
-  
-  <script type="application/javascript">
-  
-    window.headroom_prevent_pin = false;
-  
-    window.document.addEventListener("DOMContentLoaded", function (event) {
-  
-      // initialize headroom for banner
-      var header = $('header').get(0);
-      var headerHeight = header.offsetHeight;
-      var headroom = new Headroom(header, {
-        tolerance: 5,
-        onPin : function() {
-          if (window.headroom_prevent_pin) {
-            window.headroom_prevent_pin = false;
-            headroom.unpin();
-          }
-        }
-      });
-      headroom.init();
-      if(window.location.hash)
-        headroom.unpin();
-      $(header).addClass('headroom--transition');
-  
-      // offset scroll location for banner on hash change
-      // (see: https://github.com/WickyNilliams/headroom.js/issues/38)
-      window.addEventListener("hashchange", function(event) {
-        window.scrollTo(0, window.pageYOffset - (headerHeight + 25));
-      });
-  
-      // responsive menu
-      $('.distill-site-header').each(function(i, val) {
-        var topnav = $(this);
-        var toggle = topnav.find('.nav-toggle');
-        toggle.on('click', function() {
-          topnav.toggleClass('responsive');
-        });
-      });
-  
-      // nav dropdowns
-      $('.nav-dropbtn').click(function(e) {
-        $(this).next('.nav-dropdown-content').toggleClass('nav-dropdown-active');
-        $(this).parent().siblings('.nav-dropdown')
-           .children('.nav-dropdown-content').removeClass('nav-dropdown-active');
-      });
-      $("body").click(function(e){
-        $('.nav-dropdown-content').removeClass('nav-dropdown-active');
-      });
-      $(".nav-dropdown").click(function(e){
-        e.stopPropagation();
-      });
-    });
-  </script>
-  
-  <style type="text/css">
-  
-  /* Theme (user-documented overrideables for nav appearance) */
-  
-  .distill-site-nav {
-    color: rgba(255, 255, 255, 0.8);
-    background-color: #0F2E3D;
-    font-size: 15px;
-    font-weight: 300;
-  }
-  
-  .distill-site-nav a {
-    color: inherit;
-    text-decoration: none;
-  }
-  
-  .distill-site-nav a:hover {
-    color: white;
-  }
-  
-  @media print {
-    .distill-site-nav {
-      display: none;
-    }
-  }
-  
-  .distill-site-header {
-  
-  }
-  
-  .distill-site-footer {
-  
-  }
-  
-  
-  /* Site Header */
-  
-  .distill-site-header {
-    width: 100%;
-    box-sizing: border-box;
-    z-index: 3;
-  }
-  
-  .distill-site-header .nav-left {
-    display: inline-block;
-    margin-left: 8px;
-  }
-  
-  @media screen and (max-width: 768px) {
-    .distill-site-header .nav-left {
-      margin-left: 0;
-    }
-  }
-  
-  
-  .distill-site-header .nav-right {
-    float: right;
-    margin-right: 8px;
-  }
-  
-  .distill-site-header a,
-  .distill-site-header .title {
-    display: inline-block;
-    text-align: center;
-    padding: 14px 10px 14px 10px;
-  }
-  
-  .distill-site-header .title {
-    font-size: 18px;
-    min-width: 150px;
-  }
-  
-  .distill-site-header .logo {
-    padding: 0;
-  }
-  
-  .distill-site-header .logo img {
-    display: none;
-    max-height: 20px;
-    width: auto;
-    margin-bottom: -4px;
-  }
-  
-  .distill-site-header .nav-image img {
-    max-height: 18px;
-    width: auto;
-    display: inline-block;
-    margin-bottom: -3px;
-  }
-  
-  
-  
-  @media screen and (min-width: 1000px) {
-    .distill-site-header .logo img {
-      display: inline-block;
-    }
-    .distill-site-header .nav-left {
-      margin-left: 20px;
-    }
-    .distill-site-header .nav-right {
-      margin-right: 20px;
-    }
-    .distill-site-header .title {
-      padding-left: 12px;
-    }
-  }
-  
-  
-  .distill-site-header .nav-toggle {
-    display: none;
-  }
-  
-  .nav-dropdown {
-    display: inline-block;
-    position: relative;
-  }
-  
-  .nav-dropdown .nav-dropbtn {
-    border: none;
-    outline: none;
-    color: rgba(255, 255, 255, 0.8);
-    padding: 16px 10px;
-    background-color: transparent;
-    font-family: inherit;
-    font-size: inherit;
-    font-weight: inherit;
-    margin: 0;
-    margin-top: 1px;
-    z-index: 2;
-  }
-  
-  .nav-dropdown-content {
-    display: none;
-    position: absolute;
-    background-color: white;
-    min-width: 200px;
-    border: 1px solid rgba(0,0,0,0.15);
-    border-radius: 4px;
-    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.1);
-    z-index: 1;
-    margin-top: 2px;
-    white-space: nowrap;
-    padding-top: 4px;
-    padding-bottom: 4px;
-  }
-  
-  .nav-dropdown-content hr {
-    margin-top: 4px;
-    margin-bottom: 4px;
-    border: none;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-  }
-  
-  .nav-dropdown-active {
-    display: block;
-  }
-  
-  .nav-dropdown-content a, .nav-dropdown-content .nav-dropdown-header {
-    color: black;
-    padding: 6px 24px;
-    text-decoration: none;
-    display: block;
-    text-align: left;
-  }
-  
-  .nav-dropdown-content .nav-dropdown-header {
-    display: block;
-    padding: 5px 24px;
-    padding-bottom: 0;
-    text-transform: uppercase;
-    font-size: 14px;
-    color: #999999;
-    white-space: nowrap;
-  }
-  
-  .nav-dropdown:hover .nav-dropbtn {
-    color: white;
-  }
-  
-  .nav-dropdown-content a:hover {
-    background-color: #ddd;
-    color: black;
-  }
-  
-  .nav-right .nav-dropdown-content {
-    margin-left: -45%;
-    right: 0;
-  }
-  
-  @media screen and (max-width: 768px) {
-    .distill-site-header a, .distill-site-header .nav-dropdown  {display: none;}
-    .distill-site-header a.nav-toggle {
-      float: right;
-      display: block;
-    }
-    .distill-site-header .title {
-      margin-left: 0;
-    }
-    .distill-site-header .nav-right {
-      margin-right: 0;
-    }
-    .distill-site-header {
-      overflow: hidden;
-    }
-    .nav-right .nav-dropdown-content {
-      margin-left: 0;
-    }
-  }
-  
-  
-  @media screen and (max-width: 768px) {
-    .distill-site-header.responsive {position: relative; min-height: 500px; }
-    .distill-site-header.responsive a.nav-toggle {
-      position: absolute;
-      right: 0;
-      top: 0;
-    }
-    .distill-site-header.responsive a,
-    .distill-site-header.responsive .nav-dropdown {
-      display: block;
-      text-align: left;
-    }
-    .distill-site-header.responsive .nav-left,
-    .distill-site-header.responsive .nav-right {
-      width: 100%;
-    }
-    .distill-site-header.responsive .nav-dropdown {float: none;}
-    .distill-site-header.responsive .nav-dropdown-content {position: relative;}
-    .distill-site-header.responsive .nav-dropdown .nav-dropbtn {
-      display: block;
-      width: 100%;
-      text-align: left;
-    }
-  }
-  
-  /* Site Footer */
-  
-  .distill-site-footer {
-    width: 100%;
-    overflow: hidden;
-    box-sizing: border-box;
-    z-index: 3;
-    margin-top: 30px;
-    padding-top: 30px;
-    padding-bottom: 30px;
-    text-align: center;
-  }
-  
-  /* Headroom */
-  
-  d-title {
-    padding-top: 6rem;
-  }
-  
-  @media print {
-    d-title {
-      padding-top: 4rem;
-    }
-  }
-  
-  .headroom {
-    z-index: 1000;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-  }
-  
-  .headroom--transition {
-    transition: all .4s ease-in-out;
-  }
-  
-  .headroom--unpinned {
-    top: -100px;
-  }
-  
-  .headroom--pinned {
-    top: 0;
-  }
-  
-  /* adjust viewport for navbar height */
-  /* helps vertically center bootstrap (non-distill) content */
-  .min-vh-100 {
-    min-height: calc(100vh - 100px) !important;
-  }
-  
-  </style>
-  
-  <script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
-  <link href="site_libs/font-awesome-5.1.0/css/all.css" rel="stylesheet"/>
-  <link href="site_libs/font-awesome-5.1.0/css/v4-shims.css" rel="stylesheet"/>
-  <script src="site_libs/headroom-0.9.4/headroom.min.js"></script>
-  <script src="site_libs/autocomplete-0.37.1/autocomplete.min.js"></script>
-  <script src="site_libs/fuse-6.4.1/fuse.min.js"></script>
-  
-  <script type="application/javascript">
-  
-  function getMeta(metaName) {
-    var metas = document.getElementsByTagName('meta');
-    for (let i = 0; i < metas.length; i++) {
-      if (metas[i].getAttribute('name') === metaName) {
-        return metas[i].getAttribute('content');
-      }
-    }
-    return '';
-  }
-  
-  function offsetURL(url) {
-    var offset = getMeta('distill:offset');
-    return offset ? offset + '/' + url : url;
-  }
-  
-  function createFuseIndex() {
-  
-    // create fuse index
-    var options = {
-      keys: [
-        { name: 'title', weight: 20 },
-        { name: 'categories', weight: 15 },
-        { name: 'description', weight: 10 },
-        { name: 'contents', weight: 5 },
-      ],
-      ignoreLocation: true,
-      threshold: 0
-    };
-    var fuse = new window.Fuse([], options);
-  
-    // fetch the main search.json
-    return fetch(offsetURL('search.json'))
-      .then(function(response) {
-        if (response.status == 200) {
-          return response.json().then(function(json) {
-            // index main articles
-            json.articles.forEach(function(article) {
-              fuse.add(article);
-            });
-            // download collections and index their articles
-            return Promise.all(json.collections.map(function(collection) {
-              return fetch(offsetURL(collection)).then(function(response) {
-                if (response.status === 200) {
-                  return response.json().then(function(articles) {
-                    articles.forEach(function(article) {
-                      fuse.add(article);
-                    });
-                  })
-                } else {
-                  return Promise.reject(
-                    new Error('Unexpected status from search index request: ' +
-                              response.status)
-                  );
-                }
-              });
-            })).then(function() {
-              return fuse;
-            });
-          });
-  
-        } else {
-          return Promise.reject(
-            new Error('Unexpected status from search index request: ' +
-                        response.status)
-          );
-        }
-      });
-  }
-  
-  window.document.addEventListener("DOMContentLoaded", function (event) {
-  
-    // get search element (bail if we don't have one)
-    var searchEl = window.document.getElementById('distill-search');
-    if (!searchEl)
-      return;
-  
-    createFuseIndex()
-      .then(function(fuse) {
-  
-        // make search box visible
-        searchEl.classList.remove('hidden');
-  
-        // initialize autocomplete
-        var options = {
-          autoselect: true,
-          hint: false,
-          minLength: 2,
-        };
-        window.autocomplete(searchEl, options, [{
-          source: function(query, callback) {
-            const searchOptions = {
-              isCaseSensitive: false,
-              shouldSort: true,
-              minMatchCharLength: 2,
-              limit: 10,
-            };
-            var results = fuse.search(query, searchOptions);
-            callback(results
-              .map(function(result) { return result.item; })
-            );
-          },
-          templates: {
-            suggestion: function(suggestion) {
-              var img = suggestion.preview && Object.keys(suggestion.preview).length > 0
-                ? `<img src="${offsetURL(suggestion.preview)}"</img>`
-                : '';
-              var html = `
-                <div class="search-item">
-                  <h3>${suggestion.title}</h3>
-                  <div class="search-item-description">
-                    ${suggestion.description || ''}
-                  </div>
-                  <div class="search-item-preview">
-                    ${img}
-                  </div>
-                </div>
-              `;
-              return html;
-            }
-          }
-        }]).on('autocomplete:selected', function(event, suggestion) {
-          window.location.href = offsetURL(suggestion.path);
-        });
-        // remove inline display style on autocompleter (we want to
-        // manage responsive display via css)
-        $('.algolia-autocomplete').css("display", "");
-      })
-      .catch(function(error) {
-        console.log(error);
-      });
-  
-  });
-  
-  </script>
-  
-  <style type="text/css">
-  
-  .nav-search {
-    font-size: x-small;
-  }
-  
-  /* Algolioa Autocomplete */
-  
-  .algolia-autocomplete {
-    display: inline-block;
-    margin-left: 10px;
-    vertical-align: sub;
-    background-color: white;
-    color: black;
-    padding: 6px;
-    padding-top: 8px;
-    padding-bottom: 0;
-    border-radius: 6px;
-    border: 1px #0F2E3D solid;
-    width: 180px;
-  }
-  
-  
-  @media screen and (max-width: 768px) {
-    .distill-site-nav .algolia-autocomplete {
-      display: none;
-      visibility: hidden;
-    }
-    .distill-site-nav.responsive .algolia-autocomplete {
-      display: inline-block;
-      visibility: visible;
-    }
-    .distill-site-nav.responsive .algolia-autocomplete .aa-dropdown-menu {
-      margin-left: 0;
-      width: 400px;
-      max-height: 400px;
-    }
-  }
-  
-  .algolia-autocomplete .aa-input, .algolia-autocomplete .aa-hint {
-    width: 90%;
-    outline: none;
-    border: none;
-  }
-  
-  .algolia-autocomplete .aa-hint {
-    color: #999;
-  }
-  .algolia-autocomplete .aa-dropdown-menu {
-    width: 550px;
-    max-height: 70vh;
-    overflow-x: visible;
-    overflow-y: scroll;
-    padding: 5px;
-    margin-top: 3px;
-    margin-left: -150px;
-    background-color: #fff;
-    border-radius: 5px;
-    border: 1px solid #999;
-    border-top: none;
-  }
-  
-  .algolia-autocomplete .aa-dropdown-menu .aa-suggestion {
-    cursor: pointer;
-    padding: 5px 4px;
-    border-bottom: 1px solid #eee;
-  }
-  
-  .algolia-autocomplete .aa-dropdown-menu .aa-suggestion:last-of-type {
-    border-bottom: none;
-    margin-bottom: 2px;
-  }
-  
-  .algolia-autocomplete .aa-dropdown-menu .aa-suggestion .search-item {
-    overflow: hidden;
-    font-size: 0.8em;
-    line-height: 1.4em;
-  }
-  
-  .algolia-autocomplete .aa-dropdown-menu .aa-suggestion .search-item h3 {
-    font-size: 1rem;
-    margin-block-start: 0;
-    margin-block-end: 5px;
-  }
-  
-  .algolia-autocomplete .aa-dropdown-menu .aa-suggestion .search-item-description {
-    display: inline-block;
-    overflow: hidden;
-    height: 2.8em;
-    width: 80%;
-    margin-right: 4%;
-  }
-  
-  .algolia-autocomplete .aa-dropdown-menu .aa-suggestion .search-item-preview {
-    display: inline-block;
-    width: 15%;
-  }
-  
-  .algolia-autocomplete .aa-dropdown-menu .aa-suggestion .search-item-preview img {
-    height: 3em;
-    width: auto;
-    display: none;
-  }
-  
-  .algolia-autocomplete .aa-dropdown-menu .aa-suggestion .search-item-preview img[src] {
-    display: initial;
-  }
-  
-  .algolia-autocomplete .aa-dropdown-menu .aa-suggestion.aa-cursor {
-    background-color: #eee;
-  }
-  .algolia-autocomplete .aa-dropdown-menu .aa-suggestion em {
-    font-weight: bold;
-    font-style: normal;
-  }
-  
-  </style>
-  
-  
   <!--/radix_placeholder_navigation_in_header-->
   <!--radix_placeholder_distill-->
   
@@ -2030,14 +1434,15 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
   </script>
   
   <!--/radix_placeholder_distill-->
-  <script src="site_libs/popper-2.6.0/popper.min.js"></script>
-  <link href="site_libs/tippy-6.2.7/tippy.css" rel="stylesheet" />
-  <link href="site_libs/tippy-6.2.7/tippy-light-border.css" rel="stylesheet" />
-  <script src="site_libs/tippy-6.2.7/tippy.umd.min.js"></script>
-  <script src="site_libs/anchor-4.2.2/anchor.min.js"></script>
-  <script src="site_libs/bowser-1.9.3/bowser.min.js"></script>
-  <script src="site_libs/webcomponents-2.0.0/webcomponents.js"></script>
-  <script src="site_libs/distill-2.2.21/template.v2.js"></script>
+  <script src="the-mathematics-of-the-elastic-net_files/jquery-1.11.3/jquery.min.js"></script>
+  <script src="the-mathematics-of-the-elastic-net_files/popper-2.6.0/popper.min.js"></script>
+  <link href="the-mathematics-of-the-elastic-net_files/tippy-6.2.7/tippy.css" rel="stylesheet" />
+  <link href="the-mathematics-of-the-elastic-net_files/tippy-6.2.7/tippy-light-border.css" rel="stylesheet" />
+  <script src="the-mathematics-of-the-elastic-net_files/tippy-6.2.7/tippy.umd.min.js"></script>
+  <script src="the-mathematics-of-the-elastic-net_files/anchor-4.2.2/anchor.min.js"></script>
+  <script src="the-mathematics-of-the-elastic-net_files/bowser-1.9.3/bowser.min.js"></script>
+  <script src="the-mathematics-of-the-elastic-net_files/webcomponents-2.0.0/webcomponents.js"></script>
+  <script src="the-mathematics-of-the-elastic-net_files/distill-2.2.21/template.v2.js"></script>
   <!--radix_placeholder_site_in_header-->
   <!--/radix_placeholder_site_in_header-->
 
@@ -2049,65 +1454,126 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 <!--radix_placeholder_front_matter-->
 
 <script id="distill-front-matter" type="text/json">
-{"title":"About Me","authors":[]}
+{"title":"The Mathematics of the Elastic Net","description":"OLS with L1 and L2 penalties.","authors":[{"author":"Jeffrey C. Wong","authorURL":{},"affiliation":"&nbsp;","affiliationURL":"#","orcidID":""}],"publishedDate":"2021-04-07T00:00:00.000+00:00","citationText":"Wong, 2021"}
 </script>
 
 <!--/radix_placeholder_front_matter-->
 <!--radix_placeholder_navigation_before_body-->
-<header class="header header--fixed" role="banner">
-<nav class="distill-site-nav distill-site-header">
-<div class="nav-left">
-<a href="index.html" class="title">Jeffrey C. Wong</a>
-<input id="distill-search" class="nav-search hidden" type="text" placeholder="Search..."/>
-</div>
-<div class="nav-right">
-<a href="index.html">Home</a>
-<a href="about_me.html">About Me</a>
-<a href="https://rweekly.org">R Weekly</a>
-<a href="https://github.com/rbind">rbind</a>
-<a href="https://github.com/jeffwong/jeffwong.github.io">github</a>
-<a href="javascript:void(0);" class="nav-toggle">&#9776;</a>
-</div>
-</nav>
-</header>
 <!--/radix_placeholder_navigation_before_body-->
 <!--radix_placeholder_site_before_body-->
 <!--/radix_placeholder_site_before_body-->
 
 <div class="d-title">
-<h1>About Me</h1>
+<h1>The Mathematics of the Elastic Net</h1>
 <!--radix_placeholder_categories-->
 <!--/radix_placeholder_categories-->
-
+<p><p>OLS with L1 and L2 penalties.</p></p>
 </div>
 
+<div class="d-byline">
+  Jeffrey C. Wong true 
+  
+<br/>04-07-2021
+</div>
 
 <div class="d-article">
-<div class="layout-chunk" data-layout="l-body">
-<p><img src="jeffwong_headshot.gif" /><!-- --></p>
-</div>
-<p>I am a local expert in causal inference and computational methods for causal inference. I have 10+ years experience doing data science research to improve business operations, promotion, and product, as well as writing software for data science systems.</p>
-<p>My two main research areas are in measuring causal effects in large systems, such as AB testing, as well as optimizing products and systems based on causal effects, for example in personalization and algorithmic decision making. My work has led to two significant changes within the promotion and experimentation industries:</p>
-<h2 id="promotion-incrementality-based-attribution.">1. Promotion: Incrementality based attribution.</h2>
-<p>Incrementality is the science of measuring the effectiveness of product promotion. This science motivates ROI analysis, audience targeting and recommendation systems. Through well designed experiments and causal effects models, we measure the effect of promotion on conversion, factoring in heterogeneous effects as well as time dynamic effects. For example, different promotions will have different causal effects on different devices, and the causal effect of a promotion can fade away over time. We are able to offer a causal effects solution to the multitouch attribution (MTA) problem that can credit a conversion to different promotion channels from a business.</p>
-<h2 id="experimentation-causal-effect-measurement.">2. Experimentation: Causal effect measurement.</h2>
-<p>Causal Effect Measurement is a series of work aimed to make the measurement of average effects (ATE), heterogeneous effects (HTE), and time-dynamic effects (DTE) scalable enough to analyze a hundred million users across a hundred different experiments. By doing so, companies can gather better insights on how users interact with products, and therefore can design and implement changes to improve user joy. The combination of ATE-HTE-DTE provides deep insights into segmentation and trend analysis, and with roots in causal effects. Causal Effect Measurement is a significant milestone for product analysis. This interdisciplinary work across software engineering, data science research, and computational methods eliminated the stereotype that causal effects models could not scale to large engineering systems.</p>
-<h1 id="featured-presentations">Featured Presentations</h1>
-<p>I am interested in promoting an interdisciplinary community around causal inference and software for causal inference. I have given featured presentations on the topics of causal inference and attribution for different organizations, including the World Bank, Lyft, Apple, and Instacart. Please reach out to me if there is a chance to discuss these topics with your organization:</p>
+<p><strong>Author’s note: This post is largely a rehash of many of the original elastic net and glmnet papers.</strong> I hope that having another voice describe the elegance of the elastic net will help others understand it. I have linked to all of the original documents to the best I can.</p>
+<p>The elastic net adds L1 and L2 penalties to OLS, and is used to shrink coefficients towards zero. This can help with overfitting, as well as building an interpretive model from many features. When there is structure in coefficient-specific penalties, regularization can mimic a hierarchical model.</p>
+<p>We start with a feature matrix, <span class="math inline">\(X \in \mathbb{R}^{n \times p}\)</span>, a response vector, <span class="math inline">\(y \in \mathbb{R}^n\)</span>, and a given <span class="math inline">\(\alpha\)</span>. The elastic net formulates the problem</p>
+<p><span class="math display">\[\beta^{(\lambda)} = \arg\min \sum_{i=1}^n (y_i -\beta_0 -x_i^T \beta)^2 + \lambda \sum_{j=1}^p (0.5(1-\alpha)\beta_j^2 + \alpha |\beta_j|).\]</span></p>
+<p>The first term is the usual OLS term and the second term is a combination of L1 and L2 regularization.</p>
+<h1 id="physical-interpretation-of-the-regularization">Physical Interpretation of the Regularization</h1>
+<p>The 2 norm on <span class="math inline">\(\beta\)</span> incentivizes the program to return coefficients that are small in magnitude. Likewise, the 1 norm incentivizes coefficients that are exactly zero. This prevents the exaggeration of effects in a model, while simultaneously serving as a form of model selection and interpretation.</p>
+<p>Regularization is also similar to a prior. L2 regularization is similar to OLS with a gaussian prior on the parameters, that has a prior mean of 0 and a prior variance of <span class="math inline">\(1/\lambda\)</span>. L1 regularization is similar to a laplacian prior. The relationship is explained <a href="https://papers.nips.cc/paper/1976-adaptive-sparseness-using-jeffreys-prior.pdf">here</a> with a compact stack overflow description <a href="https://stats.stackexchange.com/questions/163388/why-is-the-l2-regularization-equivalent-to-gaussian-prior">here</a>.</p>
+<h1 id="solving-the-program">Solving the Program</h1>
+<p>When <span class="math inline">\(X\)</span> is centered and scaled to have zero mean and unit variance, the optimization problem can be solved using <a href="https://web.stanford.edu/~hastie/Papers/glmnet.pdf">coordinate descent</a>, with the update step:</p>
+<p><span class="math display">\[\beta^{(\lambda)}_j = \frac{S(\frac{1}{n} \sum_{i=1}^n (x_{i,j}\varepsilon_i + \beta^{(\lambda)}_j), \lambda \alpha)}{1 + \lambda(1 - \alpha)}\]</span></p>
+<p>where <span class="math inline">\(S(x, \lambda) = \text{sign}(x) \cdot (|x| - \lambda)_+\)</span> is the soft thresholding function.</p>
+<p>This produces an algorithm with the form</p>
+<pre><code># Given X, y, lambda, alpha.
+for cycle in 1:max_cycles
+  for j in 1:p
+    for it in 1:max_iters
+      beta_j = &lt;do update step above&gt;</code></pre>
+<h1 id="searching-lambda">Searching <span class="math inline">\(\lambda\)</span></h1>
+<p>The amount of regularization to use is always a question when fitting the elastic net. More regularization will more aggressively shrink the coefficients to zero. From the physical interpretation section above, regularization is like a prior, and careful thought also goes into choosing the prior. Usually, we cross validate and search for an optimal <span class="math inline">\(\lambda\)</span> that minimizes an out-of-sample metric. Fortunately there is a smart strategy for how to pick a starting set of <span class="math inline">\(\lambda\)</span> to explore (<a href="https://web.stanford.edu/~hastie/TALKS/glmnet.pdf">talk</a>, <a href="https://stats.stackexchange.com/questions/166630/glmnet-compute-maximal-lambda-value">stack overflow</a>).</p>
+<p>Say a good set of <span class="math inline">\(\lambda\)</span> ranges from <span class="math inline">\(\lambda_{max}\)</span> to <span class="math inline">\(\lambda_{min}\)</span>, and is logarithmically spaced apart, where <span class="math inline">\(\lambda_{max}\)</span> is the smallest <span class="math inline">\(\lambda\)</span> such that the coefficient vector is the zero vector and <span class="math inline">\(\lambda_{min}\)</span> is some multiple of <span class="math inline">\(\lambda_{max}\)</span>.</p>
+<p>When <span class="math inline">\(X\)</span> is centered and scaled to have zero mean and unit variance, and <span class="math inline">\(y\)</span> is centered to have zero mean, then</p>
+<p><span class="math display">\[\lambda_{max} = \frac{\max(|X^T y|)}{n \alpha}.\]</span></p>
+<p>In <code>glmnet::glmnet</code>, <span class="math inline">\(\lambda_{min} = .0001 \lambda_{max}\)</span> if <span class="math inline">\(n &gt; p\)</span>. It should be noted that when <span class="math inline">\(\alpha = 0\)</span>, <span class="math inline">\(\lambda_{max}\)</span> does not exist, so <code>glmnet</code> intercepts <span class="math inline">\(\alpha\)</span> and pretends it is 0.001.</p>
+<p>Adding this layer to search for <span class="math inline">\(\lambda\)</span> means the optimization algorithm above gains a fourth nested for loop.</p>
+<pre><code># Given X, y, alpha.
+for cycle in 1:max_cycles
+  for j in 1:p
+    for l in lambda: 
+      for it in 1:max_iters
+        beta_j = &lt;do update step above&gt;</code></pre>
+<p>This sounds like it is untractable, but there are several optimizations that can make the algorithm fast.</p>
+<h1 id="computational-performance">Computational performance</h1>
+<p>The above two sections are sufficient enough to build a lightweight elastic net solver. This section describes specific optimizations that make the algorithm faster, but ultimately are not relevant for how to use the elastic net as an end user.</p>
+<h2 id="updates-via-covariance">Updates via Covariance</h2>
+<p>Note that the <span class="math inline">\(\sum_i x_{i,j}\varepsilon_i\)</span> term can be decomposed into <span class="math inline">\(\sum_i x_{i,j}(y_{i} - x_{i}^T \beta)\)</span>. This can be computed very efficiently from a few vectorized operations that are computed just once outside of all of the loops. We first compute and store <span class="math inline">\(X^T X\)</span> and <span class="math inline">\(X^T y\)</span>. When <span class="math inline">\(X\)</span> is sparse the linear algebra can be optimized. Then <span class="math inline">\(\sum_i x_{i,j}\varepsilon_i = (X^T y)[j] - (X^T X)[,j]^T\beta\)</span>, i.e. the j-th component of <span class="math inline">\(X^T y\)</span> and the dot product between the j-th column of <span class="math inline">\(X^T X\)</span> and <span class="math inline">\(\beta\)</span>.</p>
+<h2 id="reuse-xt-y-from-searching-lambda">Reuse <span class="math inline">\(X^T y\)</span> from searching <span class="math inline">\(\lambda\)</span></h2>
+<p>When a smart set of <span class="math inline">\(\lambda\)</span> is initialized, we can store the product <span class="math inline">\(X^T y\)</span>, which is then used as part of the covariance update strategy.</p>
+<h2 id="pathwise-coordinate-descent">Pathwise Coordinate Descent</h2>
+<p>The elastic net algorithm can compute the coefficient vector for several values of <span class="math inline">\(\lambda\)</span>. Suppose we have a monotonically decreasing sequence for <span class="math inline">\(\lambda\)</span>, <span class="math inline">\({\lambda} = {\lambda_{max}, \lambda_2, \ldots}\)</span>. By definition, the coefficient vector for <span class="math inline">\(\lambda_{max}\)</span> is the zero vector. The next <span class="math inline">\(\lambda\)</span> in the sequence will have the update step <span class="math inline">\(\beta^{(\lambda)}_j = 0\)</span> as long as <span class="math inline">\(|X^Ty[j]| &lt; \lambda \alpha n\)</span>. This check is a simple lookup since <span class="math inline">\(X^T y\)</span> is cached, and can bypass several update steps.</p>
+<h2 id="active-sets">Active Sets</h2>
+<p>After doing one pass on the outermost loop that iterates on <code>cycles</code>, we check which coefficients are nonzero. In the second cycle, instead of iterating on the <span class="math inline">\(p\)</span> coefficients, we iterate only on the nonzero ones. These are the active sets. Finally, at the end we do one last cycle iterating on all coefficients. If the nonzeros have not changed, we conclude the algorithm.</p>
+<h2 id="centering-and-scaling">Centering and Scaling</h2>
+<p>Much of the elastic net algorithm assumes <span class="math inline">\(X\)</span> and <span class="math inline">\(y\)</span> have been centered and scaled. Say we start with a feature matrix <span class="math inline">\(\tilde{X}\)</span> which is not centered or scaled. Centering <span class="math inline">\(\tilde{X}\)</span> makes it become dense, and many sparse linear algebra optimizations are lost.</p>
+<p>Instead, we leverage the formula that centering and scaling can be written as</p>
+<p><span class="math display">\[X = (\tilde{X} - 1\mu_\tilde{x}^T) \begin{bmatrix} 1/\sigma_{\tilde{x}, 1} &amp; &amp; \\ &amp; \ddots &amp; \\ &amp; &amp; 1/\sigma_{\tilde{x}, p} \end{bmatrix}.\]</span></p>
+<p>with <span class="math inline">\(\mu_\tilde{x}\)</span> and <span class="math inline">\(\sigma_\tilde{x}\)</span> column vectors containing the column means and column standard deviations of <span class="math inline">\(\tilde{X}\)</span>, and likewise for <span class="math inline">\(\tilde{y}\)</span>.</p>
+<p>The key computations can be written as:</p>
+<p><span class="math display">\[\begin{align}
+X^T y &amp;= [(\tilde{X} - 1\mu_\tilde{x}^T) \begin{bmatrix} 1/\sigma_{\tilde{x}, 1} &amp; &amp; \\ &amp; \ddots &amp; \\ &amp; &amp; 1/\sigma_{\tilde{x}, p} \end{bmatrix}]^T (\tilde{y} - 1\mu_\tilde{y}).\\
+X^T X &amp;= [(\tilde{X} - 1\mu_\tilde{x}^T) \begin{bmatrix} 1/\sigma_{\tilde{x}, 1} &amp; &amp; \\ &amp; \ddots &amp; \\ &amp; &amp; 1/\sigma_{\tilde{x}, p} \end{bmatrix}]^T [(\tilde{X} - 1\mu_\tilde{x}^T) \begin{bmatrix} 1/\sigma_{\tilde{x}, 1} &amp; &amp; \\ &amp; \ddots &amp; \\ &amp; &amp; 1/\sigma_{\tilde{x}, p} \end{bmatrix}] \\
+&amp;= \begin{bmatrix} 1/\sigma_{\tilde{x}, 1} &amp; &amp; \\ &amp; \ddots &amp; \\ &amp; &amp; 1/\sigma_{\tilde{x}, p} \end{bmatrix} \tilde{X}^T \tilde{X} \begin{bmatrix} 1/\sigma_{\tilde{x}, 1} &amp; &amp; \\ &amp; \ddots &amp; \\ &amp; &amp; 1/\sigma_{\tilde{x}, p} \end{bmatrix} - n (\frac{\mu_\tilde{x}}{\sigma_\tilde{x}}) (\frac{\mu_\tilde{x}}{\sigma_\tilde{x}})^T.
+\end{align}\]</span></p>
+<h1 id="elastic-net-with-weights">Elastic Net with Weights</h1>
+<p>This section discusses the extension of elastic net to use weights, similar to weighted least squares.</p>
+<h2 id="coordinate-descent-with-weights">Coordinate Descent with Weights</h2>
+<p>Assume that <span class="math inline">\(X\)</span> and <span class="math inline">\(y\)</span> have been centered and scaled <strong>without weights</strong>, so that their unweighted means are 0 and unweighted variances are 1. The update step for weighted elastic net is</p>
+<p><span class="math display">\[\beta_j^{(\lambda)} = \frac{S(\sum_{i=1}^n (w_i x_{i,j}(\varepsilon_i + x_{i,j}\beta_j^{(\lambda)})), \lambda \alpha)}{\sum_i w_i x_{i,j}^2 + \lambda(1 - \alpha)}\]</span></p>
+<p>Though it looks more complex than before, using <span class="math inline">\(w_i = 1/n\)</span> will reduce the update step to the original unweighted update step.</p>
+<p>Now suppose that <span class="math inline">\(X\)</span> and <span class="math inline">\(y\)</span> were centered and scaled <strong>with weights</strong>, so that their weighted means are 0 and weighted variances are 1. By taking advantage of the definition <span class="math inline">\(\sum_i w_i x_{i,j}^2 = \sum_i w_i\)</span> we can recover the more familiar formula</p>
+<p><span class="math display">\[\beta_j^{(\lambda)} = \frac{S(\sum_{i=1}^n (w_i x_{i,j}\varepsilon_i + \beta_j^{(\lambda)}), \lambda \alpha)}{\sum_i w_i + \lambda(1 - \alpha)}.\]</span></p>
+<p>Like before, this update step can use vectorized operations. The key computations can be written as:</p>
+<p><span class="math display">\[\begin{align}
+X^T W y &amp;= [(\tilde{X} - 1\mu_{\tilde{X}}^T) \begin{bmatrix} 1/\sigma_{\tilde{x}, 1} &amp; &amp; \\ &amp; \ddots &amp; \\ &amp; &amp; 1/\sigma_{\tilde{x}, p} \end{bmatrix}]^T \text{Diagonal}(w) ({\tilde{y}}) \\
+  &amp;= \begin{bmatrix} 1/\sigma_{\tilde{x}, 1} &amp; &amp; \\ &amp; \ddots &amp; \\ &amp; &amp; 1/\sigma_{\tilde{x}, p} \end{bmatrix} \tilde{X}^T \text{Diagonal}(w) ({\tilde{y}}) - 
+     \begin{bmatrix} 1/\sigma_{\tilde{x}, 1} &amp; &amp; \\ &amp; \ddots &amp; \\ &amp; &amp; 1/\sigma_{\tilde{x}, p} \end{bmatrix} \mu_{\tilde{X}} w^T \tilde{y}. \\
+X^T W X &amp;= [(\tilde{X} - 1\mu_{\tilde{X}}^T) \begin{bmatrix} 1/\sigma_{\tilde{x}, 1} &amp; &amp; \\ &amp; \ddots &amp; \\ &amp; &amp; 1/\sigma_{\tilde{x}, p} \end{bmatrix}]^T [({\tilde{X}} - 1\mu_{\tilde{X}}^T) \begin{bmatrix} 1/\sigma_{\tilde{x}, 1} &amp; &amp; \\ &amp; \ddots &amp; \\ &amp; &amp; 1/\sigma_{\tilde{x}, p} \end{bmatrix}] \\
+&amp;= \begin{bmatrix} 1/\sigma_{\tilde{x}, 1} &amp; &amp; \\ &amp; \ddots &amp; \\ &amp; &amp; 1/\sigma_{\tilde{x}, p} \end{bmatrix} \tilde{X}^T \text{Diagonal}(w) \tilde{X} \begin{bmatrix} 1/\sigma_{\tilde{x}, 1} &amp; &amp; \\ &amp; \ddots &amp; \\ &amp; &amp; 1/\sigma_{\tilde{x}, p} \end{bmatrix} -
+  \begin{bmatrix} 1/\sigma_{\tilde{x}, 1} &amp; &amp; \\ &amp; \ddots &amp; \\ &amp; &amp; 1/\sigma_{\tilde{x}, p} \end{bmatrix} \tilde{X}^T w (\frac{\mu_\tilde{x}}{\sigma_\tilde{x}})^T -
+  (\frac{\mu_\tilde{x}}{\sigma_\tilde{x}}) w^T \tilde{X}\begin{bmatrix} 1/\sigma_{\tilde{x}, 1} &amp; &amp; \\ &amp; \ddots &amp; \\ &amp; &amp; 1/\sigma_{\tilde{x}, p} \end{bmatrix} +
+  (\frac{\mu_\tilde{x}}{\sigma_\tilde{x}}) (\frac{\mu_\tilde{x}}{\sigma_\tilde{x}})^T \sum_i w_i \\
+&amp;= \begin{bmatrix} 1/\sigma_{\tilde{x}, 1} &amp; &amp; \\ &amp; \ddots &amp; \\ &amp; &amp; 1/\sigma_{\tilde{x}, p} \end{bmatrix} \tilde{X}^T \text{Diagonal}(w) \tilde{X} \begin{bmatrix} 1/\sigma_{\tilde{x}, 1} &amp; &amp; \\ &amp; \ddots &amp; \\ &amp; &amp; 1/\sigma_{\tilde{x}, p} \end{bmatrix} -
+  (\frac{\mu_\tilde{x}}{\sigma_\tilde{x}}) (\frac{\mu_\tilde{x}}{\sigma_\tilde{x}})^T \sum_i w_i. \\
+\lambda_{max} &amp;= \max \frac{|X^T W y|}{\alpha}.
+\end{align}\]</span></p>
+<h2 id="vectorizing-for-multiple-outcome-variables">Vectorizing for Multiple Outcome Variables</h2>
+<p>Many applications will track multiple outcome variables, so that <span class="math inline">\(Y \in \mathbb{R}^{n \times o}\)</span> is a matrix of <span class="math inline">\(o\)</span> outcomes per observation. When the outcomes are independent, there is a fast way to fit multiple OLS regressions to the same feature matrix. Likewise, there is a fast way to do this for multiple elastic nets.</p>
+<p>The bulk of the computation for a single <span class="math inline">\(y\)</span> is in the covariance update step</p>
+<p><span class="math display">\[\sum_i x_{i,j}\varepsilon_i = (X^T y)[j] - (X^T X)[,j]^T\beta.\]</span></p>
+<p><span class="math inline">\(y\)</span> and <span class="math inline">\(\beta\)</span> are column vectors. It is possible to update the j-th coefficient for all outcomes simultaneously. We vectorize over <span class="math inline">\(o\)</span> outcomes to produce and cache the intermediate matrix <span class="math inline">\(X^T Y \in \mathbb{R}^{p \times o}\)</span>, and reuse <span class="math inline">\(X^T X\)</span> across outcomes.</p>
+<p>However, different outcome variables can reach convergence differently. When updating the j-th coefficient, we would like to subset the columns of <span class="math inline">\(X^T Y\)</span> to those outcomes which have not converged yet. This subsetting creates a deep copy of the matrix, and can be counter productive to the vectorization over multiple outcomes.</p>
+<p>In practice, it may be easier to implement a job coordinator that computes <span class="math inline">\(X^T Y\)</span> and <span class="math inline">\(X^T X\)</span> apriori. These intermediates are stored in shared memory. Then, the coordinator assigns the task of estimating <span class="math inline">\(\beta\)</span> for a single outcome to a worker, which reads the intermediates from shared memory.</p>
+<h1 id="extensions">Extensions</h1>
+<h2 id="differential-shrinkage">Differential Shrinkage</h2>
+<p>The standard description of the elastic net assumes a constant penalty across all coefficients, as seen in</p>
+<p><span class="math display">\[\beta^{(\lambda)} = \arg\min \sum_{i=1}^n (y_i -\beta_0 -x_i^T \beta)^2 + \lambda \sum_{j=1}^p (0.5(1-\alpha)\beta_j^2 + \alpha |\beta_j|).\]</span></p>
+<p>Sometimes we want to augment the penalty for different coefficients. The library <code>glmnet</code> introduces the parameter <code>penalty.factor</code>, which multiplies the <span class="math inline">\(\lambda\)</span> term by a <span class="math inline">\(\gamma_j \geq 0\)</span> that varies for different coefficients. The algorithm for solving elastic net is flexible for differential shrinkage, where the loop over coefficients scales the <span class="math inline">\(\lambda\)</span> penalty term by <span class="math inline">\(\gamma_j\)</span>. In addition, the initialization of the <span class="math inline">\(\lambda\)</span> path should use</p>
+<p><span class="math display">\[\lambda_{max} = \max \text{Diagonal}(1/\gamma) \frac{|X^T W y|}{n \alpha}.\]</span></p>
+<h1 id="references">References</h1>
 <ol type="1">
-<li>Incrementality Bidding and Attribution</li>
-<li>Computational Causal Inference</li>
+<li><a href="https://web.stanford.edu/~hastie/TALKS/glmnet.pdf" class="uri">https://web.stanford.edu/~hastie/TALKS/glmnet.pdf</a></li>
+<li><a href="https://web.stanford.edu/~hastie/Papers/glmnet.pdf" class="uri">https://web.stanford.edu/~hastie/Papers/glmnet.pdf</a></li>
+<li><a href="https://stats.stackexchange.com/questions/166630/glmnet-compute-maximal-lambda-value" class="uri">https://stats.stackexchange.com/questions/166630/glmnet-compute-maximal-lambda-value</a></li>
+<li><a href="https://stats.stackexchange.com/questions/13617/how-is-the-intercept-computed-in-glmnet" class="uri">https://stats.stackexchange.com/questions/13617/how-is-the-intercept-computed-in-glmnet</a></li>
+<li><a href="https://web.stanford.edu/~hastie/glmnet/glmnet_alpha.html" class="uri">https://web.stanford.edu/~hastie/glmnet/glmnet_alpha.html</a></li>
 </ol>
-<h1 id="featured-papers-blog-posts">Featured Papers &amp; Blog Posts</h1>
-<ol type="1">
-<li><a href="https://arxiv.org/pdf/2007.10979.pdf">Computational Causal Inference</a></li>
-<li><a href="http://causaleffect.io/lewis2018.pdf">Incrementality Bidding and Attribution</a></li>
-<li><a href="https://arxiv.org/abs/1910.01305">Efficient Computation for Linear Model Treatment Effects</a></li>
-<li><a href="https://dl.acm.org/doi/10.1145/3377813.3381349">Engineering for a science-centric experimentation platform</a></li>
-<li><a href="https://netflixtechblog.com/reimagining-experimentation-analysis-at-netflix-71356393af21">Reimagining Experimentation Analysis at Netflix</a></li>
-<li><a href="https://arxiv.org/pdf/2012.10403.pdf">Success Stories from a Democratized Experimentation Platform</a></li>
-</ol>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r distill-force-highlighting-css"><code class="sourceCode r"></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r distill-force-highlighting-css"><code class="sourceCode r"></code></pre></div>
 <!--radix_placeholder_article_footer-->
 <!--/radix_placeholder_article_footer-->
 </div>
@@ -2115,6 +1581,15 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 <div class="d-appendix">
 </div>
 
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
 
 <!--radix_placeholder_site_after_body-->
 <!--/radix_placeholder_site_after_body-->

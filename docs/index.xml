@@ -7,7 +7,15 @@
     <description>A blog on causal inference, algorithmic decision making, and numerical computing.
 </description>
     <generator>Distill</generator>
-    <lastBuildDate>Fri, 09 Apr 2021 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Sat, 10 Apr 2021 00:00:00 +0000</lastBuildDate>
+    <item>
+      <title>Sparse Model Matrix Optimizations in C++</title>
+      <dc:creator>Jeffrey C. Wong</dc:creator>
+      <link>http://jeffreycwong.com/posts/2021-04-10-sparse-model-matrix-optimizations-in-c</link>
+      <description>Using Rcpp to decrease memory usage and increase throughput.</description>
+      <guid>http://jeffreycwong.com/posts/2021-04-10-sparse-model-matrix-optimizations-in-c</guid>
+      <pubDate>Sat, 10 Apr 2021 00:00:00 +0000</pubDate>
+    </item>
     <item>
       <title>R is a great Research Environment</title>
       <dc:creator>Jeffrey C. Wong</dc:creator>

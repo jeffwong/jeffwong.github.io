@@ -1,0 +1,11 @@
+[
+  {
+    "listing": "/index.html",
+    "items": [
+      "/posts/outliers/index.html",
+      "/posts/statistical_power/index.html",
+      "/posts/elastic_net/index.html",
+      "/posts/l2_gaussian_prior/index.html"
+    ]
+  }
+]

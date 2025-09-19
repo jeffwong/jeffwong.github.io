@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss  xmlns:atom="http://www.w3.org/2005/Atom" 
+      xmlns:media="http://search.yahoo.com/mrss/" 
+      xmlns:content="http://purl.org/rss/1.0/modules/content/" 
+      xmlns:dc="http://purl.org/dc/elements/1.1/" 
+      version="2.0">
+<channel>
+<title>From First Principles</title>
+<link>https://your-website-url.example.com/</link>
+<atom:link href="https://your-website-url.example.com/index.xml" rel="self" type="application/rss+xml"/>
+<description>A blog built with Quarto</description>
+<generator>quarto-1.7.32</generator>
+<lastBuildDate>Tue, 16 Sep 2025 07:00:00 GMT</lastBuildDate>
+<item>
+  <title>AB Testing with Outliers</title>
+  <dc:creator>Jeffrey Wong</dc:creator>
+  <link>https://your-website-url.example.com/posts/outliers/</link>
+  <description><![CDATA[ 
+
+
+
+
+
+
+
+
+ ]]></description>
+  <category>experimentation</category>
+  <category>statistics</category>
+  <guid>https://your-website-url.example.com/posts/outliers/</guid>
+  <pubDate>Tue, 16 Sep 2025 07:00:00 GMT</pubDate>
+</item>
+<item>
+  <title>Improving Statistical Power</title>
+  <dc:creator>Jeffrey Wong</dc:creator>
+  <link>https://your-website-url.example.com/posts/statistical_power/</link>
+  <description><![CDATA[ 
+
+
+
+
+
+
+
+
+ ]]></description>
+  <category>experimentation</category>
+  <category>statistics</category>
+  <guid>https://your-website-url.example.com/posts/statistical_power/</guid>
+  <pubDate>Mon, 15 Sep 2025 07:00:00 GMT</pubDate>
+</item>
+<item>
+  <title>The Mathematics of the Elastic Net</title>
+  <dc:creator>Jeffrey Wong</dc:creator>
+  <link>https://your-website-url.example.com/posts/elastic_net/</link>
+  <description><![CDATA[ 
+
+
+
+
+
+<p><strong>Author’s note: This post is largely a rehash of many of the original elastic net and glmnet papers.</strong> I hope that having another voice describe the elegance of the elastic net will help others understand it. I have linked to all of the original documents to the best I can.</p>
+<p>The elastic net adds L1 and L2 penalties to OLS, and is used to shrink coefficients towards zero. This can help with overfitting, as well as building an interpretive model from many features. When there is structure in coefficient-specific penalties, regularization can mimic a hierarchical model.</p>
+<p>We start with a feature matrix, <img src="https://latex.codecogs.com/png.latex?X%20%5Cin%20%5Cmathbb%7BR%7D%5E%7Bn%20%5Ctimes%20p%7D">, a response vector, <img src="https://latex.codecogs.com/png.latex?y%20%5Cin%20%5Cmathbb%7BR%7D%5En">, and a given <img src="https://latex.codecogs.com/png.latex?%5Calpha">. The elastic net formulates the problem</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbeta%5E%7B(%5Clambda)%7D%20=%20%5Carg%5Cmin%20%5Csum_%7Bi=1%7D%5En%20(y_i%20-%5Cbeta_0%20-x_i%5ET%20%5Cbeta)%5E2%20+%20%5Clambda%20%5Csum_%7Bj=1%7D%5Ep%20(0.5(1-%5Calpha)%5Cbeta_j%5E2%20+%20%5Calpha%20%7C%5Cbeta_j%7C)."></p>
+<p>The first term is the usual OLS term and the second term is a combination of L1 and L2 regularization.</p>
+<section id="physical-interpretation-of-the-regularization" class="level1">
+<h1>Physical Interpretation of the Regularization</h1>
+<p>The 2 norm on <img src="https://latex.codecogs.com/png.latex?%5Cbeta"> incentivizes the program to return coefficients that are small in magnitude. Likewise, the 1 norm incentivizes coefficients that are exactly zero. This prevents the exaggeration of effects in a model, while simultaneously serving as a form of model selection and interpretation.</p>
+<p>Regularization is also similar to a prior. L2 regularization is similar to OLS with a gaussian prior on the parameters, that has a prior mean of 0 and a prior variance of <img src="https://latex.codecogs.com/png.latex?1/%5Clambda">. L1 regularization is similar to a laplacian prior. The relationship is explained <a href="https://papers.nips.cc/paper/1976-adaptive-sparseness-using-jeffreys-prior.pdf">here</a> with a compact stack overflow description <a href="https://stats.stackexchange.com/questions/163388/why-is-the-l2-regularization-equivalent-to-gaussian-prior">here</a>.</p>
+</section>
+<section id="solving-the-program" class="level1">
+<h1>Solving the Program</h1>
+<p>When <img src="https://latex.codecogs.com/png.latex?X"> is centered and scaled to have zero mean and unit variance, the optimization problem can be solved using <a href="https://web.stanford.edu/~hastie/Papers/glmnet.pdf">coordinate descent</a>, with the update step:</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbeta%5E%7B(%5Clambda)%7D_j%20=%20%5Cfrac%7BS(%5Cfrac%7B1%7D%7Bn%7D%20%5Csum_%7Bi=1%7D%5En%20(x_%7Bi,j%7D%5Cvarepsilon_i%20+%20%5Cbeta%5E%7B(%5Clambda)%7D_j),%20%5Clambda%20%5Calpha)%7D%7B1%20+%20%5Clambda(1%20-%20%5Calpha)%7D"></p>
+<p>where <img src="https://latex.codecogs.com/png.latex?S(x,%20%5Clambda)%20=%20%5Ctext%7Bsign%7D(x)%20%5Ccdot%20(%7Cx%7C%20-%20%5Clambda)_+"> is the soft thresholding function.</p>
+<p>This produces an algorithm with the form</p>
+<pre><code># Given X, y, lambda, alpha.
+for cycle in 1:max_cycles
+  for j in 1:p
+    for it in 1:max_iters
+      beta_j = &lt;do update step above&gt;</code></pre>
+</section>
+<section id="searching-lambda" class="level1">
+<h1>Searching <img src="https://latex.codecogs.com/png.latex?%5Clambda"></h1>
+<p>The amount of regularization to use is always a question when fitting the elastic net. More regularization will more aggressively shrink the coefficients to zero. From the physical interpretation section above, regularization is like a prior, and careful thought also goes into choosing the prior. Usually, we cross validate and search for an optimal <img src="https://latex.codecogs.com/png.latex?%5Clambda"> that minimizes an out-of-sample metric. Fortunately there is a smart strategy for how to pick a starting set of <img src="https://latex.codecogs.com/png.latex?%5Clambda"> to explore (<a href="https://web.stanford.edu/~hastie/TALKS/glmnet.pdf">talk</a>, <a href="https://stats.stackexchange.com/questions/166630/glmnet-compute-maximal-lambda-value">stack overflow</a>).</p>
+<p>Say a good set of <img src="https://latex.codecogs.com/png.latex?%5Clambda"> ranges from <img src="https://latex.codecogs.com/png.latex?%5Clambda_%7Bmax%7D"> to <img src="https://latex.codecogs.com/png.latex?%5Clambda_%7Bmin%7D">, and is logarithmically spaced apart, where <img src="https://latex.codecogs.com/png.latex?%5Clambda_%7Bmax%7D"> is the smallest <img src="https://latex.codecogs.com/png.latex?%5Clambda"> such that the coefficient vector is the zero vector and <img src="https://latex.codecogs.com/png.latex?%5Clambda_%7Bmin%7D"> is some multiple of <img src="https://latex.codecogs.com/png.latex?%5Clambda_%7Bmax%7D">.</p>
+<p>When <img src="https://latex.codecogs.com/png.latex?X"> is centered and scaled to have zero mean and unit variance, and <img src="https://latex.codecogs.com/png.latex?y"> is centered to have zero mean, then</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Clambda_%7Bmax%7D%20=%20%5Cfrac%7B%5Cmax(%7CX%5ET%20y%7C)%7D%7Bn%20%5Calpha%7D."></p>
+<p>In <code>glmnet::glmnet</code>, <img src="https://latex.codecogs.com/png.latex?%5Clambda_%7Bmin%7D%20=%20.0001%20%5Clambda_%7Bmax%7D"> if <img src="https://latex.codecogs.com/png.latex?n%20%3E%20p">. It should be noted that when <img src="https://latex.codecogs.com/png.latex?%5Calpha%20=%200">, <img src="https://latex.codecogs.com/png.latex?%5Clambda_%7Bmax%7D"> does not exist, so <code>glmnet</code> intercepts <img src="https://latex.codecogs.com/png.latex?%5Calpha"> and pretends it is 0.001.</p>
+<p>Adding this layer to search for <img src="https://latex.codecogs.com/png.latex?%5Clambda"> means the optimization algorithm above gains a fourth nested for loop.</p>
+<pre><code># Given X, y, alpha.
+for cycle in 1:max_cycles
+  for j in 1:p
+    for l in lambda: 
+      for it in 1:max_iters
+        beta_j = &lt;do update step above&gt;</code></pre>
+<p>This sounds like it is untractable, but there are several optimizations that can make the algorithm fast.</p>
+</section>
+<section id="computational-performance" class="level1">
+<h1>Computational performance</h1>
+<p>The above two sections are sufficient enough to build a lightweight elastic net solver. This section describes specific optimizations that make the algorithm faster, but ultimately are not relevant for how to use the elastic net as an end user.</p>
+<section id="updates-via-covariance" class="level2">
+<h2 class="anchored" data-anchor-id="updates-via-covariance">Updates via Covariance</h2>
+<p>Note that the <img src="https://latex.codecogs.com/png.latex?%5Csum_i%20x_%7Bi,j%7D%5Cvarepsilon_i"> term can be decomposed into <img src="https://latex.codecogs.com/png.latex?%5Csum_i%20x_%7Bi,j%7D(y_%7Bi%7D%20-%20x_%7Bi%7D%5ET%20%5Cbeta)">. This can be computed very efficiently from a few vectorized operations that are computed just once outside of all of the loops. We first compute and store <img src="https://latex.codecogs.com/png.latex?X%5ET%20X"> and <img src="https://latex.codecogs.com/png.latex?X%5ET%20y">. When <img src="https://latex.codecogs.com/png.latex?X"> is sparse the linear algebra can be optimized. Then <img src="https://latex.codecogs.com/png.latex?%5Csum_i%20x_%7Bi,j%7D%5Cvarepsilon_i%20=%20(X%5ET%20y)%5Bj%5D%20-%20(X%5ET%20X)%5B,j%5D%5ET%5Cbeta">, i.e. the j-th component of <img src="https://latex.codecogs.com/png.latex?X%5ET%20y"> and the dot product between the j-th column of <img src="https://latex.codecogs.com/png.latex?X%5ET%20X"> and <img src="https://latex.codecogs.com/png.latex?%5Cbeta">.</p>
+</section>
+<section id="reuse-xt-y-from-searching-lambda" class="level2">
+<h2 class="anchored" data-anchor-id="reuse-xt-y-from-searching-lambda">Reuse <img src="https://latex.codecogs.com/png.latex?X%5ET%20y"> from searching <img src="https://latex.codecogs.com/png.latex?%5Clambda"></h2>
+<p>When a smart set of <img src="https://latex.codecogs.com/png.latex?%5Clambda"> is initialized, we can store the product <img src="https://latex.codecogs.com/png.latex?X%5ET%20y">, which is then used as part of the covariance update strategy.</p>
+</section>
+<section id="pathwise-coordinate-descent" class="level2">
+<h2 class="anchored" data-anchor-id="pathwise-coordinate-descent">Pathwise Coordinate Descent</h2>
+<p>The elastic net algorithm can compute the coefficient vector for several values of <img src="https://latex.codecogs.com/png.latex?%5Clambda">. Suppose we have a monotonically decreasing sequence for <img src="https://latex.codecogs.com/png.latex?%5Clambda">, <img src="https://latex.codecogs.com/png.latex?%7B%5Clambda%7D%20=%20%7B%5Clambda_%7Bmax%7D,%20%5Clambda_2,%20%5Cldots%7D">. By definition, the coefficient vector for <img src="https://latex.codecogs.com/png.latex?%5Clambda_%7Bmax%7D"> is the zero vector. The next <img src="https://latex.codecogs.com/png.latex?%5Clambda"> in the sequence will have the update step <img src="https://latex.codecogs.com/png.latex?%5Cbeta%5E%7B(%5Clambda)%7D_j%20=%200"> as long as <img src="https://latex.codecogs.com/png.latex?%7CX%5ETy%5Bj%5D%7C%20%3C%20%5Clambda%20%5Calpha%20n">. This check is a simple lookup since <img src="https://latex.codecogs.com/png.latex?X%5ET%20y"> is cached, and can bypass several update steps.</p>
+</section>
+<section id="active-sets" class="level2">
+<h2 class="anchored" data-anchor-id="active-sets">Active Sets</h2>
+<p>After doing one pass on the outermost loop that iterates on <code>cycles</code>, we check which coefficients are nonzero. In the second cycle, instead of iterating on the <img src="https://latex.codecogs.com/png.latex?p"> coefficients, we iterate only on the nonzero ones. These are the active sets. Finally, at the end we do one last cycle iterating on all coefficients. If the nonzeros have not changed, we conclude the algorithm.</p>
+</section>
+<section id="centering-and-scaling" class="level2">
+<h2 class="anchored" data-anchor-id="centering-and-scaling">Centering and Scaling</h2>
+<p>Much of the elastic net algorithm assumes <img src="https://latex.codecogs.com/png.latex?X"> and <img src="https://latex.codecogs.com/png.latex?y"> have been centered and scaled. Say we start with a feature matrix <img src="https://latex.codecogs.com/png.latex?%5Ctilde%7BX%7D"> which is not centered or scaled. Centering <img src="https://latex.codecogs.com/png.latex?%5Ctilde%7BX%7D"> makes it become dense, and many sparse linear algebra optimizations are lost.</p>
+<p>Instead, we leverage the formula that centering and scaling can be written as</p>
+<p><img src="https://latex.codecogs.com/png.latex?X%20=%20(%5Ctilde%7BX%7D%20-%201%5Cmu_%5Ctilde%7Bx%7D%5ET)%20%5Cbegin%7Bbmatrix%7D%201/%5Csigma_%7B%5Ctilde%7Bx%7D,%201%7D%20&amp;%20&amp;%20%5C%5C%20&amp;%20%5Cddots%20&amp;%20%5C%5C%20&amp;%20&amp;%201/%5Csigma_%7B%5Ctilde%7Bx%7D,%20p%7D%20%5Cend%7Bbmatrix%7D."></p>
+<p>with <img src="https://latex.codecogs.com/png.latex?%5Cmu_%5Ctilde%7Bx%7D"> and <img src="https://latex.codecogs.com/png.latex?%5Csigma_%5Ctilde%7Bx%7D"> column vectors containing the column means and column standard deviations of <img src="https://latex.codecogs.com/png.latex?%5Ctilde%7BX%7D">, and likewise for <img src="https://latex.codecogs.com/png.latex?%5Ctilde%7By%7D">.</p>
+<p>The key computations can be written as:</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0AX%5ET%20y%20&amp;=%20%5B(%5Ctilde%7BX%7D%20-%201%5Cmu_%5Ctilde%7Bx%7D%5ET)%20%5Cbegin%7Bbmatrix%7D%201/%5Csigma_%7B%5Ctilde%7Bx%7D,%201%7D%20&amp;%20&amp;%20%5C%5C%20&amp;%20%5Cddots%20&amp;%20%5C%5C%20&amp;%20&amp;%201/%5Csigma_%7B%5Ctilde%7Bx%7D,%20p%7D%20%5Cend%7Bbmatrix%7D%5D%5ET%20(%5Ctilde%7By%7D%20-%201%5Cmu_%5Ctilde%7By%7D).%5C%5C%0AX%5ET%20X%20&amp;=%20%5B(%5Ctilde%7BX%7D%20-%201%5Cmu_%5Ctilde%7Bx%7D%5ET)%20%5Cbegin%7Bbmatrix%7D%201/%5Csigma_%7B%5Ctilde%7Bx%7D,%201%7D%20&amp;%20&amp;%20%5C%5C%20&amp;%20%5Cddots%20&amp;%20%5C%5C%20&amp;%20&amp;%201/%5Csigma_%7B%5Ctilde%7Bx%7D,%20p%7D%20%5Cend%7Bbmatrix%7D%5D%5ET%20%5B(%5Ctilde%7BX%7D%20-%201%5Cmu_%5Ctilde%7Bx%7D%5ET)%20%5Cbegin%7Bbmatrix%7D%201/%5Csigma_%7B%5Ctilde%7Bx%7D,%201%7D%20&amp;%20&amp;%20%5C%5C%20&amp;%20%5Cddots%20&amp;%20%5C%5C%20&amp;%20&amp;%201/%5Csigma_%7B%5Ctilde%7Bx%7D,%20p%7D%20%5Cend%7Bbmatrix%7D%5D%20%5C%5C%0A&amp;=%20%5Cbegin%7Bbmatrix%7D%201/%5Csigma_%7B%5Ctilde%7Bx%7D,%201%7D%20&amp;%20&amp;%20%5C%5C%20&amp;%20%5Cddots%20&amp;%20%5C%5C%20&amp;%20&amp;%201/%5Csigma_%7B%5Ctilde%7Bx%7D,%20p%7D%20%5Cend%7Bbmatrix%7D%20%5Ctilde%7BX%7D%5ET%20%5Ctilde%7BX%7D%20%5Cbegin%7Bbmatrix%7D%201/%5Csigma_%7B%5Ctilde%7Bx%7D,%201%7D%20&amp;%20&amp;%20%5C%5C%20&amp;%20%5Cddots%20&amp;%20%5C%5C%20&amp;%20&amp;%201/%5Csigma_%7B%5Ctilde%7Bx%7D,%20p%7D%20%5Cend%7Bbmatrix%7D%20-%20n%20(%5Cfrac%7B%5Cmu_%5Ctilde%7Bx%7D%7D%7B%5Csigma_%5Ctilde%7Bx%7D%7D)%20(%5Cfrac%7B%5Cmu_%5Ctilde%7Bx%7D%7D%7B%5Csigma_%5Ctilde%7Bx%7D%7D)%5ET.%0A%5Cend%7Balign%7D"></p>
+</section>
+</section>
+<section id="elastic-net-with-weights" class="level1">
+<h1>Elastic Net with Weights</h1>
+<p>This section discusses the extension of elastic net to use weights, similar to weighted least squares.</p>
+<section id="coordinate-descent-with-weights" class="level2">
+<h2 class="anchored" data-anchor-id="coordinate-descent-with-weights">Coordinate Descent with Weights</h2>
+<p>Assume that <img src="https://latex.codecogs.com/png.latex?X"> and <img src="https://latex.codecogs.com/png.latex?y"> have been centered and scaled <strong>without weights</strong>, so that their unweighted means are 0 and unweighted variances are 1. The update step for weighted elastic net is</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbeta_j%5E%7B(%5Clambda)%7D%20=%20%5Cfrac%7BS(%5Csum_%7Bi=1%7D%5En%20(w_i%20x_%7Bi,j%7D(%5Cvarepsilon_i%20+%20x_%7Bi,j%7D%5Cbeta_j%5E%7B(%5Clambda)%7D)),%20%5Clambda%20%5Calpha)%7D%7B%5Csum_i%20w_i%20x_%7Bi,j%7D%5E2%20+%20%5Clambda(1%20-%20%5Calpha)%7D"></p>
+<p>Though it looks more complex than before, using <img src="https://latex.codecogs.com/png.latex?w_i%20=%201/n"> will reduce the update step to the original unweighted update step.</p>
+<p>Now suppose that <img src="https://latex.codecogs.com/png.latex?X"> and <img src="https://latex.codecogs.com/png.latex?y"> were centered and scaled <strong>with weights</strong>, so that their weighted means are 0 and weighted variances are 1. By taking advantage of the definition <img src="https://latex.codecogs.com/png.latex?%5Csum_i%20w_i%20x_%7Bi,j%7D%5E2%20=%20%5Csum_i%20w_i"> we can recover the more familiar formula</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbeta_j%5E%7B(%5Clambda)%7D%20=%20%5Cfrac%7BS(%5Csum_%7Bi=1%7D%5En%20(w_i%20x_%7Bi,j%7D%5Cvarepsilon_i%20+%20%5Cbeta_j%5E%7B(%5Clambda)%7D),%20%5Clambda%20%5Calpha)%7D%7B%5Csum_i%20w_i%20+%20%5Clambda(1%20-%20%5Calpha)%7D."></p>
+<p>Like before, this update step can use vectorized operations. The key computations can be written as:</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0AX%5ET%20W%20y%20&amp;=%20%5B(%5Ctilde%7BX%7D%20-%201%5Cmu_%7B%5Ctilde%7BX%7D%7D%5ET)%20%5Cbegin%7Bbmatrix%7D%201/%5Csigma_%7B%5Ctilde%7Bx%7D,%201%7D%20&amp;%20&amp;%20%5C%5C%20&amp;%20%5Cddots%20&amp;%20%5C%5C%20&amp;%20&amp;%201/%5Csigma_%7B%5Ctilde%7Bx%7D,%20p%7D%20%5Cend%7Bbmatrix%7D%5D%5ET%20%5Ctext%7BDiagonal%7D(w)%20(%7B%5Ctilde%7By%7D%7D)%20%5C%5C%0A%20%20&amp;=%20%5Cbegin%7Bbmatrix%7D%201/%5Csigma_%7B%5Ctilde%7Bx%7D,%201%7D%20&amp;%20&amp;%20%5C%5C%20&amp;%20%5Cddots%20&amp;%20%5C%5C%20&amp;%20&amp;%201/%5Csigma_%7B%5Ctilde%7Bx%7D,%20p%7D%20%5Cend%7Bbmatrix%7D%20%5Ctilde%7BX%7D%5ET%20%5Ctext%7BDiagonal%7D(w)%20(%7B%5Ctilde%7By%7D%7D)%20-%0A%20%20%20%20%20%5Cbegin%7Bbmatrix%7D%201/%5Csigma_%7B%5Ctilde%7Bx%7D,%201%7D%20&amp;%20&amp;%20%5C%5C%20&amp;%20%5Cddots%20&amp;%20%5C%5C%20&amp;%20&amp;%201/%5Csigma_%7B%5Ctilde%7Bx%7D,%20p%7D%20%5Cend%7Bbmatrix%7D%20%5Cmu_%7B%5Ctilde%7BX%7D%7D%20w%5ET%20%5Ctilde%7By%7D.%20%5C%5C%0AX%5ET%20W%20X%20&amp;=%20%5B(%5Ctilde%7BX%7D%20-%201%5Cmu_%7B%5Ctilde%7BX%7D%7D%5ET)%20%5Cbegin%7Bbmatrix%7D%201/%5Csigma_%7B%5Ctilde%7Bx%7D,%201%7D%20&amp;%20&amp;%20%5C%5C%20&amp;%20%5Cddots%20&amp;%20%5C%5C%20&amp;%20&amp;%201/%5Csigma_%7B%5Ctilde%7Bx%7D,%20p%7D%20%5Cend%7Bbmatrix%7D%5D%5ET%20%5B(%7B%5Ctilde%7BX%7D%7D%20-%201%5Cmu_%7B%5Ctilde%7BX%7D%7D%5ET)%20%5Cbegin%7Bbmatrix%7D%201/%5Csigma_%7B%5Ctilde%7Bx%7D,%201%7D%20&amp;%20&amp;%20%5C%5C%20&amp;%20%5Cddots%20&amp;%20%5C%5C%20&amp;%20&amp;%201/%5Csigma_%7B%5Ctilde%7Bx%7D,%20p%7D%20%5Cend%7Bbmatrix%7D%5D%20%5C%5C%0A&amp;=%20%5Cbegin%7Bbmatrix%7D%201/%5Csigma_%7B%5Ctilde%7Bx%7D,%201%7D%20&amp;%20&amp;%20%5C%5C%20&amp;%20%5Cddots%20&amp;%20%5C%5C%20&amp;%20&amp;%201/%5Csigma_%7B%5Ctilde%7Bx%7D,%20p%7D%20%5Cend%7Bbmatrix%7D%20%5Ctilde%7BX%7D%5ET%20%5Ctext%7BDiagonal%7D(w)%20%5Ctilde%7BX%7D%20%5Cbegin%7Bbmatrix%7D%201/%5Csigma_%7B%5Ctilde%7Bx%7D,%201%7D%20&amp;%20&amp;%20%5C%5C%20&amp;%20%5Cddots%20&amp;%20%5C%5C%20&amp;%20&amp;%201/%5Csigma_%7B%5Ctilde%7Bx%7D,%20p%7D%20%5Cend%7Bbmatrix%7D%20-%0A%20%20%5Cbegin%7Bbmatrix%7D%201/%5Csigma_%7B%5Ctilde%7Bx%7D,%201%7D%20&amp;%20&amp;%20%5C%5C%20&amp;%20%5Cddots%20&amp;%20%5C%5C%20&amp;%20&amp;%201/%5Csigma_%7B%5Ctilde%7Bx%7D,%20p%7D%20%5Cend%7Bbmatrix%7D%20%5Ctilde%7BX%7D%5ET%20w%20(%5Cfrac%7B%5Cmu_%5Ctilde%7Bx%7D%7D%7B%5Csigma_%5Ctilde%7Bx%7D%7D)%5ET%20-%0A%20%20(%5Cfrac%7B%5Cmu_%5Ctilde%7Bx%7D%7D%7B%5Csigma_%5Ctilde%7Bx%7D%7D)%20w%5ET%20%5Ctilde%7BX%7D%5Cbegin%7Bbmatrix%7D%201/%5Csigma_%7B%5Ctilde%7Bx%7D,%201%7D%20&amp;%20&amp;%20%5C%5C%20&amp;%20%5Cddots%20&amp;%20%5C%5C%20&amp;%20&amp;%201/%5Csigma_%7B%5Ctilde%7Bx%7D,%20p%7D%20%5Cend%7Bbmatrix%7D%20+%0A%20%20(%5Cfrac%7B%5Cmu_%5Ctilde%7Bx%7D%7D%7B%5Csigma_%5Ctilde%7Bx%7D%7D)%20(%5Cfrac%7B%5Cmu_%5Ctilde%7Bx%7D%7D%7B%5Csigma_%5Ctilde%7Bx%7D%7D)%5ET%20%5Csum_i%20w_i%20%5C%5C%0A&amp;=%20%5Cbegin%7Bbmatrix%7D%201/%5Csigma_%7B%5Ctilde%7Bx%7D,%201%7D%20&amp;%20&amp;%20%5C%5C%20&amp;%20%5Cddots%20&amp;%20%5C%5C%20&amp;%20&amp;%201/%5Csigma_%7B%5Ctilde%7Bx%7D,%20p%7D%20%5Cend%7Bbmatrix%7D%20%5Ctilde%7BX%7D%5ET%20%5Ctext%7BDiagonal%7D(w)%20%5Ctilde%7BX%7D%20%5Cbegin%7Bbmatrix%7D%201/%5Csigma_%7B%5Ctilde%7Bx%7D,%201%7D%20&amp;%20&amp;%20%5C%5C%20&amp;%20%5Cddots%20&amp;%20%5C%5C%20&amp;%20&amp;%201/%5Csigma_%7B%5Ctilde%7Bx%7D,%20p%7D%20%5Cend%7Bbmatrix%7D%20-%0A%20%20(%5Cfrac%7B%5Cmu_%5Ctilde%7Bx%7D%7D%7B%5Csigma_%5Ctilde%7Bx%7D%7D)%20(%5Cfrac%7B%5Cmu_%5Ctilde%7Bx%7D%7D%7B%5Csigma_%5Ctilde%7Bx%7D%7D)%5ET%20%5Csum_i%20w_i.%20%5C%5C%0A%5Clambda_%7Bmax%7D%20&amp;=%20%5Cmax%20%5Cfrac%7B%7CX%5ET%20W%20y%7C%7D%7B%5Calpha%7D.%0A%5Cend%7Balign%7D"></p>
+</section>
+<section id="vectorizing-for-multiple-outcome-variables" class="level2">
+<h2 class="anchored" data-anchor-id="vectorizing-for-multiple-outcome-variables">Vectorizing for Multiple Outcome Variables</h2>
+<p>Many applications will track multiple outcome variables, so that <img src="https://latex.codecogs.com/png.latex?Y%20%5Cin%20%5Cmathbb%7BR%7D%5E%7Bn%20%5Ctimes%20o%7D"> is a matrix of <img src="https://latex.codecogs.com/png.latex?o"> outcomes per observation. When the outcomes are independent, there is a fast way to fit multiple OLS regressions to the same feature matrix. Likewise, there is a fast way to do this for multiple elastic nets.</p>
+<p>The bulk of the computation for a single <img src="https://latex.codecogs.com/png.latex?y"> is in the covariance update step</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Csum_i%20x_%7Bi,j%7D%5Cvarepsilon_i%20=%20(X%5ET%20y)%5Bj%5D%20-%20(X%5ET%20X)%5B,j%5D%5ET%5Cbeta."></p>
+<p><img src="https://latex.codecogs.com/png.latex?y"> and <img src="https://latex.codecogs.com/png.latex?%5Cbeta"> are column vectors. It is possible to update the j-th coefficient for all outcomes simultaneously. We vectorize over <img src="https://latex.codecogs.com/png.latex?o"> outcomes to produce and cache the intermediate matrix <img src="https://latex.codecogs.com/png.latex?X%5ET%20Y%20%5Cin%20%5Cmathbb%7BR%7D%5E%7Bp%20%5Ctimes%20o%7D">, and reuse <img src="https://latex.codecogs.com/png.latex?X%5ET%20X"> across outcomes.</p>
+<p>However, different outcome variables can reach convergence differently. When updating the j-th coefficient, we would like to subset the columns of <img src="https://latex.codecogs.com/png.latex?X%5ET%20Y"> to those outcomes which have not converged yet. This subsetting creates a deep copy of the matrix, and can be counter productive to the vectorization over multiple outcomes.</p>
+<p>In practice, it may be easier to implement a job coordinator that computes <img src="https://latex.codecogs.com/png.latex?X%5ET%20Y"> and <img src="https://latex.codecogs.com/png.latex?X%5ET%20X"> apriori. These intermediates are stored in shared memory. Then, the coordinator assigns the task of estimating <img src="https://latex.codecogs.com/png.latex?%5Cbeta"> for a single outcome to a worker, which reads the intermediates from shared memory.</p>
+</section>
+</section>
+<section id="extensions" class="level1">
+<h1>Extensions</h1>
+<section id="differential-shrinkage" class="level2">
+<h2 class="anchored" data-anchor-id="differential-shrinkage">Differential Shrinkage</h2>
+<p>The standard description of the elastic net assumes a constant penalty across all coefficients, as seen in</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbeta%5E%7B(%5Clambda)%7D%20=%20%5Carg%5Cmin%20%5Csum_%7Bi=1%7D%5En%20(y_i%20-%5Cbeta_0%20-x_i%5ET%20%5Cbeta)%5E2%20+%20%5Clambda%20%5Csum_%7Bj=1%7D%5Ep%20(0.5(1-%5Calpha)%5Cbeta_j%5E2%20+%20%5Calpha%20%7C%5Cbeta_j%7C)."></p>
+<p>Sometimes we want to augment the penalty for different coefficients. The library <code>glmnet</code> introduces the parameter <code>penalty.factor</code>, which multiplies the <img src="https://latex.codecogs.com/png.latex?%5Clambda"> term by a <img src="https://latex.codecogs.com/png.latex?%5Cgamma_j%20%5Cgeq%200"> that varies for different coefficients. The algorithm for solving elastic net is flexible for differential shrinkage, where the loop over coefficients scales the <img src="https://latex.codecogs.com/png.latex?%5Clambda"> penalty term by <img src="https://latex.codecogs.com/png.latex?%5Cgamma_j">. In addition, the initialization of the <img src="https://latex.codecogs.com/png.latex?%5Clambda"> path should use</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Clambda_%7Bmax%7D%20=%20%5Cmax%20%5Ctext%7BDiagonal%7D(1/%5Cgamma)%20%5Cfrac%7B%7CX%5ET%20W%20y%7C%7D%7Bn%20%5Calpha%7D."></p>
+</section>
+</section>
+<section id="references" class="level1">
+<h1>References</h1>
+<ol type="1">
+<li>https://web.stanford.edu/~hastie/TALKS/glmnet.pdf</li>
+<li>https://web.stanford.edu/~hastie/Papers/glmnet.pdf</li>
+<li>https://stats.stackexchange.com/questions/166630/glmnet-compute-maximal-lambda-value</li>
+<li>https://stats.stackexchange.com/questions/13617/how-is-the-intercept-computed-in-glmnet</li>
+<li>https://web.stanford.edu/~hastie/glmnet/glmnet_alpha.html</li>
+</ol>
+
+
+</section>
+
+ ]]></description>
+  <category>mathematical statistics</category>
+  <guid>https://your-website-url.example.com/posts/elastic_net/</guid>
+  <pubDate>Wed, 07 Apr 2021 07:00:00 GMT</pubDate>
+</item>
+<item>
+  <title>Tikhonov Regularization and Gaussian Priors</title>
+  <dc:creator>Jeffrey Wong</dc:creator>
+  <link>https://your-website-url.example.com/posts/l2_gaussian_prior/</link>
+  <description><![CDATA[ 
+
+
+
+
+
+<p>In this post we will show that the maximum a-posteriori (MAP) estimator of a normal-normal is equal to the estimator from Tikhonov regularization.</p>
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<p>Throughout this post we will build on ordinary least squares. First, we will assume that there is a random variable, <img src="https://latex.codecogs.com/png.latex?y">, that is normally distributed and its mean is a linear combination of features, <img src="https://latex.codecogs.com/png.latex?x">, so that <img src="https://latex.codecogs.com/png.latex?Y%20%5Csim%20N(x%5ET%5Cbeta,%20%5CSigma)">.</p>
+<p>Optionally, the parameter vector <img src="https://latex.codecogs.com/png.latex?%5Cbeta"> can have a prior on it, in the form <img src="https://latex.codecogs.com/png.latex?%5Cbeta%20%5Csim%20N(%5Cmu_0,%20%5CSigma_0)">.</p>
+</section>
+<section id="maximum-likelihood-for-normally-distributed-data" class="level1">
+<h1>Maximum Likelihood for Normally Distributed Data</h1>
+<p>In frequentist statistics, we will write the likelihood of the data, then find an estimate of the parameters that will maximize the likelihood. The likelihood as a function of <img src="https://latex.codecogs.com/png.latex?%5Cbeta"> is</p>
+<p><img src="https://latex.codecogs.com/png.latex?%20L(%5Cbeta)%20=%20%5Cprod_i%20N(y_i%20%7C%20x_i,%20%5Cbeta,%20%5CSigma)%20=%20%5Cprod_i%20%5Cfrac%7B1%7D%7B%5Csqrt%7B(2%20%5Cpi)%5Ek%20%7C%5CSigma%7C%7D%7D%0Aexp(%7B-%5Cfrac%7B1%7D%7B2%7D%20(y_i%20-%20x_i%5ET%20%5Cbeta)%5ET%20%5CSigma%5E%7B-1%7D%20(y_i%20-%20x_i%5ET%20%5Cbeta)%7D)."> The MLE estimate for <img src="https://latex.codecogs.com/png.latex?%5Cbeta"> will maximize the log-likelihood with respect to <img src="https://latex.codecogs.com/png.latex?%5Cbeta">, by differentiating it and finding its root. This produces the MLE estimate</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Cbeta%7D%5E%7BMLE%7D%20=%20(X%5ET%20X)%5E%7B-1%7D%20X%5ET%20y."></p>
+</section>
+<section id="maximum-a-posteriori" class="level1">
+<h1>Maximum a Posteriori</h1>
+<p>When there is a gaussian prior in the form <img src="https://latex.codecogs.com/png.latex?%5Cbeta%20%5Csim%20N(%5Cmu_0,%20%5CSigma_0)">, we use Baye’s rule to multiply the likelihood with the prior to get the posterior probability of <img src="https://latex.codecogs.com/png.latex?%5Cbeta">. Since we are multiplying two normals, we can add their exponents. The posterior takes the form of another normal distribution.</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0Ap(%5Cbeta%7Cy,%20x,%20%5CSigma)%20&amp;=%20%5Cprod_i%20N(y_i%20%7C%20x_i,%20%5Cbeta,%20%5CSigma)%20%5Ccdot%20N(%5Cbeta%20%7C%20%5Cmu_0,%20%5CSigma_0)%20%5C%5C%0A%20%20&amp;%5Cpropto%0A%20%20%5Cprod_i%20%5Cfrac%7B1%7D%7B%7C%5CSigma%7C%7D%0A%20%20exp(%7B-%5Cfrac%7B1%7D%7B2%7D%20%5Cbig((y_i%20-%20x_i%5ET%20%5Cbeta)%5ET%20%5CSigma%5E%7B-1%7D%20(y_i%20-%20x_i%5ET%20%5Cbeta)%20-%20(%5Cbeta%20-%20%5Cmu_0)%5ET%20%5CSigma_0%5E%7B-1%7D%20(%5Cbeta%20-%20%5Cmu_0)%5Cbig)%7D).%0A%5Cend%7Balign%7D"></p>
+<p>The posterior turns out to be another normal distribution, <img src="https://latex.codecogs.com/png.latex?N(%5Cmu_1,%20%5CSigma_1)"> (<a href="https://en.wikipedia.org/wiki/Conjugate_prior">wiki</a>), where</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0A%5CSigma_1%20&amp;=%20(%5CSigma_0%5E%7B-1%7D%20+%20n%20%5CSigma%5E%7B-1%7D)%5E%7B-1%7D%20%5C%5C%0A%5Cmu_1%20&amp;=%20%5CSigma_1%20(%5CSigma_0%5E%7B-1%7D%20%5Cmu_0%20+%20%5CSigma%5E%7B-1%7D%20%5Csum_i%7By_i%7D)%0A%5Cend%7Balign%7D"></p>
+<p>The maximum a-posteriori estimator (<a href="https://en.wikipedia.org/wiki/Maximum_a_posteriori_estimation">wiki</a>) estimates the parameter vector as the mode of the posterior distribution. This is done by differentiating the posterior and solvings its root, similar to MLE. Taking the log posterior probability and then maximizing it gives</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Cbeta%7D%5E%7BMAP%7D%20=%20%5Carg%20max_%7B%5Cbeta%7D%0A-%20(y-X%5Cbeta)%5ET%20%5CSigma%5E%7B-1%7D%20(y-X%5Cbeta)%0A-%20(%5Cbeta-%5Cbeta_0)%5ET%20%5CSigma_0%5E%7B-1%7D%20(%5Cbeta-%5Cbeta_0)."> Recall that <img src="https://latex.codecogs.com/png.latex?%5CSigma"> is fixed, and <img src="https://latex.codecogs.com/png.latex?%5Cmu_0"> and <img src="https://latex.codecogs.com/png.latex?%5CSigma_0"> are inputs for the prior. Differentiating and solving, we can show the MAP estimator is equal to Tikhonov regularization.</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Cbeta%7D%5E%7BMAP%7D%20=%20(X%5ET%20X%20+%20%5CSigma_0)%5E%7B-1%7D%20(X%5ET%20y%20+%20%5CSigma_0%20%5Cmu_0)."></p>
+</section>
+<section id="equivalence-between-mle-and-map" class="level1">
+<h1>Equivalence between MLE and MAP</h1>
+<p>When the prior is a constant everywhere, it factors out of the posterior probability as a constant. That means the MLE estimator is a special case of MAP when the prior is a uniform distribution.</p>
+
+
+</section>
+
+ ]]></description>
+  <category>mathematical statistics</category>
+  <guid>https://your-website-url.example.com/posts/l2_gaussian_prior/</guid>
+  <pubDate>Sun, 27 Dec 2020 08:00:00 GMT</pubDate>
+</item>
+</channel>
+</rss>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://your-website-url.example.com/posts/statistical_power/index.html</loc>
+    <lastmod>2025-09-19T18:24:42.568Z</lastmod>
+  </url>
+  <url>
+    <loc>https://your-website-url.example.com/posts/l2_gaussian_prior/index.html</loc>
+    <lastmod>2025-09-19T17:52:08.631Z</lastmod>
+  </url>
+  <url>
+    <loc>https://your-website-url.example.com/index.html</loc>
+    <lastmod>2025-09-19T18:23:18.071Z</lastmod>
+  </url>
+  <url>
+    <loc>https://your-website-url.example.com/about.html</loc>
+    <lastmod>2025-09-19T17:49:47.289Z</lastmod>
+  </url>
+  <url>
+    <loc>https://your-website-url.example.com/posts/elastic_net/index.html</loc>
+    <lastmod>2025-09-19T17:52:23.258Z</lastmod>
+  </url>
+  <url>
+    <loc>https://your-website-url.example.com/posts/outliers/index.html</loc>
+    <lastmod>2025-09-19T18:24:36.733Z</lastmod>
+  </url>
+</urlset>

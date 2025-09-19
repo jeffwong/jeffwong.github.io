@@ -1,0 +1,114 @@
+[
+  {
+    "objectID": "posts/l2_gaussian_prior/index.html",
+    "href": "posts/l2_gaussian_prior/index.html",
+    "title": "Tikhonov Regularization and Gaussian Priors",
+    "section": "",
+    "text": "In this post we will show that the maximum a-posteriori (MAP) estimator of a normal-normal is equal to the estimator from Tikhonov regularization.\n\nIntroduction\nThroughout this post we will build on ordinary least squares. First, we will assume that there is a random variable, \\(y\\), that is normally distributed and its mean is a linear combination of features, \\(x\\), so that \\(Y \\sim N(x^T\\beta, \\Sigma)\\).\nOptionally, the parameter vector \\(\\beta\\) can have a prior on it, in the form \\(\\beta \\sim N(\\mu_0, \\Sigma_0)\\).\n\n\nMaximum Likelihood for Normally Distributed Data\nIn frequentist statistics, we will write the likelihood of the data, then find an estimate of the parameters that will maximize the likelihood. The likelihood as a function of \\(\\beta\\) is\n\\[ L(\\beta) = \\prod_i N(y_i | x_i, \\beta, \\Sigma) = \\prod_i \\frac{1}{\\sqrt{(2 \\pi)^k |\\Sigma|}}\nexp({-\\frac{1}{2} (y_i - x_i^T \\beta)^T \\Sigma^{-1} (y_i - x_i^T \\beta)}).\\] The MLE estimate for \\(\\beta\\) will maximize the log-likelihood with respect to \\(\\beta\\), by differentiating it and finding its root. This produces the MLE estimate\n\\[\\hat{\\beta}^{MLE} = (X^T X)^{-1} X^T y.\\]\n\n\nMaximum a Posteriori\nWhen there is a gaussian prior in the form \\(\\beta \\sim N(\\mu_0, \\Sigma_0)\\), we use Baye’s rule to multiply the likelihood with the prior to get the posterior probability of \\(\\beta\\). Since we are multiplying two normals, we can add their exponents. The posterior takes the form of another normal distribution.\n\\[\\begin{align}\np(\\beta|y, x, \\Sigma) &= \\prod_i N(y_i | x_i, \\beta, \\Sigma) \\cdot N(\\beta | \\mu_0, \\Sigma_0) \\\\\n  &\\propto\n  \\prod_i \\frac{1}{|\\Sigma|}\n  exp({-\\frac{1}{2} \\big((y_i - x_i^T \\beta)^T \\Sigma^{-1} (y_i - x_i^T \\beta) - (\\beta - \\mu_0)^T \\Sigma_0^{-1} (\\beta - \\mu_0)\\big)}).\n\\end{align}\\]\nThe posterior turns out to be another normal distribution, \\(N(\\mu_1, \\Sigma_1)\\) (wiki), where\n\\[\\begin{align}\n\\Sigma_1 &= (\\Sigma_0^{-1} + n \\Sigma^{-1})^{-1} \\\\\n\\mu_1 &= \\Sigma_1 (\\Sigma_0^{-1} \\mu_0 + \\Sigma^{-1} \\sum_i{y_i})\n\\end{align}\\]\nThe maximum a-posteriori estimator (wiki) estimates the parameter vector as the mode of the posterior distribution. This is done by differentiating the posterior and solvings its root, similar to MLE. Taking the log posterior probability and then maximizing it gives\n\\[\\hat{\\beta}^{MAP} = \\arg max_{\\beta}\n- (y-X\\beta)^T \\Sigma^{-1} (y-X\\beta)\n- (\\beta-\\beta_0)^T \\Sigma_0^{-1} (\\beta-\\beta_0).\\] Recall that \\(\\Sigma\\) is fixed, and \\(\\mu_0\\) and \\(\\Sigma_0\\) are inputs for the prior. Differentiating and solving, we can show the MAP estimator is equal to Tikhonov regularization.\n\\[\\hat{\\beta}^{MAP} = (X^T X + \\Sigma_0)^{-1} (X^T y + \\Sigma_0 \\mu_0).\\]\n\n\nEquivalence between MLE and MAP\nWhen the prior is a constant everywhere, it factors out of the posterior probability as a constant. That means the MLE estimator is a special case of MAP when the prior is a uniform distribution."
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "From First Principles",
+    "section": "",
+    "text": "Absolute truth in data is impossible. What is important is to build a communal understanding of data with others around us. In doing so, there is communal trust, and a path forward in how to make data driven decisions.\nCommunication is key, and it is crucial to not assume partners have the same knowledge of statistical models as other data scientists. This blog “From First Principles” unpacks concepts in statistics and explains them from their first principles using math and software. By building this background together, we will be well positioned to explain concepts in data, gain trust with partners, understand history, and innovate in algorihms to make intelligent systems."
+  },
+  {
+    "objectID": "index.html#about-this-blog",
+    "href": "index.html#about-this-blog",
+    "title": "From First Principles",
+    "section": "",
+    "text": "Absolute truth in data is impossible. What is important is to build a communal understanding of data with others around us. In doing so, there is communal trust, and a path forward in how to make data driven decisions.\nCommunication is key, and it is crucial to not assume partners have the same knowledge of statistical models as other data scientists. This blog “From First Principles” unpacks concepts in statistics and explains them from their first principles using math and software. By building this background together, we will be well positioned to explain concepts in data, gain trust with partners, understand history, and innovate in algorihms to make intelligent systems."
+  },
+  {
+    "objectID": "index.html#recent-posts",
+    "href": "index.html#recent-posts",
+    "title": "From First Principles",
+    "section": "Recent posts",
+    "text": "Recent posts"
+  },
+  {
+    "objectID": "about.html",
+    "href": "about.html",
+    "title": "About Me",
+    "section": "",
+    "text": "I am a local expert in causal inference and computational methods for causal inference. I have 15+ years experience doing data science research to improve business operations, promotion, and product, as well as writing software for data science systems.\nMy two main research areas are in measuring causal effects in large systems, such as AB testing, as well as optimizing products and systems based on causal effects, for example in personalization and algorithmic decision making. My work has led to two significant changes within the promotion and experimentation industries:\n\n\nIncrementality is the science of measuring the effectiveness of product promotion. This science motivates ROI analysis, audience targeting and recommendation systems. Through well designed experiments and causal effects models, we measure the effect of promotion on conversion, factoring in heterogeneous effects as well as time dynamic effects. For example, different promotions will have different causal effects on different devices, and the causal effect of a promotion can fade away over time. We are able to offer a causal effects solution to the multitouch attribution (MTA) problem that can credit a conversion to different promotion channels from a business.\n\n\n\nCausal Effect Measurement is a series of work aimed to make the measurement of average effects (ATE), heterogeneous effects (HTE), and time-dynamic effects (DTE) scalable enough to analyze a hundred million users across a hundred different experiments. By doing so, companies can gather better insights on how users interact with products, and therefore can design and implement changes to improve user joy. The combination of ATE-HTE-DTE provides deep insights into segmentation and trend analysis, and with roots in causal effects. Causal Effect Measurement is a significant milestone for product analysis. This interdisciplinary work across software engineering, data science research, and computational methods eliminated the stereotype that causal effects models could not scale to large engineering systems.\n\n\n\nI am interested in promoting an interdisciplinary community around causal inference and software for causal inference. I have given featured presentations on the topics of causal inference and attribution for different organizations, including the World Bank, Lyft, Apple, and Instacart. Please reach out to me if there is a chance to discuss these topics with your organization:\n\nIncrementality Bidding and Attribution\nComputational Causal Inference\n\n\n\n\n\nComputational Causal Inference\nIncrementality Bidding and Attribution\nEfficient Computation for Linear Model Treatment Effects\nEngineering for a science-centric experimentation platform\nReimagining Experimentation Analysis at Netflix\nSuccess Stories from a Democratized Experimentation Platform"
+  },
+  {
+    "objectID": "about.html#promotion-incrementality-based-attribution.",
+    "href": "about.html#promotion-incrementality-based-attribution.",
+    "title": "About Me",
+    "section": "",
+    "text": "Incrementality is the science of measuring the effectiveness of product promotion. This science motivates ROI analysis, audience targeting and recommendation systems. Through well designed experiments and causal effects models, we measure the effect of promotion on conversion, factoring in heterogeneous effects as well as time dynamic effects. For example, different promotions will have different causal effects on different devices, and the causal effect of a promotion can fade away over time. We are able to offer a causal effects solution to the multitouch attribution (MTA) problem that can credit a conversion to different promotion channels from a business."
+  },
+  {
+    "objectID": "about.html#experimentation-causal-effect-measurement.",
+    "href": "about.html#experimentation-causal-effect-measurement.",
+    "title": "About Me",
+    "section": "",
+    "text": "Causal Effect Measurement is a series of work aimed to make the measurement of average effects (ATE), heterogeneous effects (HTE), and time-dynamic effects (DTE) scalable enough to analyze a hundred million users across a hundred different experiments. By doing so, companies can gather better insights on how users interact with products, and therefore can design and implement changes to improve user joy. The combination of ATE-HTE-DTE provides deep insights into segmentation and trend analysis, and with roots in causal effects. Causal Effect Measurement is a significant milestone for product analysis. This interdisciplinary work across software engineering, data science research, and computational methods eliminated the stereotype that causal effects models could not scale to large engineering systems."
+  },
+  {
+    "objectID": "posts/elastic_net/index.html",
+    "href": "posts/elastic_net/index.html",
+    "title": "The Mathematics of the Elastic Net",
+    "section": "",
+    "text": "Author’s note: This post is largely a rehash of many of the original elastic net and glmnet papers. I hope that having another voice describe the elegance of the elastic net will help others understand it. I have linked to all of the original documents to the best I can.\nThe elastic net adds L1 and L2 penalties to OLS, and is used to shrink coefficients towards zero. This can help with overfitting, as well as building an interpretive model from many features. When there is structure in coefficient-specific penalties, regularization can mimic a hierarchical model.\nWe start with a feature matrix, \\(X \\in \\mathbb{R}^{n \\times p}\\), a response vector, \\(y \\in \\mathbb{R}^n\\), and a given \\(\\alpha\\). The elastic net formulates the problem\n\\[\\beta^{(\\lambda)} = \\arg\\min \\sum_{i=1}^n (y_i -\\beta_0 -x_i^T \\beta)^2 + \\lambda \\sum_{j=1}^p (0.5(1-\\alpha)\\beta_j^2 + \\alpha |\\beta_j|).\\]\nThe first term is the usual OLS term and the second term is a combination of L1 and L2 regularization."
+  },
+  {
+    "objectID": "posts/elastic_net/index.html#updates-via-covariance",
+    "href": "posts/elastic_net/index.html#updates-via-covariance",
+    "title": "The Mathematics of the Elastic Net",
+    "section": "Updates via Covariance",
+    "text": "Updates via Covariance\nNote that the \\(\\sum_i x_{i,j}\\varepsilon_i\\) term can be decomposed into \\(\\sum_i x_{i,j}(y_{i} - x_{i}^T \\beta)\\). This can be computed very efficiently from a few vectorized operations that are computed just once outside of all of the loops. We first compute and store \\(X^T X\\) and \\(X^T y\\). When \\(X\\) is sparse the linear algebra can be optimized. Then \\(\\sum_i x_{i,j}\\varepsilon_i = (X^T y)[j] - (X^T X)[,j]^T\\beta\\), i.e. the j-th component of \\(X^T y\\) and the dot product between the j-th column of \\(X^T X\\) and \\(\\beta\\)."
+  },
+  {
+    "objectID": "posts/elastic_net/index.html#reuse-xt-y-from-searching-lambda",
+    "href": "posts/elastic_net/index.html#reuse-xt-y-from-searching-lambda",
+    "title": "The Mathematics of the Elastic Net",
+    "section": "Reuse \\(X^T y\\) from searching \\(\\lambda\\)",
+    "text": "Reuse \\(X^T y\\) from searching \\(\\lambda\\)\nWhen a smart set of \\(\\lambda\\) is initialized, we can store the product \\(X^T y\\), which is then used as part of the covariance update strategy."
+  },
+  {
+    "objectID": "posts/elastic_net/index.html#pathwise-coordinate-descent",
+    "href": "posts/elastic_net/index.html#pathwise-coordinate-descent",
+    "title": "The Mathematics of the Elastic Net",
+    "section": "Pathwise Coordinate Descent",
+    "text": "Pathwise Coordinate Descent\nThe elastic net algorithm can compute the coefficient vector for several values of \\(\\lambda\\). Suppose we have a monotonically decreasing sequence for \\(\\lambda\\), \\({\\lambda} = {\\lambda_{max}, \\lambda_2, \\ldots}\\). By definition, the coefficient vector for \\(\\lambda_{max}\\) is the zero vector. The next \\(\\lambda\\) in the sequence will have the update step \\(\\beta^{(\\lambda)}_j = 0\\) as long as \\(|X^Ty[j]| &lt; \\lambda \\alpha n\\). This check is a simple lookup since \\(X^T y\\) is cached, and can bypass several update steps."
+  },
+  {
+    "objectID": "posts/elastic_net/index.html#active-sets",
+    "href": "posts/elastic_net/index.html#active-sets",
+    "title": "The Mathematics of the Elastic Net",
+    "section": "Active Sets",
+    "text": "Active Sets\nAfter doing one pass on the outermost loop that iterates on cycles, we check which coefficients are nonzero. In the second cycle, instead of iterating on the \\(p\\) coefficients, we iterate only on the nonzero ones. These are the active sets. Finally, at the end we do one last cycle iterating on all coefficients. If the nonzeros have not changed, we conclude the algorithm."
+  },
+  {
+    "objectID": "posts/elastic_net/index.html#centering-and-scaling",
+    "href": "posts/elastic_net/index.html#centering-and-scaling",
+    "title": "The Mathematics of the Elastic Net",
+    "section": "Centering and Scaling",
+    "text": "Centering and Scaling\nMuch of the elastic net algorithm assumes \\(X\\) and \\(y\\) have been centered and scaled. Say we start with a feature matrix \\(\\tilde{X}\\) which is not centered or scaled. Centering \\(\\tilde{X}\\) makes it become dense, and many sparse linear algebra optimizations are lost.\nInstead, we leverage the formula that centering and scaling can be written as\n\\[X = (\\tilde{X} - 1\\mu_\\tilde{x}^T) \\begin{bmatrix} 1/\\sigma_{\\tilde{x}, 1} & & \\\\ & \\ddots & \\\\ & & 1/\\sigma_{\\tilde{x}, p} \\end{bmatrix}.\\]\nwith \\(\\mu_\\tilde{x}\\) and \\(\\sigma_\\tilde{x}\\) column vectors containing the column means and column standard deviations of \\(\\tilde{X}\\), and likewise for \\(\\tilde{y}\\).\nThe key computations can be written as:\n\\[\\begin{align}\nX^T y &= [(\\tilde{X} - 1\\mu_\\tilde{x}^T) \\begin{bmatrix} 1/\\sigma_{\\tilde{x}, 1} & & \\\\ & \\ddots & \\\\ & & 1/\\sigma_{\\tilde{x}, p} \\end{bmatrix}]^T (\\tilde{y} - 1\\mu_\\tilde{y}).\\\\\nX^T X &= [(\\tilde{X} - 1\\mu_\\tilde{x}^T) \\begin{bmatrix} 1/\\sigma_{\\tilde{x}, 1} & & \\\\ & \\ddots & \\\\ & & 1/\\sigma_{\\tilde{x}, p} \\end{bmatrix}]^T [(\\tilde{X} - 1\\mu_\\tilde{x}^T) \\begin{bmatrix} 1/\\sigma_{\\tilde{x}, 1} & & \\\\ & \\ddots & \\\\ & & 1/\\sigma_{\\tilde{x}, p} \\end{bmatrix}] \\\\\n&= \\begin{bmatrix} 1/\\sigma_{\\tilde{x}, 1} & & \\\\ & \\ddots & \\\\ & & 1/\\sigma_{\\tilde{x}, p} \\end{bmatrix} \\tilde{X}^T \\tilde{X} \\begin{bmatrix} 1/\\sigma_{\\tilde{x}, 1} & & \\\\ & \\ddots & \\\\ & & 1/\\sigma_{\\tilde{x}, p} \\end{bmatrix} - n (\\frac{\\mu_\\tilde{x}}{\\sigma_\\tilde{x}}) (\\frac{\\mu_\\tilde{x}}{\\sigma_\\tilde{x}})^T.\n\\end{align}\\]"
+  },
+  {
+    "objectID": "posts/elastic_net/index.html#coordinate-descent-with-weights",
+    "href": "posts/elastic_net/index.html#coordinate-descent-with-weights",
+    "title": "The Mathematics of the Elastic Net",
+    "section": "Coordinate Descent with Weights",
+    "text": "Coordinate Descent with Weights\nAssume that \\(X\\) and \\(y\\) have been centered and scaled without weights, so that their unweighted means are 0 and unweighted variances are 1. The update step for weighted elastic net is\n\\[\\beta_j^{(\\lambda)} = \\frac{S(\\sum_{i=1}^n (w_i x_{i,j}(\\varepsilon_i + x_{i,j}\\beta_j^{(\\lambda)})), \\lambda \\alpha)}{\\sum_i w_i x_{i,j}^2 + \\lambda(1 - \\alpha)}\\]\nThough it looks more complex than before, using \\(w_i = 1/n\\) will reduce the update step to the original unweighted update step.\nNow suppose that \\(X\\) and \\(y\\) were centered and scaled with weights, so that their weighted means are 0 and weighted variances are 1. By taking advantage of the definition \\(\\sum_i w_i x_{i,j}^2 = \\sum_i w_i\\) we can recover the more familiar formula\n\\[\\beta_j^{(\\lambda)} = \\frac{S(\\sum_{i=1}^n (w_i x_{i,j}\\varepsilon_i + \\beta_j^{(\\lambda)}), \\lambda \\alpha)}{\\sum_i w_i + \\lambda(1 - \\alpha)}.\\]\nLike before, this update step can use vectorized operations. The key computations can be written as:\n\\[\\begin{align}\nX^T W y &= [(\\tilde{X} - 1\\mu_{\\tilde{X}}^T) \\begin{bmatrix} 1/\\sigma_{\\tilde{x}, 1} & & \\\\ & \\ddots & \\\\ & & 1/\\sigma_{\\tilde{x}, p} \\end{bmatrix}]^T \\text{Diagonal}(w) ({\\tilde{y}}) \\\\\n  &= \\begin{bmatrix} 1/\\sigma_{\\tilde{x}, 1} & & \\\\ & \\ddots & \\\\ & & 1/\\sigma_{\\tilde{x}, p} \\end{bmatrix} \\tilde{X}^T \\text{Diagonal}(w) ({\\tilde{y}}) -\n     \\begin{bmatrix} 1/\\sigma_{\\tilde{x}, 1} & & \\\\ & \\ddots & \\\\ & & 1/\\sigma_{\\tilde{x}, p} \\end{bmatrix} \\mu_{\\tilde{X}} w^T \\tilde{y}. \\\\\nX^T W X &= [(\\tilde{X} - 1\\mu_{\\tilde{X}}^T) \\begin{bmatrix} 1/\\sigma_{\\tilde{x}, 1} & & \\\\ & \\ddots & \\\\ & & 1/\\sigma_{\\tilde{x}, p} \\end{bmatrix}]^T [({\\tilde{X}} - 1\\mu_{\\tilde{X}}^T) \\begin{bmatrix} 1/\\sigma_{\\tilde{x}, 1} & & \\\\ & \\ddots & \\\\ & & 1/\\sigma_{\\tilde{x}, p} \\end{bmatrix}] \\\\\n&= \\begin{bmatrix} 1/\\sigma_{\\tilde{x}, 1} & & \\\\ & \\ddots & \\\\ & & 1/\\sigma_{\\tilde{x}, p} \\end{bmatrix} \\tilde{X}^T \\text{Diagonal}(w) \\tilde{X} \\begin{bmatrix} 1/\\sigma_{\\tilde{x}, 1} & & \\\\ & \\ddots & \\\\ & & 1/\\sigma_{\\tilde{x}, p} \\end{bmatrix} -\n  \\begin{bmatrix} 1/\\sigma_{\\tilde{x}, 1} & & \\\\ & \\ddots & \\\\ & & 1/\\sigma_{\\tilde{x}, p} \\end{bmatrix} \\tilde{X}^T w (\\frac{\\mu_\\tilde{x}}{\\sigma_\\tilde{x}})^T -\n  (\\frac{\\mu_\\tilde{x}}{\\sigma_\\tilde{x}}) w^T \\tilde{X}\\begin{bmatrix} 1/\\sigma_{\\tilde{x}, 1} & & \\\\ & \\ddots & \\\\ & & 1/\\sigma_{\\tilde{x}, p} \\end{bmatrix} +\n  (\\frac{\\mu_\\tilde{x}}{\\sigma_\\tilde{x}}) (\\frac{\\mu_\\tilde{x}}{\\sigma_\\tilde{x}})^T \\sum_i w_i \\\\\n&= \\begin{bmatrix} 1/\\sigma_{\\tilde{x}, 1} & & \\\\ & \\ddots & \\\\ & & 1/\\sigma_{\\tilde{x}, p} \\end{bmatrix} \\tilde{X}^T \\text{Diagonal}(w) \\tilde{X} \\begin{bmatrix} 1/\\sigma_{\\tilde{x}, 1} & & \\\\ & \\ddots & \\\\ & & 1/\\sigma_{\\tilde{x}, p} \\end{bmatrix} -\n  (\\frac{\\mu_\\tilde{x}}{\\sigma_\\tilde{x}}) (\\frac{\\mu_\\tilde{x}}{\\sigma_\\tilde{x}})^T \\sum_i w_i. \\\\\n\\lambda_{max} &= \\max \\frac{|X^T W y|}{\\alpha}.\n\\end{align}\\]"
+  },
+  {
+    "objectID": "posts/elastic_net/index.html#vectorizing-for-multiple-outcome-variables",
+    "href": "posts/elastic_net/index.html#vectorizing-for-multiple-outcome-variables",
+    "title": "The Mathematics of the Elastic Net",
+    "section": "Vectorizing for Multiple Outcome Variables",
+    "text": "Vectorizing for Multiple Outcome Variables\nMany applications will track multiple outcome variables, so that \\(Y \\in \\mathbb{R}^{n \\times o}\\) is a matrix of \\(o\\) outcomes per observation. When the outcomes are independent, there is a fast way to fit multiple OLS regressions to the same feature matrix. Likewise, there is a fast way to do this for multiple elastic nets.\nThe bulk of the computation for a single \\(y\\) is in the covariance update step\n\\[\\sum_i x_{i,j}\\varepsilon_i = (X^T y)[j] - (X^T X)[,j]^T\\beta.\\]\n\\(y\\) and \\(\\beta\\) are column vectors. It is possible to update the j-th coefficient for all outcomes simultaneously. We vectorize over \\(o\\) outcomes to produce and cache the intermediate matrix \\(X^T Y \\in \\mathbb{R}^{p \\times o}\\), and reuse \\(X^T X\\) across outcomes.\nHowever, different outcome variables can reach convergence differently. When updating the j-th coefficient, we would like to subset the columns of \\(X^T Y\\) to those outcomes which have not converged yet. This subsetting creates a deep copy of the matrix, and can be counter productive to the vectorization over multiple outcomes.\nIn practice, it may be easier to implement a job coordinator that computes \\(X^T Y\\) and \\(X^T X\\) apriori. These intermediates are stored in shared memory. Then, the coordinator assigns the task of estimating \\(\\beta\\) for a single outcome to a worker, which reads the intermediates from shared memory."
+  },
+  {
+    "objectID": "posts/elastic_net/index.html#differential-shrinkage",
+    "href": "posts/elastic_net/index.html#differential-shrinkage",
+    "title": "The Mathematics of the Elastic Net",
+    "section": "Differential Shrinkage",
+    "text": "Differential Shrinkage\nThe standard description of the elastic net assumes a constant penalty across all coefficients, as seen in\n\\[\\beta^{(\\lambda)} = \\arg\\min \\sum_{i=1}^n (y_i -\\beta_0 -x_i^T \\beta)^2 + \\lambda \\sum_{j=1}^p (0.5(1-\\alpha)\\beta_j^2 + \\alpha |\\beta_j|).\\]\nSometimes we want to augment the penalty for different coefficients. The library glmnet introduces the parameter penalty.factor, which multiplies the \\(\\lambda\\) term by a \\(\\gamma_j \\geq 0\\) that varies for different coefficients. The algorithm for solving elastic net is flexible for differential shrinkage, where the loop over coefficients scales the \\(\\lambda\\) penalty term by \\(\\gamma_j\\). In addition, the initialization of the \\(\\lambda\\) path should use\n\\[\\lambda_{max} = \\max \\text{Diagonal}(1/\\gamma) \\frac{|X^T W y|}{n \\alpha}.\\]"
+  }
+]

@@ -1,0 +1,227 @@
+---
+title: "The Mathematics of the Elastic Net"
+author: "Jeffrey Wong"
+date: "2021-04-07"
+categories: [mathematical statistics]
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+**Author's note: This post is largely a rehash of many of the original elastic net and glmnet papers.**
+I hope that having another voice describe the elegance of the elastic net will help others
+understand it. I have linked to all of the original documents to the best I can.
+
+The elastic net adds L1 and L2 penalties to OLS, and is used to shrink coefficients towards zero.
+This can help with overfitting, as well as building an interpretive model from many features.
+When there is structure in coefficient-specific penalties, regularization can mimic a hierarchical model.
+
+We start with  a feature matrix, $X \in \mathbb{R}^{n \times p}$,
+a response vector, $y \in \mathbb{R}^n$, and a given $\alpha$.
+The elastic net formulates the problem
+
+$$\beta^{(\lambda)} = \arg\min \sum_{i=1}^n (y_i -\beta_0 -x_i^T \beta)^2 + \lambda \sum_{j=1}^p (0.5(1-\alpha)\beta_j^2 + \alpha |\beta_j|).$$
+
+The first term is the usual OLS term and the second term is a combination of L1 and L2 regularization.
+
+# Physical Interpretation of the Regularization
+
+The 2 norm on $\beta$ incentivizes the program to return coefficients that are small in magnitude.
+Likewise, the 1 norm incentivizes coefficients that are exactly zero. This prevents the exaggeration of effects
+in a model, while simultaneously serving as a form of model selection and interpretation.
+
+Regularization is also similar to a prior. L2 regularization is similar to OLS with a gaussian prior on the parameters,
+that has a prior mean of 0 and a prior variance of $1/\lambda$.
+L1 regularization is similar to a laplacian prior. The relationship is explained [here](https://papers.nips.cc/paper/1976-adaptive-sparseness-using-jeffreys-prior.pdf)
+with a compact stack overflow description [here](https://stats.stackexchange.com/questions/163388/why-is-the-l2-regularization-equivalent-to-gaussian-prior).
+
+# Solving the Program
+
+When $X$ is centered and scaled to have zero mean and unit variance,
+the optimization problem can be solved using [coordinate descent](https://web.stanford.edu/~hastie/Papers/glmnet.pdf), with the update step:
+
+$$\beta^{(\lambda)}_j = \frac{S(\frac{1}{n} \sum_{i=1}^n (x_{i,j}\varepsilon_i + \beta^{(\lambda)}_j), \lambda \alpha)}{1 + \lambda(1 - \alpha)}$$
+
+where $S(x, \lambda) = \text{sign}(x) \cdot (|x| - \lambda)_+$ is the soft thresholding function.
+
+This produces an algorithm with the form
+
+```
+# Given X, y, lambda, alpha.
+for cycle in 1:max_cycles
+  for j in 1:p
+    for it in 1:max_iters
+      beta_j = <do update step above>
+```
+
+# Searching $\lambda$
+
+The amount of regularization to use is always a question when fitting the elastic net.
+More regularization will more aggressively shrink the coefficients to zero.
+From the physical interpretation section above, regularization is like a prior, and careful thought
+also goes into choosing the prior. Usually, we cross validate and search for
+an optimal $\lambda$ that minimizes an out-of-sample metric.
+Fortunately there is a smart strategy for how to pick a starting set of $\lambda$ to explore ([talk](https://web.stanford.edu/~hastie/TALKS/glmnet.pdf), [stack overflow](https://stats.stackexchange.com/questions/166630/glmnet-compute-maximal-lambda-value)).
+
+Say a good set of $\lambda$ ranges from $\lambda_{max}$ to $\lambda_{min}$, and is logarithmically spaced apart,
+where $\lambda_{max}$ is the smallest $\lambda$ such that the coefficient vector is the zero vector
+and $\lambda_{min}$ is some multiple of $\lambda_{max}$.
+
+When $X$ is centered and scaled to have zero mean and unit variance, and $y$ is centered to have zero mean, then
+
+$$\lambda_{max} = \frac{\max(|X^T y|)}{n \alpha}.$$
+
+In `glmnet::glmnet`, $\lambda_{min} = .0001 \lambda_{max}$ if $n > p$. It should be noted that when $\alpha = 0$,
+$\lambda_{max}$ does not exist, so `glmnet` intercepts $\alpha$ and pretends it is 0.001.
+
+Adding this layer to search for $\lambda$ means the optimization algorithm above gains a fourth nested for loop.
+
+```
+# Given X, y, alpha.
+for cycle in 1:max_cycles
+  for j in 1:p
+    for l in lambda: 
+      for it in 1:max_iters
+        beta_j = <do update step above>
+```
+This sounds like it is untractable, but there are several optimizations that can make the algorithm fast.
+
+# Computational performance
+
+The above two sections are sufficient enough to build a lightweight elastic net solver.
+This section describes specific optimizations that make the algorithm faster,
+but ultimately are not relevant for how to use the elastic net as an end user.
+
+## Updates via Covariance
+
+Note that the $\sum_i x_{i,j}\varepsilon_i$ term can be decomposed into $\sum_i x_{i,j}(y_{i} - x_{i}^T \beta)$.
+This can be computed very efficiently from a few vectorized operations that are computed just once
+outside of all of the loops.
+We first compute and store $X^T X$ and $X^T y$. When $X$ is sparse the linear algebra can be optimized.
+Then $\sum_i x_{i,j}\varepsilon_i = (X^T y)[j] - (X^T X)[,j]^T\beta$, i.e.
+the j-th component of $X^T y$ and the dot product between the j-th column of $X^T X$ and $\beta$.
+
+## Reuse $X^T y$ from searching $\lambda$
+
+When a smart set of $\lambda$ is initialized, we can store the product $X^T y$, which is then used as part
+of the covariance update strategy.
+
+## Pathwise Coordinate Descent
+
+The elastic net algorithm can compute the coefficient vector for several values of $\lambda$.
+Suppose we have a monotonically decreasing sequence for $\lambda$, ${\lambda} = {\lambda_{max}, \lambda_2, \ldots}$.
+By definition, the coefficient vector for $\lambda_{max}$ is the zero vector.
+The next $\lambda$ in the sequence will have the update step
+$\beta^{(\lambda)}_j = 0$ as long as $|X^Ty[j]| < \lambda \alpha n$.
+This check is a simple lookup since $X^T y$ is cached, and can bypass several update steps.
+
+## Active Sets
+
+After doing one pass on the outermost loop that iterates on `cycles`, we check which coefficients are nonzero.
+In the second cycle, instead of iterating on the $p$ coefficients, we iterate only on the nonzero ones.
+These are the active sets.
+Finally, at the end we do one last cycle iterating on all coefficients. If the nonzeros have not changed,
+we conclude the algorithm.
+
+## Centering and Scaling
+
+Much of the elastic net algorithm assumes $X$ and $y$ have been centered and scaled.
+Say we start with a feature matrix $\tilde{X}$ which is not centered or scaled. Centering $\tilde{X}$ makes it become
+dense, and many sparse linear algebra optimizations are lost.
+
+Instead, we leverage the formula that centering and scaling can be written as
+
+$$X = (\tilde{X} - 1\mu_\tilde{x}^T) \begin{bmatrix} 1/\sigma_{\tilde{x}, 1} & & \\ & \ddots & \\ & & 1/\sigma_{\tilde{x}, p} \end{bmatrix}.$$
+
+with $\mu_\tilde{x}$ and $\sigma_\tilde{x}$ column vectors containing the column means and column standard deviations
+of $\tilde{X}$, and likewise for $\tilde{y}$.
+
+The key computations can be written as:
+
+\begin{align}
+X^T y &= [(\tilde{X} - 1\mu_\tilde{x}^T) \begin{bmatrix} 1/\sigma_{\tilde{x}, 1} & & \\ & \ddots & \\ & & 1/\sigma_{\tilde{x}, p} \end{bmatrix}]^T (\tilde{y} - 1\mu_\tilde{y}).\\
+X^T X &= [(\tilde{X} - 1\mu_\tilde{x}^T) \begin{bmatrix} 1/\sigma_{\tilde{x}, 1} & & \\ & \ddots & \\ & & 1/\sigma_{\tilde{x}, p} \end{bmatrix}]^T [(\tilde{X} - 1\mu_\tilde{x}^T) \begin{bmatrix} 1/\sigma_{\tilde{x}, 1} & & \\ & \ddots & \\ & & 1/\sigma_{\tilde{x}, p} \end{bmatrix}] \\
+&= \begin{bmatrix} 1/\sigma_{\tilde{x}, 1} & & \\ & \ddots & \\ & & 1/\sigma_{\tilde{x}, p} \end{bmatrix} \tilde{X}^T \tilde{X} \begin{bmatrix} 1/\sigma_{\tilde{x}, 1} & & \\ & \ddots & \\ & & 1/\sigma_{\tilde{x}, p} \end{bmatrix} - n (\frac{\mu_\tilde{x}}{\sigma_\tilde{x}}) (\frac{\mu_\tilde{x}}{\sigma_\tilde{x}})^T.
+\end{align}
+
+# Elastic Net with Weights
+
+This section discusses the extension of elastic net to use weights, similar to weighted least squares.
+
+## Coordinate Descent with Weights
+
+Assume that $X$ and $y$ have been centered and scaled **without weights**, so that their
+unweighted means are 0 and unweighted variances are 1. The update step for weighted elastic net is
+
+$$\beta_j^{(\lambda)} = \frac{S(\sum_{i=1}^n (w_i x_{i,j}(\varepsilon_i + x_{i,j}\beta_j^{(\lambda)})), \lambda \alpha)}{\sum_i w_i x_{i,j}^2 + \lambda(1 - \alpha)}$$
+
+Though it looks more complex than before, using $w_i = 1/n$ will reduce the update step to the original unweighted update step.
+
+Now suppose that $X$ and $y$ were centered and scaled **with weights**, so that their weighted means are 0 and weighted
+variances are 1. By taking advantage of the definition $\sum_i w_i x_{i,j}^2 = \sum_i w_i$ we can recover the more familiar formula
+
+$$\beta_j^{(\lambda)} = \frac{S(\sum_{i=1}^n (w_i x_{i,j}\varepsilon_i + \beta_j^{(\lambda)}), \lambda \alpha)}{\sum_i w_i + \lambda(1 - \alpha)}.$$
+
+Like before, this update step can use vectorized operations.
+The key computations can be written as:
+
+\begin{align}
+X^T W y &= [(\tilde{X} - 1\mu_{\tilde{X}}^T) \begin{bmatrix} 1/\sigma_{\tilde{x}, 1} & & \\ & \ddots & \\ & & 1/\sigma_{\tilde{x}, p} \end{bmatrix}]^T \text{Diagonal}(w) ({\tilde{y}}) \\
+  &= \begin{bmatrix} 1/\sigma_{\tilde{x}, 1} & & \\ & \ddots & \\ & & 1/\sigma_{\tilde{x}, p} \end{bmatrix} \tilde{X}^T \text{Diagonal}(w) ({\tilde{y}}) - 
+     \begin{bmatrix} 1/\sigma_{\tilde{x}, 1} & & \\ & \ddots & \\ & & 1/\sigma_{\tilde{x}, p} \end{bmatrix} \mu_{\tilde{X}} w^T \tilde{y}. \\
+X^T W X &= [(\tilde{X} - 1\mu_{\tilde{X}}^T) \begin{bmatrix} 1/\sigma_{\tilde{x}, 1} & & \\ & \ddots & \\ & & 1/\sigma_{\tilde{x}, p} \end{bmatrix}]^T [({\tilde{X}} - 1\mu_{\tilde{X}}^T) \begin{bmatrix} 1/\sigma_{\tilde{x}, 1} & & \\ & \ddots & \\ & & 1/\sigma_{\tilde{x}, p} \end{bmatrix}] \\
+&= \begin{bmatrix} 1/\sigma_{\tilde{x}, 1} & & \\ & \ddots & \\ & & 1/\sigma_{\tilde{x}, p} \end{bmatrix} \tilde{X}^T \text{Diagonal}(w) \tilde{X} \begin{bmatrix} 1/\sigma_{\tilde{x}, 1} & & \\ & \ddots & \\ & & 1/\sigma_{\tilde{x}, p} \end{bmatrix} -
+  \begin{bmatrix} 1/\sigma_{\tilde{x}, 1} & & \\ & \ddots & \\ & & 1/\sigma_{\tilde{x}, p} \end{bmatrix} \tilde{X}^T w (\frac{\mu_\tilde{x}}{\sigma_\tilde{x}})^T -
+  (\frac{\mu_\tilde{x}}{\sigma_\tilde{x}}) w^T \tilde{X}\begin{bmatrix} 1/\sigma_{\tilde{x}, 1} & & \\ & \ddots & \\ & & 1/\sigma_{\tilde{x}, p} \end{bmatrix} +
+  (\frac{\mu_\tilde{x}}{\sigma_\tilde{x}}) (\frac{\mu_\tilde{x}}{\sigma_\tilde{x}})^T \sum_i w_i \\
+&= \begin{bmatrix} 1/\sigma_{\tilde{x}, 1} & & \\ & \ddots & \\ & & 1/\sigma_{\tilde{x}, p} \end{bmatrix} \tilde{X}^T \text{Diagonal}(w) \tilde{X} \begin{bmatrix} 1/\sigma_{\tilde{x}, 1} & & \\ & \ddots & \\ & & 1/\sigma_{\tilde{x}, p} \end{bmatrix} -
+  (\frac{\mu_\tilde{x}}{\sigma_\tilde{x}}) (\frac{\mu_\tilde{x}}{\sigma_\tilde{x}})^T \sum_i w_i. \\
+\lambda_{max} &= \max \frac{|X^T W y|}{\alpha}.
+\end{align}
+
+## Vectorizing for Multiple Outcome Variables
+
+Many applications will track multiple outcome variables, so that $Y \in \mathbb{R}^{n \times o}$ is
+a matrix of $o$ outcomes per observation. When the outcomes are independent, there is a fast way to fit
+multiple OLS regressions to the same feature matrix. Likewise, there is a fast way to do this for
+multiple elastic nets.
+
+The bulk of the computation for a single $y$ is in the covariance update step
+
+$$\sum_i x_{i,j}\varepsilon_i = (X^T y)[j] - (X^T X)[,j]^T\beta.$$
+
+$y$ and $\beta$ are column vectors. It is possible to update the j-th coefficient for all outcomes simultaneously.
+We vectorize over $o$ outcomes to produce and cache the intermediate matrix
+$X^T Y \in \mathbb{R}^{p \times o}$, and reuse $X^T X$ across outcomes.
+
+However, different outcome variables can reach convergence differently.
+When updating the j-th coefficient, we would like to subset the columns of $X^T Y$ to those outcomes which
+have not converged yet. This subsetting creates a deep copy of the matrix, and can be counter productive
+to the vectorization over multiple outcomes.
+
+In practice, it may be easier to implement a job coordinator that computes $X^T Y$ and $X^T X$ apriori.
+These intermediates are stored in shared memory. Then, the coordinator assigns the task of estimating $\beta$
+for a single outcome to a worker, which reads the intermediates from shared memory.
+
+# Extensions
+
+## Differential Shrinkage
+
+The standard description of the elastic net assumes a constant penalty across all coefficients, as seen in
+
+$$\beta^{(\lambda)} = \arg\min \sum_{i=1}^n (y_i -\beta_0 -x_i^T \beta)^2 + \lambda \sum_{j=1}^p (0.5(1-\alpha)\beta_j^2 + \alpha |\beta_j|).$$
+
+Sometimes we want to augment the penalty for different coefficients. The library `glmnet` introduces the parameter
+`penalty.factor`, which multiplies the $\lambda$ term by a $\gamma_j \geq 0$ that varies for different coefficients.
+The algorithm for solving elastic net is flexible for differential shrinkage, where the loop over coefficients scales the $\lambda$ penalty term by $\gamma_j$. In addition, the initialization of the $\lambda$ path should use 
+
+$$\lambda_{max} = \max \text{Diagonal}(1/\gamma) \frac{|X^T W y|}{n \alpha}.$$
+
+# References
+
+1. https://web.stanford.edu/~hastie/TALKS/glmnet.pdf
+2. https://web.stanford.edu/~hastie/Papers/glmnet.pdf
+3. https://stats.stackexchange.com/questions/166630/glmnet-compute-maximal-lambda-value
+4. https://stats.stackexchange.com/questions/13617/how-is-the-intercept-computed-in-glmnet
+5. https://web.stanford.edu/~hastie/glmnet/glmnet_alpha.html

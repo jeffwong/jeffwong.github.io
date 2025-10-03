@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.7.32">
+<meta name="generator" content="quarto-1.8.24">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -22,6 +22,41 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
 </style>
 
 
@@ -34,14 +69,15 @@ ul.task-list li input[type="checkbox"] {
 <meta name="quarto:offset" content="../../">
 <script src="../../site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../../site_libs/quarto-html/axe/axe-check.js" type="module"></script>
 <script src="../../site_libs/quarto-html/popper.min.js"></script>
 <script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="../../site_libs/quarto-html/anchor.min.js"></script>
 <link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-37eea08aefeeee20ff55810ff984fec1.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-dc55a5b9e770e841cd82e46aadbfb9b0.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../../site_libs/bootstrap/bootstrap-c1fac2584b48ed01fb6e278e36375074.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="../../site_libs/bootstrap/bootstrap-5b4ad623e5705c0698d39aec6f10cf02.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -70,6 +106,35 @@ ul.task-list li input[type="checkbox"] {
   }
 }</script>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 <link rel="stylesheet" href="../../styles.css">
 </head>
@@ -81,6 +146,8 @@ ul.task-list li input[type="checkbox"] {
     <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
+    <a href="../../index.html" class="navbar-brand navbar-brand-logo">
+    </a>
     <a class="navbar-brand" href="../../index.html">
     <span class="navbar-title">From First Principles</span>
     </a>
@@ -151,8 +218,165 @@ ul.task-list li input[type="checkbox"] {
 
 
 
+<p>Statistical power is a concept that helps us plan for an effective experiment. Power is typically described in terms of a purely randomized and controlled trial, where we can take advantage of certain properties like independence. It is also typically described in the context of measuring the difference in means, which also has properties like the Central Limit Theorem that it takes advantage of. Finally, an assumption in typical description is that all units that are assigned to the treatment group are successfully treated, and all units assigned to the control are successfully withheld.</p>
+<p>But not all experiments are so perfectly planned and executed. It is important to understand the history of how statistical power was derived, from first principles, so that we can adapt it and innovate. For example, some experiments do not have perfect compliance. Many experiments will try to give treatment to a subject, but that subject refuses, or forgets, to use the treatment. This complexity can add layers to the question: “what should we measure? The average effect or the average effect among the compliers?” With this complication we will need to revisit our formula for statistical power. We will do this innovation exercise in the next post. For now, let us understand the history of statistical power.</p>
+<hr>
+<p>Power is always associated with a hypothesis test. <span class="math display">\[\text{Power} = 1 - \beta = P(\text{Reject }H_0 | H_A)\]</span> where <span class="math inline">\(\alpha\)</span> is the type 1 error rate, and <span class="math inline">\(\beta\)</span> is the type 2 error rate.</p>
+<p>So to derive power, we must first identify the rejection rules of the hypothesis test, then evaluate the probability of rejection if the alternative is true.</p>
+<p>To illustrate, we specify a very generic hypothesis test, the difference in means. While frequently associated with the t test, it is not necessarily tied to it. The hypothesis about the difference in means is</p>
+<p><span class="math display">\[\begin{align}
+H_0: \mu_1 - \mu_0 &amp;= 0 \\
+H_A: \mu_1 - \mu_0 &amp;\neq 0
+\end{align}\]</span></p>
+<section id="central-limit-theorem" class="level1">
+<h1>Central Limit Theorem</h1>
+<p>From the Central Limit Theorem, we know the distribution of a sample mean is <span class="math inline">\(\bar{X} \sim N(\mu, \sigma^2 / n)\)</span> and the standard error on <span class="math inline">\(\bar{X}\)</span> is <span class="math inline">\(se(\bar{X}) = \sigma/\sqrt{n}\)</span>. The Z statistic is a transformation with <span class="math inline">\(Z = \frac{\bar X - \mu}{se(\bar{X})} \sim N(0, 1)\)</span>. Now we apply information from the hypothesis test, where the mean in question is the difference in two means.</p>
+</section>
+<section id="rejection-rule" class="level1">
+<h1>Rejection Rule</h1>
+<p>In order to reject the null, we must first assume that the null is true. Then we must show that the sample mean for <span class="math inline">\(\Delta\)</span> is sufficiently different from 0, even when the true governing parameter is 0. This is conveniently done by working with the normalized Z statistic. In the case of the null, the sample mean <span class="math inline">\(\bar{\Delta} \sim N(\Delta, \sigma^2)\)</span> and <span class="math inline">\(\Delta = 0\)</span>. Converting to a normalized Z statistic we have <span class="math inline">\(Z = \frac{\bar{\Delta}}{{SE(\bar{\Delta})}} \sim N(0, 1)\)</span>. Now, we can state the rejection rule: reject if <span class="math inline">\(|Z| \geq z_{1-\alpha/2}\)</span>. Equivalently <span class="math display">\[\begin{align}
+\left|\frac{\bar{\mu}_1 - \bar{\mu}_0}{se(\bar{\Delta})}\right| &amp;\geq z_{1-\alpha/2}
+\end{align}\]</span> where <span class="math inline">\(se(\bar{\Delta}) = \sqrt{\frac{\sigma_T^2}{n_T} + \frac{\sigma_C^2}{n_C}}\)</span> under randomization.</p>
+</section>
+<section id="probability-under-the-alternative" class="level1">
+<h1>Probability under the Alternative</h1>
+<p>Power is the probability of triggering the rejection rules, which were derived under the null <span class="math inline">\(H_0: \Delta = 0\)</span>, when the true data generating process has <span class="math inline">\(\Delta \neq 0\)</span>. It is important to understand which governing parameter is in play here. The rejection rules will be derived using <span class="math inline">\(\Delta = 0\)</span>, and those rules will be fixed. Then, we toggle the governing parameter to have <span class="math inline">\(\Delta \neq 0\)</span>, and benchmark the probability that data under this governing parameter will hit the rejection rule.</p>
+<p>Say that <span class="math inline">\(H_1\)</span> is true and there are two distinct means <span class="math inline">\(\mu_0\)</span> and <span class="math inline">\(\mu_1\)</span> with <span class="math inline">\(\mu_1 - \mu_0 = k \neq 0\)</span>. Under <span class="math inline">\(H_1\)</span> we cannot claim the usual Z statistic is distributed N(0, 1). Instead, we have</p>
+<p><span class="math display">\[\begin{align}
+Z | H_1 &amp;= \frac{\bar{\Delta}}{se(\bar{\Delta})} \sim N(\frac{k}{se(\bar{\Delta})},1) \\
+\end{align}\]</span></p>
+<p>Now we revisit the rejection rule: reject when <span class="math inline">\(|Z| \geq z_{1-\alpha/2}\)</span>. Power is the probability of triggering the rejection rule when <span class="math inline">\(H_1\)</span> is true, so</p>
+<p><span class="math display">\[\begin{align}
+Power &amp;= P(|Z| \geq z_{1-\alpha/2} | Z \sim N(\frac{k}{se(\bar{\Delta})}, 1))
+\end{align}\]</span></p>
+<p>Let <span class="math inline">\(\delta = \frac{\Delta | H_1}{se(\bar{\Delta})}\)</span> be the noncentrality parameter, using the effect size we would like to detect under <span class="math inline">\(H_1\)</span>. The final solution for power is <span class="math display">\[
+\boxed{\text{Power} = \Phi(\delta - z_{1-\alpha/2}) + \Phi(-\delta - z_{1-\alpha/2})}
+\]</span></p>
+<p>In code, we would have:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>treatment_effect <span class="ot">=</span> .<span class="dv">01</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>sigma2 <span class="ot">=</span> <span class="dv">2</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>n <span class="ot">=</span> <span class="fl">1e3</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>alpha <span class="ot">=</span> .<span class="dv">05</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>treatment_share <span class="ot">=</span> .<span class="dv">5</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>control_share <span class="ot">=</span> .<span class="dv">5</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>n_treatment <span class="ot">=</span> n <span class="sc">*</span> treatment_share</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>n_control <span class="ot">=</span> n <span class="sc">*</span> control_share</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>df <span class="ot">=</span> n <span class="sc">-</span> <span class="dv">2</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>sd_treatment <span class="ot">=</span> <span class="fu">sqrt</span>(sigma2)</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>sd_control <span class="ot">=</span> <span class="fu">sqrt</span>(sigma2)</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>pooled_var <span class="ot">=</span> ((n_treatment <span class="sc">-</span> <span class="dv">1</span>) <span class="sc">*</span> sd_treatment<span class="sc">^</span><span class="dv">2</span> <span class="sc">+</span> (n_control <span class="sc">-</span> <span class="dv">1</span>) <span class="sc">*</span> sd_control<span class="sc">^</span><span class="dv">2</span>) <span class="sc">/</span> (n <span class="sc">-</span> <span class="dv">2</span>)</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>pooled_sd <span class="ot">=</span> <span class="fu">sqrt</span>(pooled_var)</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>pooled_se <span class="ot">=</span> pooled_sd <span class="sc">*</span> <span class="fu">sqrt</span>(<span class="dv">1</span><span class="sc">/</span>n_treatment <span class="sc">+</span> <span class="dv">1</span><span class="sc">/</span>n_control)</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>pooled_ncp <span class="ot">=</span> treatment_effect <span class="sc">/</span> pooled_se</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>crit <span class="ot">=</span> <span class="fu">qnorm</span>(<span class="dv">1</span><span class="sc">-</span>alpha<span class="sc">/</span><span class="dv">2</span>)</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a><span class="fu">pnorm</span>(<span class="sc">-</span>crit <span class="sc">-</span> pooled_ncp) <span class="sc">+</span> (<span class="fu">pnorm</span>(<span class="sc">-</span>crit <span class="sc">+</span> pooled_ncp))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.05143313</code></pre>
+</div>
+</div>
+</section>
+<section id="how-power-changes" class="level1">
+<h1>How Power Changes</h1>
+<p>A lot of research in experimentation goes into methods to increase statistical power. Using the formula, the variables that drive variance are:</p>
+<ol type="1">
+<li>The treatment effect, <span class="math inline">\(\mu_1 - \mu_0\)</span>.</li>
+<li>The critical value, determined by <span class="math inline">\(\alpha\)</span>.</li>
+<li>Sample size, <span class="math inline">\(n\)</span>.</li>
+<li>Variance, <span class="math inline">\(\sigma^2\)</span>.</li>
+</ol>
+<p>By changing the treatment effect that we want to detect, we can change power. However, that may jeopardize the practical value of an experiment. If we only power our experiment to detect large treatment effects that in practice do not happen, then the experiment is useless. Increasing <span class="math inline">\(\alpha\)</span> is also a simple change, but it also increases the false positive rate. Increasing sample size decreases the standard error, but it will take more time and resources to accumulate the extra data.</p>
+<p>Finally, the last path to improve power has a lot of subtlety. The role variance plays in the power formula is not fixed, it can vary. Its role is more precisely called <strong>“unexplained variance”</strong>. If there is a model that relates the metric, <span class="math inline">\(y\)</span>, with the treatment variable and exogeneous covariates, <span class="math inline">\(X\)</span>, then <span class="math inline">\(\sigma^2\)</span> is actually <span class="math inline">\(\text{Var}(y | X)\)</span>, or equivalently the variance of the residuals after we use <span class="math inline">\(X\)</span> to explain part of the variance. Using a good set of <span class="math inline">\(X\)</span> variables, we can make the unexplained variance small.</p>
+<p>Which of these levers should we pursue to get maximal power? How much will power change? To answer this, we combine <span class="math inline">\(n\)</span> and variance into the more general variable, standard error. We merge the standard error and the effect size using the more general variable <span class="math inline">\(\delta\)</span>. Below we plot power as <span class="math inline">\(\delta\)</span> and <span class="math inline">\(\alpha\)</span> vary. If we wanted to unpack the specific sensitivity to standard error, we could say the sensitivity of power to standard error is</p>
+<p><span class="math display">\[\begin{align}
+\frac{d \text{Power}}{dSE} &amp;= \frac{d \text{Power}}{d \delta} \frac{d \delta}{dSE} \\
+&amp; -\frac{\mu_0 - \mu_1}{SE^2} \Bigl[ \phi (\delta - z_{1-\alpha/2}) - \phi(-\delta - z_{1-\alpha/2}) \Bigr]
+\end{align}\]</span></p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>power <span class="ot">=</span> <span class="cf">function</span>(delta, se, <span class="at">alpha =</span> .<span class="dv">05</span>) {</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  pooled_ncp <span class="ot">=</span> delta <span class="sc">/</span> se</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  crit <span class="ot">=</span> <span class="fu">qnorm</span>(<span class="dv">1</span><span class="sc">-</span>alpha<span class="sc">/</span><span class="dv">2</span>)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pnorm</span>(<span class="sc">-</span>crit <span class="sc">-</span> pooled_ncp) <span class="sc">+</span> (<span class="fu">pnorm</span>(<span class="sc">-</span>crit <span class="sc">+</span> pooled_ncp))</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>delta <span class="ot">=</span> .<span class="dv">5</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>se <span class="ot">=</span> <span class="fu">seq</span>(<span class="at">from =</span> .<span class="dv">1</span>, <span class="at">to =</span> <span class="dv">1</span>, <span class="at">by =</span> .<span class="dv">01</span>)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>alpha <span class="ot">=</span> <span class="fu">c</span>(.<span class="dv">005</span>, .<span class="dv">01</span>, .<span class="dv">05</span>, .<span class="dv">1</span>, .<span class="dv">2</span>, .<span class="dv">3</span>)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>params <span class="ot">=</span> <span class="fu">expand.grid</span>(<span class="at">delta =</span> delta, <span class="at">se =</span> se, <span class="at">alpha =</span> alpha)</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>output <span class="ot">=</span> <span class="fu">pmap_dbl</span>(params <span class="sc">%&gt;%</span> <span class="fu">as.data.frame</span>(), <span class="cf">function</span>(delta, se, alpha) {</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">power</span>(delta, se, alpha)</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="fu">cbind</span>(params, <span class="at">power =</span> output) <span class="sc">%&gt;%</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">t =</span> delta <span class="sc">/</span> se,</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">crit =</span> <span class="fu">qnorm</span>(<span class="dv">1</span><span class="sc">-</span>alpha<span class="sc">/</span><span class="dv">2</span>)</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">is_stat_sig =</span> <span class="fu">abs</span>(delta<span class="sc">/</span>se) <span class="sc">&gt;=</span> crit</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(alpha, <span class="fu">desc</span>(se)) <span class="sc">%&gt;%</span></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(alpha) <span class="sc">%&gt;%</span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">power_prev =</span> <span class="fu">lag</span>(power)</span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>    <span class="at">incremental_power =</span> power <span class="sc">-</span> power_prev</span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(incremental_power)) <span class="sc">%&gt;%</span> </span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> t, <span class="at">y =</span> power, <span class="at">color =</span> is_stat_sig)) <span class="sc">+</span></span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span></span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span> alpha) <span class="sc">+</span></span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>(<span class="at">base_size =</span> <span class="dv">16</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="index_files/figure-html/unnamed-chunk-3-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="mde-as-the-inverse-of-statistical-power" class="level1">
+<h1>MDE as the Inverse of Statistical Power</h1>
+<p>MDE is the minimum detectable effect. It operates as the inverse to statistical power. Instead of asking: how much power do I have given an effect size and standard error, it asks: what is the effect size I can detect given a fixed amount of power and standard error.</p>
+<p>To derive the MDE from first principles, go back to:</p>
+<p><span class="math display">\[
+P(\delta \geq z_{1-\alpha/2} | H_1) = 1 - \beta
+\]</span></p>
+<p>This equation about the CDF can be simplified. The noncentrality parameter is distributed N(0, 1), so it being greater than or equal to <span class="math inline">\(z_{1-\alpha/2}\)</span> is actually just <span class="math inline">\(1 - \Phi(z_{1-\alpha/2} - \delta)\)</span>. Then the derivation for the MDE is</p>
+<p><span class="math display">\[\begin{align}
+\Phi(z_{1-\alpha/2} - \delta) &amp;= \beta \\
+z_{1-\alpha/2} - \delta &amp;= z_{\beta} \\
+\delta &amp;= z_{1-\alpha/2} - z_{\beta} \\
+\Delta &amp;= \boxed{(z_{1-\alpha/2} - z_{\beta}) \cdot SE}
+\end{align}\]</span></p>
+<p>Using common numbers, <span class="math inline">\(\alpha = 0.05\)</span>, <span class="math inline">\(\beta = 0.2\)</span>, the rule of thumb for MDE is</p>
+<p><span class="math display">\[
+MDE = 2.8 \cdot SE
+\]</span></p>
+<p>Again the SE here is the residual standard error after controlling for other variables.</p>
+</section>
+<section id="sample-size-calculator" class="level1">
+<h1>Sample Size Calculator</h1>
+<p>It’s easier for a business to think about designing an experiment around the MDE. It’s a more natural discussion: what is the smallest effect that the business would still care about?</p>
+<p>Given an MDE, we pivot the problem again. If <span class="math inline">\(SE = \sigma \sqrt{\frac{1}{n_T} + \frac{1}{n_C}}\)</span>, and <span class="math inline">\(n_T = k \cdot n_C\)</span>, then</p>
+<p><span class="math display">\[\begin{align}
+MDE &amp;= (z_{1-\alpha/2} - z_{\beta}) \sigma \sqrt{\frac{1}{k \cdot n_C} + \frac{1}{n_C}} \\
+n_C &amp;= \frac{(z_{1-\alpha/2} - z_{\beta})^2 \sigma^2 (\frac{1}{k} + 1)}{MDE^2} \\
+n_T &amp;= k \cdot n_C
+\end{align}\]</span></p>
+<p>Using common numbers, <span class="math inline">\(\alpha = 0.05\)</span>, <span class="math inline">\(\beta = 0.2\)</span>, and <span class="math inline">\(k = 1\)</span> the rule of thumb for <span class="math inline">\(n_c\)</span> is</p>
+<p><span class="math display">\[
+\boxed{n_C = n_T = \frac{16 \sigma^2}{MDE^2}}
+\]</span></p>
 
 
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
@@ -206,13 +430,14 @@ ul.task-list li input[type="checkbox"] {
       e.clearSelection();
     }
     const getTextToCopy = function(trigger) {
-        const codeEl = trigger.previousElementSibling.cloneNode(true);
-        for (const childEl of codeEl.children) {
-          if (isCodeAnnotation(childEl)) {
-            childEl.remove();
-          }
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
         }
-        return codeEl.innerText;
+      }
+      return codeEl.innerText;
     }
     const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
       text: getTextToCopy
@@ -227,7 +452,7 @@ ul.task-list li input[type="checkbox"] {
     }
       var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
       var mailtoRegex = new RegExp(/^mailto:/);
-        var filterRegex = new RegExp("https:\/\/your-website-url\.example\.com");
+        var filterRegex = new RegExp("https:\/\/jeffwong\.github\.io");
       var isInternal = (href) => {
           return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
       }

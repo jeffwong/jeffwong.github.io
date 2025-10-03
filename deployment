@@ -1,0 +1,13 @@
+Deployment notes:
+
+To view the site locally, run
+
+```
+quarto render
+quarto preview
+```
+
+To deploy the site, simply push the `docs/` directory to git.
+
+To omit a blog post that is not ready yet, edit `_quarto.yml` and
+under `render` add the filepath `- "!posts/<post>/index.qmd"`

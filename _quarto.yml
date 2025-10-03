@@ -1,0 +1,27 @@
+project:
+  type: website
+  output-dir: docs
+  render:
+    - "*.qmd"
+    - "posts/*/index.qmd"
+    - "!posts/sparse_model_matrix/index.qmd"  # ⛔️ this skips rendering the draft
+
+website:
+  description: "Data science innovation from first principles."
+  site-url: https://jeffwong.github.io # you must change this appropriately for RSS feeds to work properly
+  title: "From First Principles"
+  navbar:
+    right:
+      - about.qmd
+      - icon: linkedin
+        text: LinkedIn
+        href: https://linkedin.com/jeffctwong
+format:
+  html:
+    theme:
+      - cosmo
+      - brand
+    css: styles.css
+
+
+

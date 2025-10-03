@@ -1,0 +1,21 @@
+---
+title: "From First Principles"
+listing:
+  contents: posts
+  feed: true
+  sort: "date desc"
+  type: default
+  categories: true
+  sort-ui: false
+  filter-ui: false
+page-layout: full
+title-block-banner: true
+---
+
+## About this blog
+
+Absolute truth in data is impossible. What is important is to build a communal understanding of data with others around us. In doing so, there is communal trust, and a path forward in how to make data driven decisions.
+
+Communication is key, and it is crucial to not assume partners have the same knowledge of statistical models as other data scientists. This blog "From First Principles" unpacks concepts in statistics and explains them from their first principles using math and software. By building this background together, we will be well positioned to explain concepts in data, gain trust with partners, understand history, and innovate in algorihms to make intelligent systems.
+
+## Recent posts

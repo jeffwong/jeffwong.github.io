@@ -1,0 +1,92 @@
+---
+title: "Statistical Power under Noncompliance"
+author: "Jeffrey Wong"
+date: "2025-09-15"
+categories: [experimentation, statistics]
+---
+
+```{r setup, include=FALSE}
+require(purrr)
+require(ggplot2)
+require(dplyr)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This is an extension of a previous post on [statistical power](https://jeffwong.github.io/posts/statistical_power/).
+In that post we derived the formula for statistical power using
+
+1. The effect size
+2. The standard error of the effect. Alternatively, this
+can be stated as the variance and the sample size.
+3. $\alpha$.
+
+However, there is an assumption of perfect compliance. That is,
+100% of the treatment units are actually treated, 
+and 100% of the control units are actually withheld.
+
+In this post we discuss the case when $p_1$% of treatment units are
+treated, and $p_0$% of control units are withheld.
+
+# Effect size
+
+Say that treatment assignment is determined by the variable $Z$, so
+$Z = 1$ means we intend to provide treatment, and $Z = 0$ means we intend to withhold. Let $X$ be the treatment that was actually received.
+
+\begin{align}
+p_1 &= P(X = 1 | Z = 1) \\
+p_0 &= P(X = 0 | Z = 0)
+\end{align}
+
+The effect size we care about is $\Delta = \mu_1 - \mu_0 = E[y | X = 1] - E[y | X = 0]$. There is a difference between what we care about and
+what we will observe. From data, we will observe a dilution
+in the treatment effect. Noncompliance will decrease the effect size
+and will subsequently decrease the power.
+
+\begin{align}
+\mu_1 | Z = 1 &= p_1 \mu_1 + (1 - p_1) \mu_0 \\
+\mu_0 | Z = 0 &= p_0 \mu_0 + (1 - p_0) \mu_1 \\
+\mu_1 | Z = 1 - \mu_0 | Z = 0 &= (p_1 + p_0 - 1) \Delta
+\end{align}
+
+# Variance
+
+The variance of $y$ is broken into
+
+$$Var(y) = E[var(y  | X)] + Var(E[y | X])$$
+
+The first term can be simplified and reduced to just $\sigma^2$.
+We can argue that the variance of $y$ is not a function of the artificially generated assignment variable, $Z$. It is only a function
+of whether or not the unit actually received the treatment. For simplicity, we say that the variance is independent of the treatment received.
+
+$$E[var(y | X = 1)] + E[var(y | X = 0)] = \sigma^2.$$
+The conditioning on a binary X is like a mixture of bernoulli random
+variables. In this case the mixture has 2 equal components so it reduces to $\sigma^2$.
+
+Next, is the variance of a mixture of bernoulli variables: $E[y | X = 0] =\mu_0$ and $E[y | X = 1] = \mu_1 = \mu_0 + \Delta$. The variance of this
+mixture is a function of the mixing probabilities and the difference in the individual means, which in this case will be $\Delta$. Then we have
+the key pieces we need to measure statistical power based on the observed data
+
+\begin{align}
+\mu_1 | Z = 1 &= p_1 \mu_1 + (1 - p_1) \mu_0 \\
+\mu_0 | Z = 0 &= p_0 \mu_0 + (1 - p_0) \mu_1 \\
+\mu_1 | Z = 1 - \mu_0 | Z = 0 &= (p_1 + p_0 - 1) \Delta \\
+Var(y | Z = 1) &= \sigma^2 + p_1 (1 - p_1) \Delta^2 \approx \sigma^2 \\
+Var(y | Z = 0) &= \sigma^2 + p_0 (1 - p_0) \Delta^2 \approx \sigma^2
+\end{align}
+
+The approximation in $Var(y | Z = 1) \approx \sigma^2$ comes from the
+pattern that variance (not normalized by $n$) tends to be large while effect size tends to be
+small. Thus variance under noncompliance is not much different
+than variance under full compliance. The change in power will largely
+come from the dilution in the treatment effect.
+
+$$
+\boxed{\text{Power} = \Phi(\delta' - z_{1-\alpha/2}) + \Phi(-\delta' - z_{1-\alpha/2})}
+$$
+
+where $\delta' = \delta (p_1 + p_0 - 1)$ is a dilution on the treatment effect.
+
+Using some simple numbers, if $p_1 = p_0 = 0.9$, then $\delta' = 0.8 \delta$. By changing the effect size by 0.8, we change the sample size
+necessary by $\frac{1}{.8^2} = 56\%$!
+
+

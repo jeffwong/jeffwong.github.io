@@ -10,25 +10,53 @@
 <atom:link href="https://jeffwong.github.io/index.xml" rel="self" type="application/rss+xml"/>
 <description>Data science innovation from first principles.</description>
 <generator>quarto-1.8.24</generator>
-<lastBuildDate>Tue, 16 Sep 2025 07:00:00 GMT</lastBuildDate>
+<lastBuildDate>Mon, 15 Sep 2025 00:00:00 GMT</lastBuildDate>
 <item>
-  <title>AB Testing with Outliers</title>
+  <title>Statistical Power under Noncompliance</title>
   <dc:creator>Jeffrey Wong</dc:creator>
-  <link>https://jeffwong.github.io/posts/outliers/</link>
+  <link>https://jeffwong.github.io/posts/power_noncompliance/</link>
   <description><![CDATA[ 
 
 
 
 
 
+<p>This is an extension of a previous post on <a href="https://jeffwong.github.io/posts/statistical_power/">statistical power</a>. In that post we derived the formula for statistical power using</p>
+<ol type="1">
+<li>The effect size</li>
+<li>The standard error of the effect. Alternatively, this can be stated as the variance and the sample size.</li>
+<li><img src="https://latex.codecogs.com/png.latex?%5Calpha">.</li>
+</ol>
+<p>However, there is an assumption of perfect compliance. That is, 100% of the treatment units are actually treated, and 100% of the control units are actually withheld.</p>
+<p>In this post we discuss the case when <img src="https://latex.codecogs.com/png.latex?p_1">% of treatment units are treated, and <img src="https://latex.codecogs.com/png.latex?p_0">% of control units are withheld.</p>
+<section id="effect-size" class="level1">
+<h1>Effect size</h1>
+<p>Say that treatment assignment is determined by the variable <img src="https://latex.codecogs.com/png.latex?Z">, so <img src="https://latex.codecogs.com/png.latex?Z%20=%201"> means we intend to provide treatment, and <img src="https://latex.codecogs.com/png.latex?Z%20=%200"> means we intend to withhold. Let <img src="https://latex.codecogs.com/png.latex?X"> be the treatment that was actually received.</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0Ap_1%20&amp;=%20P(X%20=%201%20%7C%20Z%20=%201)%20%5C%5C%0Ap_0%20&amp;=%20P(X%20=%200%20%7C%20Z%20=%200)%0A%5Cend%7Balign%7D"></p>
+<p>The effect size we care about is <img src="https://latex.codecogs.com/png.latex?%5CDelta%20=%20%5Cmu_1%20-%20%5Cmu_0%20=%20E%5By%20%7C%20X%20=%201%5D%20-%20E%5By%20%7C%20X%20=%200%5D">. There is a difference between what we care about and what we will observe. From data, we will observe a dilution in the treatment effect. Noncompliance will decrease the effect size and will subsequently decrease the power.</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0A%5Cmu_1%20%7C%20Z%20=%201%20&amp;=%20p_1%20%5Cmu_1%20+%20(1%20-%20p_1)%20%5Cmu_0%20%5C%5C%0A%5Cmu_0%20%7C%20Z%20=%200%20&amp;=%20p_0%20%5Cmu_0%20+%20(1%20-%20p_0)%20%5Cmu_1%20%5C%5C%0A%5Cmu_1%20%7C%20Z%20=%201%20-%20%5Cmu_0%20%7C%20Z%20=%200%20&amp;=%20(p_1%20+%20p_0%20-%201)%20%5CDelta%0A%5Cend%7Balign%7D"></p>
+</section>
+<section id="variance" class="level1">
+<h1>Variance</h1>
+<p>The variance of <img src="https://latex.codecogs.com/png.latex?y"> is broken into</p>
+<p><img src="https://latex.codecogs.com/png.latex?Var(y)%20=%20E%5Bvar(y%20%20%7C%20X)%5D%20+%20Var(E%5By%20%7C%20X%5D)"></p>
+<p>The first term can be simplified and reduced to just <img src="https://latex.codecogs.com/png.latex?%5Csigma%5E2">. We can argue that the variance of <img src="https://latex.codecogs.com/png.latex?y"> is not a function of the artificially generated assignment variable, <img src="https://latex.codecogs.com/png.latex?Z">. It is only a function of whether or not the unit actually received the treatment. For simplicity, we say that the variance is independent of the treatment received.</p>
+<p><img src="https://latex.codecogs.com/png.latex?E%5Bvar(y%20%7C%20X%20=%201)%5D%20+%20E%5Bvar(y%20%7C%20X%20=%200)%5D%20=%20%5Csigma%5E2."> The conditioning on a binary X is like a mixture of bernoulli random variables. In this case the mixture has 2 equal components so it reduces to <img src="https://latex.codecogs.com/png.latex?%5Csigma%5E2">.</p>
+<p>Next, is the variance of a mixture of bernoulli variables: <img src="https://latex.codecogs.com/png.latex?E%5By%20%7C%20X%20=%200%5D%20=%5Cmu_0"> and <img src="https://latex.codecogs.com/png.latex?E%5By%20%7C%20X%20=%201%5D%20=%20%5Cmu_1%20=%20%5Cmu_0%20+%20%5CDelta">. The variance of this mixture is a function of the mixing probabilities and the difference in the individual means, which in this case will be <img src="https://latex.codecogs.com/png.latex?%5CDelta">. Then we have the key pieces we need to measure statistical power based on the observed data</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0A%5Cmu_1%20%7C%20Z%20=%201%20&amp;=%20p_1%20%5Cmu_1%20+%20(1%20-%20p_1)%20%5Cmu_0%20%5C%5C%0A%5Cmu_0%20%7C%20Z%20=%200%20&amp;=%20p_0%20%5Cmu_0%20+%20(1%20-%20p_0)%20%5Cmu_1%20%5C%5C%0A%5Cmu_1%20%7C%20Z%20=%201%20-%20%5Cmu_0%20%7C%20Z%20=%200%20&amp;=%20(p_1%20+%20p_0%20-%201)%20%5CDelta%20%5C%5C%0AVar(y%20%7C%20Z%20=%201)%20&amp;=%20%5Csigma%5E2%20+%20p_1%20(1%20-%20p_1)%20%5CDelta%5E2%20%5Capprox%20%5Csigma%5E2%20%5C%5C%0AVar(y%20%7C%20Z%20=%200)%20&amp;=%20%5Csigma%5E2%20+%20p_0%20(1%20-%20p_0)%20%5CDelta%5E2%20%5Capprox%20%5Csigma%5E2%0A%5Cend%7Balign%7D"></p>
+<p>The approximation in <img src="https://latex.codecogs.com/png.latex?Var(y%20%7C%20Z%20=%201)%20%5Capprox%20%5Csigma%5E2"> comes from the pattern that variance (not normalized by <img src="https://latex.codecogs.com/png.latex?n">) tends to be large while effect size tends to be small. Thus variance under noncompliance is not much different than variance under full compliance. The change in power will largely come from the dilution in the treatment effect.</p>
+<p><img src="https://latex.codecogs.com/png.latex?%0A%5Cboxed%7B%5Ctext%7BPower%7D%20=%20%5CPhi(%5Cdelta'%20-%20z_%7B1-%5Calpha/2%7D)%20+%20%5CPhi(-%5Cdelta'%20-%20z_%7B1-%5Calpha/2%7D)%7D%0A"></p>
+<p>where <img src="https://latex.codecogs.com/png.latex?%5Cdelta'%20=%20%5Cdelta%20(p_1%20+%20p_0%20-%201)"> is a dilution on the treatment effect.</p>
+<p>Using some simple numbers, if <img src="https://latex.codecogs.com/png.latex?p_1%20=%20p_0%20=%200.9">, then <img src="https://latex.codecogs.com/png.latex?%5Cdelta'%20=%200.8%20%5Cdelta">. By changing the effect size by 0.8, we change the sample size necessary by <img src="https://latex.codecogs.com/png.latex?%5Cfrac%7B1%7D%7B.8%5E2%7D%20=%2056%5C%25">!</p>
 
 
+</section>
 
  ]]></description>
   <category>experimentation</category>
   <category>statistics</category>
-  <guid>https://jeffwong.github.io/posts/outliers/</guid>
-  <pubDate>Tue, 16 Sep 2025 07:00:00 GMT</pubDate>
+  <guid>https://jeffwong.github.io/posts/power_noncompliance/</guid>
+  <pubDate>Mon, 15 Sep 2025 00:00:00 GMT</pubDate>
 </item>
 <item>
   <title>Improving Statistical Power</title>
@@ -499,7 +527,7 @@ font-style: inherit;">16</span>)</span></code></pre></div></div>
   <category>experimentation</category>
   <category>statistics</category>
   <guid>https://jeffwong.github.io/posts/statistical_power/</guid>
-  <pubDate>Mon, 15 Sep 2025 07:00:00 GMT</pubDate>
+  <pubDate>Mon, 15 Sep 2025 00:00:00 GMT</pubDate>
 </item>
 <item>
   <title>The Mathematics of the Elastic Net</title>
@@ -627,7 +655,7 @@ for cycle in 1:max_cycles
  ]]></description>
   <category>mathematical statistics</category>
   <guid>https://jeffwong.github.io/posts/elastic_net/</guid>
-  <pubDate>Wed, 07 Apr 2021 07:00:00 GMT</pubDate>
+  <pubDate>Wed, 07 Apr 2021 00:00:00 GMT</pubDate>
 </item>
 <item>
   <title>Tikhonov Regularization and Gaussian Priors</title>
@@ -671,7 +699,7 @@ for cycle in 1:max_cycles
  ]]></description>
   <category>mathematical statistics</category>
   <guid>https://jeffwong.github.io/posts/l2_gaussian_prior/</guid>
-  <pubDate>Sun, 27 Dec 2020 08:00:00 GMT</pubDate>
+  <pubDate>Sun, 27 Dec 2020 00:00:00 GMT</pubDate>
 </item>
 </channel>
 </rss>

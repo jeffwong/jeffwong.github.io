@@ -88,5 +88,3 @@ where $\delta' = \delta (p_1 + p_0 - 1)$ is a dilution on the treatment effect.
 
 Using some simple numbers, if $p_1 = p_0 = 0.9$, then $\delta' = 0.8 \delta$. By changing the effect size by 0.8, we change the sample size
 necessary by $\frac{1}{.8^2} = 56\%$!
-
-

@@ -1,5 +1,5 @@
 ---
-title: "Improving Statistical Power"
+title: "Foundations in Statistical Power"
 author: "Jeffrey Wong"
 date: "2025-09-15"
 categories: [experimentation, statistics]
@@ -67,7 +67,13 @@ Equivalently
 \begin{align}
 \left|\frac{\bar{\mu}_1 - \bar{\mu}_0}{se(\bar{\Delta})}\right| &\geq z_{1-\alpha/2}
 \end{align}
-where $se(\bar{\Delta}) = \sqrt{\frac{\sigma_T^2}{n_T} + \frac{\sigma_C^2}{n_C}}$ under randomization.
+where $se(\bar{\Delta}) = \sqrt{\frac{\sigma^2}{n_T} + \frac{\sigma^2}{n_C}}$ under randomization.
+If $n_T = k \cdot n_C$, then we can use the reduction
+
+\begin{align}
+Var(\bar{y}_c) &= \frac{\sigma^2}{n_C} \\
+se(\bar{\Delta}) &= \sqrt{Var(\bar{y}_c) (1 + \frac{1}{k})}
+\end{align}
 
 
 # Probability under the Alternative
@@ -75,31 +81,31 @@ where $se(\bar{\Delta}) = \sqrt{\frac{\sigma_T^2}{n_T} + \frac{\sigma_C^2}{n_C}}
 Power is the probability of triggering the rejection rules, which were derived under the null $H_0: \Delta = 0$,
 when the true data generating process has $\Delta \neq 0$. It is important to understand which governing parameter is in play here. The rejection rules will be derived using $\Delta = 0$, and those rules will be fixed. Then, we toggle the governing parameter to have $\Delta \neq 0$, and benchmark the probability that data under this governing parameter will hit the rejection rule.
 
-Say that $H_1$ is true and there are two distinct means $\mu_0$ and $\mu_1$
-with $\mu_1 - \mu_0 = k \neq 0$. Under $H_1$ we cannot claim the usual Z statistic is distributed
+Say that $H_A$ is true and there are two distinct means $\mu_0$ and $\mu_1$
+with $\mu_1 - \mu_0 = k \neq 0$. Under $H_A$ we cannot claim the usual Z statistic is distributed
 N(0, 1). Instead, we have
 
 \begin{align}
-Z | H_1 &= \frac{\bar{\Delta}}{se(\bar{\Delta})} \sim N(\frac{k}{se(\bar{\Delta})},1) \\
+Z | H_A &= \frac{\bar{\Delta}}{se(\bar{\Delta})} \sim N(\frac{k}{se(\bar{\Delta})},1) \\
 \end{align}
 
 Now we revisit the rejection rule: reject when $|Z| \geq z_{1-\alpha/2}$.
-Power is the probability of triggering the rejection rule when $H_1$ is true, so
+Power is the probability of triggering the rejection rule when $H_A$ is true, so
 
 \begin{align}
 Power &= P(|Z| \geq z_{1-\alpha/2} | Z \sim N(\frac{k}{se(\bar{\Delta})}, 1))
 \end{align}
 
-Let $\delta = \frac{\Delta | H_1}{se(\bar{\Delta})}$ be the noncentrality parameter, using the effect
-size we would like to detect under $H_1$. The final solution for power is
+Let $\delta = \frac{\Delta | H_A}{se(\bar{\Delta})}$ be the noncentrality parameter, using the effect
+size we would like to detect under $H_A$. The final solution for power is
 $$
 \boxed{\text{Power} = \Phi(\delta - z_{1-\alpha/2}) + \Phi(-\delta - z_{1-\alpha/2})}
 $$
 
-In code, we would have:
+Using first principles, we can implement code as
 ```{r}
 treatment_effect = .01
-sigma2 = 2
+sigma2_treatment = sigma2_control = sigma2 = 2
 n = 1e3
 alpha = .05
 treatment_share = .5
@@ -107,17 +113,22 @@ control_share = .5
 n_treatment = n * treatment_share
 n_control = n * control_share
 
-
-df = n - 2
-sd_treatment = sqrt(sigma2)
-sd_control = sqrt(sigma2)
-pooled_var = ((n_treatment - 1) * sd_treatment^2 + (n_control - 1) * sd_control^2) / (n - 2)
-pooled_sd = sqrt(pooled_var)
-pooled_se = pooled_sd * sqrt(1/n_treatment + 1/n_control)
+pooled_se = sqrt(sigma2_treatment / n_treatment + sigma2_control / n_control)
 pooled_ncp = treatment_effect / pooled_se
 
 crit = qnorm(1-alpha/2)
 pnorm(-crit - pooled_ncp) + (pnorm(-crit + pooled_ncp))
+```
+
+This matches the native implementation in R
+
+```{r}
+power.t.test(
+  n = n * treatment_share,
+  delta = treatment_effect,
+  sd = sqrt(sigma2),
+  strict = TRUE
+)
 ```
 
 # How Power Changes
@@ -174,7 +185,7 @@ output = pmap_dbl(params %>% as.data.frame(), function(delta, se, alpha) {
 })
 cbind(params, power = output) %>%
   mutate(
-    t = delta / se,
+    ncp = delta / se,
     crit = qnorm(1-alpha/2)
   ) %>%
   mutate(
@@ -189,7 +200,7 @@ cbind(params, power = output) %>%
     incremental_power = power - power_prev
   ) %>%
   filter(!is.na(incremental_power)) %>% 
-  ggplot(aes(x = t, y = power, color = is_stat_sig)) +
+  ggplot(aes(x = ncp, y = power, color = is_stat_sig)) +
   geom_point() +
   facet_wrap(~ alpha) +
   theme_bw(base_size = 16)
@@ -201,13 +212,16 @@ MDE is the minimum detectable effect. It operates as the inverse to statistical 
 Instead of asking: how much power do I have given an effect size and standard error, it asks:
 what is the effect size I can detect given a fixed amount of power and standard error.
 
-To derive the MDE from first principles, go back to:
+To derive the MDE from first principles, we go back to the definition of power
+and how it is framed in terms of the rejection rule:
 
 $$
-P(\delta \geq z_{1-\alpha/2} | H_1) = 1 - \beta
+\text{Power} = 1 - \beta = P(\delta \geq z_{1-\alpha/2} | H_A)
 $$
 
-This equation about the CDF can be simplified. The noncentrality parameter is distributed N(0, 1), so it being greater than or equal to $z_{1-\alpha/2}$ is actually just $1 - \Phi(z_{1-\alpha/2} - \delta)$. Then the derivation for the MDE is
+This equation about the CDF can be simplified. The noncentrality parameter is distributed 
+$\delta \sim N(0, 1)$, so it being greater than or equal to $z_{1-\alpha/2}$ is 
+actually just $1 - \Phi(z_{1-\alpha/2} - \delta)$. Then the derivation for the MDE is
 
 \begin{align}
 \Phi(z_{1-\alpha/2} - \delta) &= \beta \\
@@ -222,17 +236,32 @@ $$
 MDE = 2.8 \cdot SE
 $$
 
-Again the SE here is the residual standard error after controlling for other variables. 
+Let's unpack this common rule of thumb explicitly. It says that the
+smallest effect size we can detect while ensuring an 80% power is $2.8 \cdot se(\bar{\Delta})$.
+(The SE here is the residual standard error after controlling for other variables.)
+
+This looks like a similar rule of thumb related to rejecting the null:
+reject if the effect size is larger than 1.96 SE. This separate rule of thumb
+can be very confusing. It describes when can we flag a result as stat sig while ensuring
+a different property: that under the null hypothesis there is less than a 5% chance
+of generating this effect by random. This rule of thumb is offering a different guarantee,
+not one about power. Ensuring 80% power at a specific effect size
+simply says that there is a good chance we can detect these effects, but it does not
+make it impossible. Even using power = 50% we will correctly flag some results as stat sig.
+(See multiple online discussions like this [one](https://stats.stackexchange.com/questions/538590/reconciling-the-minimum-detectable-effect-calculation-with-the-experiment-result))
+This is why we can reject at 1.96 SE, even though the minimum detectable effect using
+power = 80% is 2.8 SE. However, it is noteworthy that the scientific community is advocating
+for rejecting at 2.8 SE (See [Redefine Statistical Significance](https://escholarship.org/content/qt1jx6091g/qt1jx6091g.pdf))
 
 # Sample Size Calculator
 
 It's easier for a business to think about designing an experiment around the MDE.
 It's a more natural discussion: what is the smallest effect that the business would still care about?
 
-Given an MDE, we pivot the problem again. If $SE = \sigma \sqrt{\frac{1}{n_T} + \frac{1}{n_C}}$, and $n_T = k \cdot n_C$, then
+Given an MDE, we pivot the problem again. If $se(\bar{\Delta}) =  \sqrt{\frac{\sigma_T^2}{n_T} + \frac{\sigma_C^2}{n_C}} = \sqrt{Var(\bar{y}_c) (1 + \frac{1}{k})}$, and $n_T = k \cdot n_C$, then
 
 \begin{align}
-MDE &= (z_{1-\alpha/2} - z_{\beta}) \sigma \sqrt{\frac{1}{k \cdot n_C} + \frac{1}{n_C}} \\
+MDE &= (z_{1-\alpha/2} - z_{\beta}) \frac{\sigma}{\sqrt{n_C}} \sqrt{1 + \frac{1}{k}} \\
 n_C &= \frac{(z_{1-\alpha/2} - z_{\beta})^2 \sigma^2 (\frac{1}{k} + 1)}{MDE^2} \\
 n_T &= k \cdot n_C
 \end{align}

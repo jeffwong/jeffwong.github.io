@@ -30,17 +30,17 @@
 <p>We’ll describe each case from first principles, and how to design an experiment when one of the errors is especially important.</p>
 <section id="sign-error" class="level1">
 <h1>Sign Error</h1>
-<p>Andrew Gelman says that we should not only plan an experiment for power, we should also plan to control for a type S error as well as an exaggeration factor. A type S error is when we flag stat sig, but the estimated effect has the wrong sign. The probability of a type S error conditions on stat sig, where the denominator is power and the numerator has</p>
+<p><a href="https://sites.stat.columbia.edu/gelman/research/published/retropower_final.pdf">Andrew Gelman</a> says that we should not only plan an experiment for power, we should also plan to control for a type S error as well as an exaggeration factor. A type S error is when we flag stat sig, but the estimated effect has the wrong sign. The probability of a type S error conditions on stat sig, where the denominator is power and the numerator has</p>
 <p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0APower%20&amp;=%20%5CPhi(%5Cdelta%20-%20z_%7B1-%5Calpha/2%7D)%20+%20%5CPhi(-%5Cdelta%20-%20z_%7B1-%5Calpha/2%7D)%20%5C%5C%0AP(%5Ctext%7BSign%20Error%7D%20%7C%20Sig)%20&amp;=%20%5Cfrac%7B%5CPhi(-%5Cdelta%20-%20z_%7B1-%5Calpha/2%7D)%7D%7B%5CPhi(%5Cdelta%20-%20z_%7B1-%5Calpha/2%7D)%20+%20%5CPhi(-%5Cdelta%20-%20z_%7B1-%5Calpha/2%7D)%7D%0A%5Cend%7Balign%7D"></p>
 <p>Power is a function of the ncp, and <img src="https://latex.codecogs.com/png.latex?%5Calpha">. The probability of a sign error is a function of the same variables. So they can be computed at the same time. Below we will show that the exaggeration ratio can also be computed at the same time.</p>
 </section>
-<section id="exaggeration" class="level1">
-<h1>Exaggeration</h1>
+<section id="exaggeration-type-m-error" class="level1">
+<h1>Exaggeration (Type M Error)</h1>
 <p>When we publish only stat sig results, we run into a winner’s curse problem. The results will tend to be exaggerated. The mere fact that a collection of results are all stat sig is correlated with the results all having large effect sizes. Remember that the underlying effect has randomness around it, and can appear in data as a large effect or a small effect. Conditioning our reporting on stat sig results means we are masking the small effect, creating the incorrect perception that the underlying effect is large. The exaggeration factor tries to measure the difference between the reported effect and the underlying effect.</p>
-<p>Say that we measure a treatment effect <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5CDelta%7D"> with standard error <img src="https://latex.codecogs.com/png.latex?se(%5Chat%7B%5CDelta%7D)">. Without loss of generality, say <img src="https://latex.codecogs.com/png.latex?%5CDelta%20%3E%200">, and since we condition on stat sig we also have <img src="https://latex.codecogs.com/png.latex?Z%20%5Cgeq%20z_%7B1%20-%20%5Calpha/2%7D">. The estimated effect size can be expressed in terms of standard errors <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5CDelta%7D%20=%20Z%20se(%5Chat%7B%5CDelta%7D)">. The type M risk is</p>
+<p>Say that we measure a treatment effect <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5CDelta%7D"> with standard error <img src="https://latex.codecogs.com/png.latex?se(%5Chat%7B%5CDelta%7D)">. Without loss of generality, say <img src="https://latex.codecogs.com/png.latex?%5CDelta%20%3E%200">, and since we condition on stat sig we also have <img src="https://latex.codecogs.com/png.latex?Z%20%5Cgeq%20z_%7B1%20-%20%5Calpha/2%7D">. The estimated effect size can be expressed in terms of standard errors <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5CDelta%7D%20=%20Z%20se(%5Chat%7B%5CDelta%7D)">. The exaggeration is</p>
 <p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0AM%20&amp;=%20E%5B%5Cfrac%7B%5Chat%7B%5CDelta%7D%7D%7B%5CDelta%7D%20%7C%20Z%20%5Cgeq%20z_%7B1%20-%20%5Calpha/2%7D%5D%5C%5C%0A%20%20&amp;=%20%5Cfrac%7Bse(%5Chat%7B%5CDelta%7D)%7D%7B%5CDelta%7D%20E%5BZ%20%7C%20Z%20%5Cgeq%20z_%7B1%20-%20%5Calpha/2%7D%5D%0A%5Cend%7Balign%7D"></p>
-<p>We know that <img src="https://latex.codecogs.com/png.latex?Z%20%5Csim%20N(ncp,%201)"> itself is a normally distributed variable, and the portion of this distribution with <img src="https://latex.codecogs.com/png.latex?Z%20%5Cgeq%20z_%7B1%20-%20%5Calpha/2%7D"> is a truncated normal. The expectation of this truncated normal is <img src="https://latex.codecogs.com/png.latex?ncp%20+%20%5Cfrac%7B%5Cphi(z_%7B1-%5Calpha/2%7D%20-%20ncp)%7D%7B1%20-%20%5CPhi(z_%7B1-%5Calpha/2%7D%20-%20ncp)%7D">. So the final expression for the type M error rate is</p>
-<p><img src="https://latex.codecogs.com/png.latex?%0A%5Cboxed%7BType%20M%20=%201%20+%20%5Cfrac%7B%5Cphi(z_%7B1-%5Calpha/2%7D%20-%20ncp)%7D%7Bncp(1%20-%20%5CPhi(z_%7B1-%5Calpha/2%7D%20-%20ncp)%7D%7D%0A"></p>
+<p>We know that <img src="https://latex.codecogs.com/png.latex?Z%20%5Csim%20N(ncp,%201)"> itself is a normally distributed variable, and the portion of this distribution with <img src="https://latex.codecogs.com/png.latex?Z%20%5Cgeq%20z_%7B1%20-%20%5Calpha/2%7D"> is a truncated normal. The expectation of this truncated normal is <img src="https://latex.codecogs.com/png.latex?ncp%20+%20%5Cfrac%7B%5Cphi(z_%7B1-%5Calpha/2%7D%20-%20ncp)%7D%7B1%20-%20%5CPhi(z_%7B1-%5Calpha/2%7D%20-%20ncp)%7D">. So the final expression for the exaggeration is</p>
+<p><img src="https://latex.codecogs.com/png.latex?%0A%5Cboxed%7BM%20=%201%20+%20%5Cfrac%7B%5Cphi(z_%7B1-%5Calpha/2%7D%20-%20ncp)%7D%7Bncp(1%20-%20%5CPhi(z_%7B1-%5Calpha/2%7D%20-%20ncp)%7D%7D%0A"></p>
 <p>An interesting thing to note is that the exaggeration decreases when <img src="https://latex.codecogs.com/png.latex?%5Calpha"> increases. When we open up <img src="https://latex.codecogs.com/png.latex?%5Calpha"> and allow more results to be flagged as stat sig, then the winner’s curse problem naturally dissipates, reducing the exaggeration.</p>
 <p>Type M is also a function of only the ncp and <img src="https://latex.codecogs.com/png.latex?%5Calpha">, so can be computed at the same time as power and type S.</p>
 <div class="cell">
@@ -84,7 +84,7 @@ background-color: null;
 font-style: inherit;">-</span>crit <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">+</span> ncp)</span>
-<span id="cb1-4">  p_sign <span class="ot" style="color: #003B4F;
+<span id="cb1-4">  sign_risk <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">=</span> <span class="fu" style="color: #4758AB;
 background-color: null;
@@ -95,14 +95,14 @@ background-color: null;
 font-style: inherit;">-</span> ncp) <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">/</span> power</span>
-<span id="cb1-5">  type_m_numerator <span class="ot" style="color: #003B4F;
+<span id="cb1-5">  exaggeration_numerator <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">=</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">dnorm</span>(crit <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">-</span> ncp)</span>
-<span id="cb1-6">  type_m_denominator <span class="ot" style="color: #003B4F;
+<span id="cb1-6">  exaggeration_denominator <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">=</span> ncp <span class="sc" style="color: #5E5E5E;
 background-color: null;
@@ -127,22 +127,22 @@ font-style: inherit;">alpha =</span> alpha,</span>
 background-color: null;
 font-style: inherit;">power =</span> power, <span class="at" style="color: #657422;
 background-color: null;
-font-style: inherit;">p_sign =</span> p_sign, <span class="at" style="color: #657422;
+font-style: inherit;">sign_risk =</span> sign_risk, <span class="at" style="color: #657422;
 background-color: null;
-font-style: inherit;">type_m =</span> <span class="dv" style="color: #AD0000;
+font-style: inherit;">exaggeration =</span> <span class="dv" style="color: #AD0000;
 background-color: null;
 font-style: inherit;">1</span> <span class="sc" style="color: #5E5E5E;
 background-color: null;
-font-style: inherit;">+</span> type_m_numerator <span class="sc" style="color: #5E5E5E;
+font-style: inherit;">+</span> exaggeration_numerator <span class="sc" style="color: #5E5E5E;
 background-color: null;
-font-style: inherit;">/</span> type_m_denominator</span>
+font-style: inherit;">/</span> exaggeration_denominator</span>
 <span id="cb1-10">  )</span>
 <span id="cb1-11">}</span></code></pre></div></div>
 </div>
 </section>
 <section id="false-positive-risk" class="level1">
 <h1>False Positive Risk</h1>
-<p>We can use the formula for <a href="https://exp-platform.com/abtestingintuitionbusters/">false positive risk</a> (FPR) to estimate a probability that a stat sig result is actually a false positive. For a test with <img src="https://latex.codecogs.com/png.latex?%5Calpha%20=%200.05">, 80% power, and a 80% chance that the null hypothesis is true, the FPR is 20%! In fact, unless P(<img src="https://latex.codecogs.com/png.latex?H_0"> is true) <img src="https://latex.codecogs.com/png.latex?%5Cleq%2046%5C%25">, the FPR <img src="https://latex.codecogs.com/png.latex?%5Cgeq%205%5C%25">. This is an important risk to understand, and it is frequently confused with <img src="https://latex.codecogs.com/png.latex?%5Calpha">. Many people think that <img src="https://latex.codecogs.com/png.latex?%5Calpha"> controls the false positive rate among significant results, but actually what it controls is the false positive rate under the null hypothesis. The FPR is actually what most people think of when they think of the false positive rate.</p>
+<p>We can use the formula for <a href="https://exp-platform.com/abtestingintuitionbusters/">false positive risk</a> (FPR) to estimate a probability that a stat sig result is actually a false positive. For a test with <img src="https://latex.codecogs.com/png.latex?%5Calpha%20=%200.05">, 80% power, and a 80% chance that the null hypothesis is true, the FPR is 20% This is an important risk to understand, and it is frequently confused with <img src="https://latex.codecogs.com/png.latex?%5Calpha">. Many people think that <img src="https://latex.codecogs.com/png.latex?%5Calpha"> controls the false positive rate among significant results, but actually what it controls is a false positive rate under the null hypothesis. The FPR is actually what most people think of when they think of the false positive risk.</p>
 <p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0A%5Ctext%7BP(H0%20is%20true%20%7C%20stat%20sig)%7D%20&amp;=%20%5Ctext%7BP(stat%20sig%20%7C%20H0%20is%20true)%7D%20%5Ccdot%20%5Cfrac%7B%5Ctext%7BP(H0%20is%20true)%7D%7D%7B%5Ctext%7BP(stat%20sig)%7D%7D%20%5C%5C%0A%20%20&amp;=%20%5Cfrac%7B%5Calpha%20%5Ctext%7BP(H0%20is%20true)%7D%7D%7B%5Calpha%20%5Ctext%7BP(H0%20is%20true)%7D%20+%20(1%20-%20%5Cbeta)%20(1%20-%20%5Ctext%7BP(H0%20is%20true)%7D)%7D%0A%5Cend%7Balign%7D"></p>
 <p>Unlike type S or type M functions, FPR is normally written in terms of <img src="https://latex.codecogs.com/png.latex?%5Calpha"> and power. However, power is a function of <img src="https://latex.codecogs.com/png.latex?%5Calpha"> and ncp. So we can cast FPR to look like it has similar arguments to type S and type M functions. This casting is going to be very convenient later.</p>
 <div class="cell">
@@ -336,7 +336,7 @@ font-style: inherit;">"False Positive Risk"</span>)</span></code></pre></div></d
 <section id="contrast-in-experimental-design" class="level1">
 <h1>Contrast in Experimental Design</h1>
 <p>So far we have described many different types of errors that can occur while designing an experiment. We tend to take for granted why conventional wisdom says to plan a test to achieve 80% power while holding <img src="https://latex.codecogs.com/png.latex?%5Calpha%20=%200.05">. We will explore why those values were chosen and what properties do they yield.</p>
-<p>Practicioners tend to say we need to design a high powered test. If we wanted to simply achieve high power, we could easily achieve that by setting <img src="https://latex.codecogs.com/png.latex?%5Calpha%20=%201">. Then every result, regardless of effect size, is flagged as stat sig with power = 100%. However, there would be many false positives, and there would be no clear understanding of which results to report. So power, false positives, sign errors, and exaggeration all need to be balanced. Is pinning <img src="https://latex.codecogs.com/png.latex?%5Calpha%20=%200.05"> and power = 80% the right balance? We will explore that.</p>
+<p>Practitioners tend to say we need to design a high powered test. If we wanted to simply achieve high power, we could easily achieve that by setting <img src="https://latex.codecogs.com/png.latex?%5Calpha%20=%201">. Then every result, regardless of effect size, is flagged as stat sig with power = 100%. However, there would be many false positives, and there would be no clear understanding of which results to report. So power, false positives, sign errors, and exaggeration all need to be balanced. Is pinning <img src="https://latex.codecogs.com/png.latex?%5Calpha%20=%200.05"> and power = 80% the right balance? We will explore that.</p>
 <p>To make the study simple, we note that power, FPR, sign errors, and exaggeration can all be computed by using the planned ncp, <img src="https://latex.codecogs.com/png.latex?%5Calpha">, and the prior that the null is true. We will scan 3 inputs and study how the 4 design statistics vary.</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1">exp_design_statistics <span class="ot" style="color: #003B4F;
@@ -386,7 +386,7 @@ background-color: null;
 font-style: inherit;">mutate</span>(</span>
 <span id="cb3-7">      <span class="at" style="color: #657422;
 background-color: null;
-font-style: inherit;">n =</span> ncp<span class="sc" style="color: #5E5E5E;
+font-style: inherit;">required_n_c =</span> ncp<span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">^</span><span class="dv" style="color: #AD0000;
 background-color: null;
@@ -511,7 +511,7 @@ font-style: inherit;">print</span>(power)</span></code></pre></div></div>
 <pre><code>[1] 0.8074304</code></pre>
 </div>
 </div>
-<p>We can learn much more about this particular design other than that it achieves 80% power. It also has a <img src="https://latex.codecogs.com/png.latex?%5Capprox%200">% sign error rate, an exaggeration of <img src="https://latex.codecogs.com/png.latex?1.125"> and false positive risk of 6% when the prior for the null is 50/50.</p>
+<p>We can learn much more about this particular design other than that it achieves 80% power. It also has a <img src="https://latex.codecogs.com/png.latex?%5Capprox%200">% sign error rate, an exaggeration of <img src="https://latex.codecogs.com/png.latex?1.125"> and false positive risk of 6% when the prior for the null is 50/50. This is a good design.</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><span class="fu" style="color: #4758AB;
 background-color: null;
@@ -529,15 +529,15 @@ font-style: inherit;">prior_h0_true =</span> <span class="fl" style="color: #AD0
 background-color: null;
 font-style: inherit;">0.5</span>)</span></code></pre></div></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>  ncp alpha     power       p_sign   type_m        fpr    n
-1 2.8  0.05 0.7995569 1.210843e-06 1.125219 0.05885421 1568</code></pre>
+<pre><code>  ncp alpha     power    sign_risk exaggeration        fpr required_n_c
+1 2.8  0.05 0.7995569 1.210843e-06     1.125219 0.05885421         1568</code></pre>
 </div>
 </div>
-<p>Conventional wisdom says to pick ncp = 2.8 and <img src="https://latex.codecogs.com/png.latex?%5Calpha%20=%200.05"> in order to yield 80% power. However there are other configurations that can also yield 80% power. If we allow <img src="https://latex.codecogs.com/png.latex?%5Calpha"> to vary, then any configuration that yields an ncp of <img src="https://latex.codecogs.com/png.latex?(z_%7B1%20-%20%5Calpha/2%7D%20-%20z_%5Cbeta)"> will also achieve 80%. We want to explore other configurations and see how type S errors, exaggeration, and fpr change.</p>
+<p>However there are other configurations that can also yield 80% power. If we allow <img src="https://latex.codecogs.com/png.latex?%5Calpha"> to vary, then any configuration that yields an ncp of <img src="https://latex.codecogs.com/png.latex?(z_%7B1%20-%20%5Calpha/2%7D%20-%20z_%5Cbeta)"> will also achieve 80%. We want to explore other configurations and see how type S errors, exaggeration, and fpr change.</p>
 </section>
 <section id="alternative-design" class="level2">
 <h2 class="anchored" data-anchor-id="alternative-design">Alternative Design</h2>
-<p>In this section we explore alternative configurations to experimental design. We will let <img src="https://latex.codecogs.com/png.latex?%5Calpha"> and the ncp vary, and compute the changes to power, FPR, type S error rates, and exaggeration. We will do this around 2 different priors for the null, one where P(H0 is true) = 50% and one where P(H0 is true) = 80%. The results are charted below.</p>
+<p>In this section we explore alternative configurations to experimental design. We will let <img src="https://latex.codecogs.com/png.latex?%5Calpha"> and the ncp vary, and compute the changes to power, FPR, type S error rates, and exaggeration. We will do this with a 50/50 prior that the null is true. The results are charted below.</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1">exp_design_statistics_sweep <span class="ot" style="color: #003B4F;
 background-color: null;
@@ -573,7 +573,7 @@ font-style: inherit;">0.05</span>, <span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">to =</span> .<span class="dv" style="color: #AD0000;
 background-color: null;
-font-style: inherit;">5</span>, <span class="at" style="color: #657422;
+font-style: inherit;">25</span>, <span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">by =</span> <span class="fl" style="color: #AD0000;
 background-color: null;
@@ -597,7 +597,7 @@ background-color: null;
 font-style: inherit;">pivot_longer</span>(</span>
 <span id="cb8-7">    <span class="fu" style="color: #4758AB;
 background-color: null;
-font-style: inherit;">c</span>(power, p_sign, type_m, fpr)</span>
+font-style: inherit;">c</span>(power, sign_risk, exaggeration, fpr)</span>
 <span id="cb8-8">  )</span>
 <span id="cb8-9"></span>
 <span id="cb8-10">exp_design_statistics_sweep  <span class="sc" style="color: #5E5E5E;
@@ -665,7 +665,27 @@ font-style: inherit;">theme</span>(<span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">legend.position =</span> <span class="st" style="color: #20794D;
 background-color: null;
-font-style: inherit;">'top'</span>)</span></code></pre></div></div>
+font-style: inherit;">'top'</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span></span>
+<span id="cb8-18">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">guides</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">color=</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">guide_legend</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">title=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"alpha"</span>)) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span></span>
+<span id="cb8-19">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ylab</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Power"</span>)</span></code></pre></div></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>`geom_smooth()` using method = 'loess' and formula = 'y ~ x'</code></pre>
 </div>
@@ -685,7 +705,7 @@ font-style: inherit;">filter</span>(name <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">==</span> <span class="st" style="color: #20794D;
 background-color: null;
-font-style: inherit;">'p_sign'</span>) <span class="sc" style="color: #5E5E5E;
+font-style: inherit;">'sign_risk'</span>) <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">%&gt;%</span></span>
 <span id="cb10-3">  <span class="fu" style="color: #4758AB;
@@ -741,7 +761,27 @@ font-style: inherit;">theme</span>(<span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">legend.position =</span> <span class="st" style="color: #20794D;
 background-color: null;
-font-style: inherit;">'top'</span>)</span></code></pre></div></div>
+font-style: inherit;">'top'</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span></span>
+<span id="cb10-9">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">guides</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">color=</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">guide_legend</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">title=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"alpha"</span>)) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span></span>
+<span id="cb10-10">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ylab</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Sign Error Risk"</span>)</span></code></pre></div></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>`geom_smooth()` using method = 'loess' and formula = 'y ~ x'</code></pre>
 </div>
@@ -830,7 +870,27 @@ font-style: inherit;">theme</span>(<span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">legend.position =</span> <span class="st" style="color: #20794D;
 background-color: null;
-font-style: inherit;">'top'</span>)</span></code></pre></div></div>
+font-style: inherit;">'top'</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span></span>
+<span id="cb12-10">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">guides</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">color=</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">guide_legend</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">title=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"alpha"</span>)) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span></span>
+<span id="cb12-11">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ylab</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"False Positive Risk"</span>)</span></code></pre></div></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>`geom_smooth()` using method = 'loess' and formula = 'y ~ x'</code></pre>
 </div>
@@ -850,7 +910,7 @@ font-style: inherit;">filter</span>(name <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">==</span> <span class="st" style="color: #20794D;
 background-color: null;
-font-style: inherit;">'type_m'</span>) <span class="sc" style="color: #5E5E5E;
+font-style: inherit;">'exaggeration'</span>) <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">%&gt;%</span></span>
 <span id="cb14-3">  <span class="fu" style="color: #4758AB;
@@ -904,202 +964,31 @@ font-style: inherit;">theme</span>(<span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">legend.position =</span> <span class="st" style="color: #20794D;
 background-color: null;
-font-style: inherit;">'top'</span>)</span></code></pre></div></div>
+font-style: inherit;">'top'</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span></span>
+<span id="cb14-9">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">guides</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">color=</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">guide_legend</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">title=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"alpha"</span>)) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span></span>
+<span id="cb14-10">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ylab</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Exaggeration"</span>)</span></code></pre></div></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
 <p><img src="https://jeffwong.github.io/posts/errors_in_experiments/index_files/figure-html/unnamed-chunk-6-4.png" class="img-fluid figure-img" width="672"></p>
-</figure>
-</div>
-</div>
-</div>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1">exp_design_statistics_sweep <span class="ot" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">=</span> <span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">map_dfr</span>(<span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">seq</span>(<span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">from =</span> <span class="dv" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">0</span>, <span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">to =</span> <span class="dv" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">3</span>, <span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">by =</span> .<span class="dv" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">1</span>), <span class="cf" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">function</span>(ncp) {</span>
-<span id="cb15-2">  <span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">map_dfr</span>(<span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">seq</span>(<span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">from =</span> <span class="fl" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">0.05</span>, <span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">to =</span> .<span class="dv" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">5</span>, <span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">by =</span> <span class="fl" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">0.05</span>), <span class="cf" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">function</span>(alpha) {</span>
-<span id="cb15-3">    <span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">exp_design_statistics</span>(ncp, alpha, <span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">prior_h0_true =</span> <span class="fl" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">0.8</span>)</span>
-<span id="cb15-4">  })</span>
-<span id="cb15-5">}) <span class="sc" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">%&gt;%</span></span>
-<span id="cb15-6">  <span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">pivot_longer</span>(</span>
-<span id="cb15-7">    <span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">c</span>(power, p_sign, type_m, fpr)</span>
-<span id="cb15-8">  )</span>
-<span id="cb15-9"></span>
-<span id="cb15-10">exp_design_statistics_sweep  <span class="sc" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">%&gt;%</span></span>
-<span id="cb15-11">  <span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">filter</span>(name <span class="sc" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">!=</span> <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">'type_m'</span>) <span class="sc" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">%&gt;%</span></span>
-<span id="cb15-12">  <span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">ggplot</span>(<span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">aes</span>(<span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">x =</span> ncp, <span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">y =</span> value, <span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">color =</span> name)) <span class="sc" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">+</span></span>
-<span id="cb15-13">  <span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">geom_point</span>() <span class="sc" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">+</span></span>
-<span id="cb15-14">  <span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">facet_wrap</span>(<span class="sc" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">~</span>alpha) <span class="sc" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">+</span></span>
-<span id="cb15-15">  <span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">theme_bw</span>(<span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">base_size =</span> <span class="dv" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">16</span>) <span class="sc" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">+</span></span>
-<span id="cb15-16">  <span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">theme</span>(<span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">legend.position =</span> <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">'top'</span>)</span></code></pre></div></div>
-<div class="cell-output-display">
-<div>
-<figure class="figure">
-<p><img src="https://jeffwong.github.io/posts/errors_in_experiments/index_files/figure-html/unnamed-chunk-7-1.png" class="img-fluid figure-img" width="672"></p>
-</figure>
-</div>
-</div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1">exp_design_statistics_sweep  <span class="sc" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">%&gt;%</span></span>
-<span id="cb16-2">  <span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">filter</span>(name <span class="sc" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">==</span> <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">'type_m'</span>) <span class="sc" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">%&gt;%</span></span>
-<span id="cb16-3">  <span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">ggplot</span>(<span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">aes</span>(<span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">x =</span> ncp, <span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">y =</span> value, <span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">color =</span> <span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">as.factor</span>(alpha))) <span class="sc" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">+</span></span>
-<span id="cb16-4">  <span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">geom_point</span>() <span class="sc" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">+</span></span>
-<span id="cb16-5">  <span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">geom_hline</span>(<span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">yintercept =</span> <span class="fl" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">1.1</span>, <span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">linetype =</span> <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">'dashed'</span>) <span class="sc" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">+</span></span>
-<span id="cb16-6">  <span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">theme_bw</span>(<span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">base_size =</span> <span class="dv" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">16</span>) <span class="sc" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">+</span></span>
-<span id="cb16-7">  <span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">theme</span>(<span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">legend.position =</span> <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">'top'</span>)</span></code></pre></div></div>
-<div class="cell-output-display">
-<div>
-<figure class="figure">
-<p><img src="https://jeffwong.github.io/posts/errors_in_experiments/index_files/figure-html/unnamed-chunk-7-2.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
@@ -1111,14 +1000,16 @@ font-style: inherit;">'top'</span>)</span></code></pre></div></div>
 <li>FPR decreases as ncp increases. FPR also increases when <img src="https://latex.codecogs.com/png.latex?%5Calpha"> increases, holding ncp constant. When <img src="https://latex.codecogs.com/png.latex?%5Calpha"> is small, the FPR is sensitive to small changes in the ncp, but FPR can be flat when <img src="https://latex.codecogs.com/png.latex?%5Calpha"> is large. To have <img src="https://latex.codecogs.com/png.latex?FPR%20%5Cleq%200.2">, we need <img src="https://latex.codecogs.com/png.latex?ncp%20%5Cgeq%201.1"> or higher depending on <img src="https://latex.codecogs.com/png.latex?%5Calpha">. Similarly to have <img src="https://latex.codecogs.com/png.latex?FPR%20%5Cleq%200.1"> we need <img src="https://latex.codecogs.com/png.latex?ncp%20%5Cgeq%201.9"> or higher.</li>
 <li>Exaggeration decreases as ncp increases. It also decreases when <img src="https://latex.codecogs.com/png.latex?%5Calpha"> increases. Achieving <img src="https://latex.codecogs.com/png.latex?M%20%5Cleq%201.1"> can be very hard, requiring ncp to be between 2.0 and 2.8. At high values of ncp, exaggeration is not sensitive to <img src="https://latex.codecogs.com/png.latex?%5Calpha">.</li>
 </ol>
+<p>All of these charts are nonlinear curves. There are diminishing returns to increasing the ncp. Yet, a doubling of the ncp requires a 4x in the data volume, since <img src="https://latex.codecogs.com/png.latex?ncp%20=%20%5Cfrac%7B%5CDelta%7D%7Bse(%5Chat%7B%5CDelta%7D)%7D">. Below is a table of configurations that range from “good” to “reasonably acceptable” to “bad”, and how data volume vaaries the quality.</p>
+<p>The standard practice of <img src="https://latex.codecogs.com/png.latex?%5Calpha%20=%200.05">, and power = 80%, is a good practice. Many others actually even advocate for more data. However, it is important to understand how we arrived here, and whether there is flexibility when designing your own experiment. Understanding the first principles is crucial.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><span class="fu" style="color: #4758AB;
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">rbind</span>(</span>
-<span id="cb17-2">  <span class="co" style="color: #5E5E5E;
+<span id="cb15-2">  <span class="co" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;"># Ideal world</span></span>
-<span id="cb17-3">  <span class="fu" style="color: #4758AB;
+<span id="cb15-3">  <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">exp_design_statistics</span>(<span class="fl" style="color: #AD0000;
 background-color: null;
@@ -1129,10 +1020,10 @@ background-color: null;
 font-style: inherit;">prior_h0_true =</span> <span class="fl" style="color: #AD0000;
 background-color: null;
 font-style: inherit;">0.5</span>),</span>
-<span id="cb17-4">  <span class="co" style="color: #5E5E5E;
+<span id="cb15-4">  <span class="co" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;"># status quo</span></span>
-<span id="cb17-5">  <span class="fu" style="color: #4758AB;
+<span id="cb15-5">  <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">exp_design_statistics</span>(<span class="fl" style="color: #AD0000;
 background-color: null;
@@ -1143,10 +1034,10 @@ background-color: null;
 font-style: inherit;">prior_h0_true =</span> <span class="fl" style="color: #AD0000;
 background-color: null;
 font-style: inherit;">0.5</span>),</span>
-<span id="cb17-6">  <span class="co" style="color: #5E5E5E;
+<span id="cb15-6">  <span class="co" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">#</span></span>
-<span id="cb17-7">  <span class="fu" style="color: #4758AB;
+<span id="cb15-7">  <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">exp_design_statistics</span>(<span class="fl" style="color: #AD0000;
 background-color: null;
@@ -1157,7 +1048,7 @@ background-color: null;
 font-style: inherit;">prior_h0_true =</span> <span class="fl" style="color: #AD0000;
 background-color: null;
 font-style: inherit;">0.5</span>),</span>
-<span id="cb17-8">  <span class="fu" style="color: #4758AB;
+<span id="cb15-8">  <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">exp_design_statistics</span>(<span class="fl" style="color: #AD0000;
 background-color: null;
@@ -1168,7 +1059,7 @@ background-color: null;
 font-style: inherit;">prior_h0_true =</span> <span class="fl" style="color: #AD0000;
 background-color: null;
 font-style: inherit;">0.5</span>),</span>
-<span id="cb17-9">  <span class="fu" style="color: #4758AB;
+<span id="cb15-9">  <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">exp_design_statistics</span>(<span class="fl" style="color: #AD0000;
 background-color: null;
@@ -1179,7 +1070,7 @@ background-color: null;
 font-style: inherit;">prior_h0_true =</span> <span class="fl" style="color: #AD0000;
 background-color: null;
 font-style: inherit;">0.5</span>),</span>
-<span id="cb17-10">  <span class="fu" style="color: #4758AB;
+<span id="cb15-10">  <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">exp_design_statistics</span>(<span class="fl" style="color: #AD0000;
 background-color: null;
@@ -1190,10 +1081,10 @@ background-color: null;
 font-style: inherit;">prior_h0_true =</span> <span class="fl" style="color: #AD0000;
 background-color: null;
 font-style: inherit;">0.5</span>),</span>
-<span id="cb17-11">  <span class="co" style="color: #5E5E5E;
+<span id="cb15-11">  <span class="co" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">#</span></span>
-<span id="cb17-12">  <span class="fu" style="color: #4758AB;
+<span id="cb15-12">  <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">exp_design_statistics</span>(<span class="dv" style="color: #AD0000;
 background-color: null;
@@ -1204,7 +1095,7 @@ background-color: null;
 font-style: inherit;">prior_h0_true =</span> <span class="fl" style="color: #AD0000;
 background-color: null;
 font-style: inherit;">0.5</span>),</span>
-<span id="cb17-13">  <span class="fu" style="color: #4758AB;
+<span id="cb15-13">  <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">exp_design_statistics</span>(<span class="dv" style="color: #AD0000;
 background-color: null;
@@ -1215,7 +1106,7 @@ background-color: null;
 font-style: inherit;">prior_h0_true =</span> <span class="fl" style="color: #AD0000;
 background-color: null;
 font-style: inherit;">0.5</span>),</span>
-<span id="cb17-14">  <span class="fu" style="color: #4758AB;
+<span id="cb15-14">  <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">exp_design_statistics</span>(<span class="dv" style="color: #AD0000;
 background-color: null;
@@ -1226,7 +1117,7 @@ background-color: null;
 font-style: inherit;">prior_h0_true =</span> <span class="fl" style="color: #AD0000;
 background-color: null;
 font-style: inherit;">0.5</span>),</span>
-<span id="cb17-15">  <span class="fu" style="color: #4758AB;
+<span id="cb15-15">  <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">exp_design_statistics</span>(<span class="dv" style="color: #AD0000;
 background-color: null;
@@ -1237,26 +1128,26 @@ background-color: null;
 font-style: inherit;">prior_h0_true =</span> <span class="fl" style="color: #AD0000;
 background-color: null;
 font-style: inherit;">0.5</span>)</span>
-<span id="cb17-16">) <span class="sc" style="color: #5E5E5E;
+<span id="cb15-16">) <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">%&gt;%</span></span>
-<span id="cb17-17">  <span class="fu" style="color: #4758AB;
+<span id="cb15-17">  <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">gt</span>() <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">%&gt;%</span></span>
-<span id="cb17-18">  <span class="fu" style="color: #4758AB;
+<span id="cb15-18">  <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">tab_header</span>(</span>
-<span id="cb17-19">    <span class="at" style="color: #657422;
+<span id="cb15-19">    <span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">title =</span> <span class="st" style="color: #20794D;
 background-color: null;
 font-style: inherit;">"Experimentation Design Statistics"</span></span>
-<span id="cb17-20">  ) <span class="sc" style="color: #5E5E5E;
+<span id="cb15-20">  ) <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">%&gt;%</span></span>
-<span id="cb17-21">  <span class="fu" style="color: #4758AB;
+<span id="cb15-21">  <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">tab_spanner</span>(<span class="at" style="color: #657422;
 background-color: null;
@@ -1266,10 +1157,10 @@ font-style: inherit;">"Design Statistics"</span>, <span class="at" style="color:
 background-color: null;
 font-style: inherit;">columns =</span> <span class="fu" style="color: #4758AB;
 background-color: null;
-font-style: inherit;">c</span>(power, p_sign, type_m, fpr)) <span class="sc" style="color: #5E5E5E;
+font-style: inherit;">c</span>(power, sign_risk, exaggeration, fpr)) <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">%&gt;%</span></span>
-<span id="cb17-22">  <span class="fu" style="color: #4758AB;
+<span id="cb15-22">  <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">tab_spanner</span>(<span class="at" style="color: #657422;
 background-color: null;
@@ -1279,267 +1170,263 @@ font-style: inherit;">"Design Inputs"</span>, <span class="at" style="color: #65
 background-color: null;
 font-style: inherit;">columns =</span> <span class="fu" style="color: #4758AB;
 background-color: null;
-font-style: inherit;">c</span>(ncp, alpha, n)) <span class="sc" style="color: #5E5E5E;
+font-style: inherit;">c</span>(ncp, alpha, required_n_c)) <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">%&gt;%</span> </span>
-<span id="cb17-23">  <span class="fu" style="color: #4758AB;
+<span id="cb15-23">  <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">tab_style</span>(</span>
-<span id="cb17-24">    <span class="at" style="color: #657422;
+<span id="cb15-24">    <span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">style =</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">cell_borders</span>(</span>
-<span id="cb17-25">      <span class="at" style="color: #657422;
+<span id="cb15-25">      <span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">sides  =</span> <span class="st" style="color: #20794D;
 background-color: null;
 font-style: inherit;">"left"</span>,</span>
-<span id="cb17-26">      <span class="at" style="color: #657422;
+<span id="cb15-26">      <span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">color  =</span> <span class="st" style="color: #20794D;
 background-color: null;
 font-style: inherit;">"black"</span>,</span>
-<span id="cb17-27">      <span class="at" style="color: #657422;
+<span id="cb15-27">      <span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">weight =</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">px</span>(<span class="dv" style="color: #AD0000;
 background-color: null;
 font-style: inherit;">2</span>)</span>
-<span id="cb17-28">    ),</span>
-<span id="cb17-29">    <span class="at" style="color: #657422;
+<span id="cb15-28">    ),</span>
+<span id="cb15-29">    <span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">locations =</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">list</span>(</span>
-<span id="cb17-30">      <span class="fu" style="color: #4758AB;
+<span id="cb15-30">      <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">cells_body</span>(<span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">columns =</span> power),</span>
-<span id="cb17-31">      <span class="fu" style="color: #4758AB;
+<span id="cb15-31">      <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">cells_column_labels</span>(<span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">columns =</span> power)</span>
-<span id="cb17-32">    )</span>
-<span id="cb17-33">  ) <span class="sc" style="color: #5E5E5E;
+<span id="cb15-32">    )</span>
+<span id="cb15-33">  ) <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">%&gt;%</span></span>
-<span id="cb17-34">  <span class="co" style="color: #5E5E5E;
+<span id="cb15-34">  <span class="co" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;"># Formatting for power</span></span>
-<span id="cb17-35">  <span class="fu" style="color: #4758AB;
+<span id="cb15-35">  <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">tab_style</span>(</span>
-<span id="cb17-36">    <span class="at" style="color: #657422;
+<span id="cb15-36">    <span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">style =</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">list</span>(</span>
-<span id="cb17-37">      <span class="fu" style="color: #4758AB;
+<span id="cb15-37">      <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">cell_fill</span>(<span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">color =</span> <span class="st" style="color: #20794D;
 background-color: null;
-font-style: inherit;">"green"</span>),            <span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;"># light orange</span></span>
-<span id="cb17-38">      <span class="fu" style="color: #4758AB;
+font-style: inherit;">"green"</span>),</span>
+<span id="cb15-38">      <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">cell_text</span>(<span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">weight =</span> <span class="st" style="color: #20794D;
 background-color: null;
-font-style: inherit;">"bold"</span>)               <span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;"># optional: bold text</span></span>
-<span id="cb17-39">    ),</span>
-<span id="cb17-40">    <span class="at" style="color: #657422;
+font-style: inherit;">"bold"</span>)</span>
+<span id="cb15-39">    ),</span>
+<span id="cb15-40">    <span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">locations =</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">cells_body</span>(</span>
-<span id="cb17-41">      <span class="at" style="color: #657422;
+<span id="cb15-41">      <span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">columns =</span> power,</span>
-<span id="cb17-42">      <span class="at" style="color: #657422;
+<span id="cb15-42">      <span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">rows    =</span> power <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">&gt;</span> .<span class="dv" style="color: #AD0000;
 background-color: null;
 font-style: inherit;">75</span></span>
-<span id="cb17-43">    )</span>
-<span id="cb17-44">  ) <span class="sc" style="color: #5E5E5E;
+<span id="cb15-43">    )</span>
+<span id="cb15-44">  ) <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">%&gt;%</span></span>
-<span id="cb17-45">  <span class="co" style="color: #5E5E5E;
+<span id="cb15-45">  <span class="co" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;"># Formatting for p sign</span></span>
-<span id="cb17-46">  <span class="fu" style="color: #4758AB;
+<span id="cb15-46">  <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">tab_style</span>(</span>
-<span id="cb17-47">    <span class="at" style="color: #657422;
+<span id="cb15-47">    <span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">style =</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">list</span>(</span>
-<span id="cb17-48">      <span class="fu" style="color: #4758AB;
+<span id="cb15-48">      <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">cell_fill</span>(<span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">color =</span> <span class="st" style="color: #20794D;
 background-color: null;
 font-style: inherit;">"green"</span>),</span>
-<span id="cb17-49">      <span class="fu" style="color: #4758AB;
+<span id="cb15-49">      <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">cell_text</span>(<span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">weight =</span> <span class="st" style="color: #20794D;
 background-color: null;
 font-style: inherit;">"bold"</span>)</span>
-<span id="cb17-50">    ),</span>
-<span id="cb17-51">    <span class="at" style="color: #657422;
+<span id="cb15-50">    ),</span>
+<span id="cb15-51">    <span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">locations =</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">cells_body</span>(</span>
-<span id="cb17-52">      <span class="at" style="color: #657422;
+<span id="cb15-52">      <span class="at" style="color: #657422;
 background-color: null;
-font-style: inherit;">columns =</span> p_sign,</span>
-<span id="cb17-53">      <span class="at" style="color: #657422;
+font-style: inherit;">columns =</span> sign_risk,</span>
+<span id="cb15-53">      <span class="at" style="color: #657422;
 background-color: null;
-font-style: inherit;">rows    =</span> p_sign <span class="sc" style="color: #5E5E5E;
+font-style: inherit;">rows    =</span> sign_risk <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">&lt;</span> .<span class="dv" style="color: #AD0000;
 background-color: null;
 font-style: inherit;">01</span></span>
-<span id="cb17-54">    )</span>
-<span id="cb17-55">  ) <span class="sc" style="color: #5E5E5E;
+<span id="cb15-54">    )</span>
+<span id="cb15-55">  ) <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">%&gt;%</span></span>
-<span id="cb17-56">  <span class="co" style="color: #5E5E5E;
+<span id="cb15-56">  <span class="co" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;"># Formatting for type m</span></span>
-<span id="cb17-57">  <span class="fu" style="color: #4758AB;
+<span id="cb15-57">  <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">tab_style</span>(</span>
-<span id="cb17-58">    <span class="at" style="color: #657422;
+<span id="cb15-58">    <span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">style =</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">list</span>(</span>
-<span id="cb17-59">      <span class="fu" style="color: #4758AB;
+<span id="cb15-59">      <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">cell_fill</span>(<span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">color =</span> <span class="st" style="color: #20794D;
 background-color: null;
 font-style: inherit;">"green"</span>),</span>
-<span id="cb17-60">      <span class="fu" style="color: #4758AB;
+<span id="cb15-60">      <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">cell_text</span>(<span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">weight =</span> <span class="st" style="color: #20794D;
 background-color: null;
 font-style: inherit;">"bold"</span>)</span>
-<span id="cb17-61">    ),</span>
-<span id="cb17-62">    <span class="at" style="color: #657422;
+<span id="cb15-61">    ),</span>
+<span id="cb15-62">    <span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">locations =</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">cells_body</span>(</span>
-<span id="cb17-63">      <span class="at" style="color: #657422;
+<span id="cb15-63">      <span class="at" style="color: #657422;
 background-color: null;
-font-style: inherit;">columns =</span> type_m,</span>
-<span id="cb17-64">      <span class="at" style="color: #657422;
+font-style: inherit;">columns =</span> exaggeration,</span>
+<span id="cb15-64">      <span class="at" style="color: #657422;
 background-color: null;
-font-style: inherit;">rows    =</span> type_m <span class="sc" style="color: #5E5E5E;
+font-style: inherit;">rows    =</span> exaggeration <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">&lt;</span> <span class="fl" style="color: #AD0000;
 background-color: null;
 font-style: inherit;">1.12</span></span>
-<span id="cb17-65">    )</span>
-<span id="cb17-66">  ) <span class="sc" style="color: #5E5E5E;
+<span id="cb15-65">    )</span>
+<span id="cb15-66">  ) <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">%&gt;%</span></span>
-<span id="cb17-67">  <span class="co" style="color: #5E5E5E;
+<span id="cb15-67">  <span class="co" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;"># Formatting for ppr</span></span>
-<span id="cb17-68">  <span class="fu" style="color: #4758AB;
+<span id="cb15-68">  <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">tab_style</span>(</span>
-<span id="cb17-69">    <span class="at" style="color: #657422;
+<span id="cb15-69">    <span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">style =</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">list</span>(</span>
-<span id="cb17-70">      <span class="fu" style="color: #4758AB;
+<span id="cb15-70">      <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">cell_fill</span>(<span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">color =</span> <span class="st" style="color: #20794D;
 background-color: null;
 font-style: inherit;">"green"</span>),</span>
-<span id="cb17-71">      <span class="fu" style="color: #4758AB;
+<span id="cb15-71">      <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">cell_text</span>(<span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">weight =</span> <span class="st" style="color: #20794D;
 background-color: null;
 font-style: inherit;">"bold"</span>)</span>
-<span id="cb17-72">    ),</span>
-<span id="cb17-73">    <span class="at" style="color: #657422;
+<span id="cb15-72">    ),</span>
+<span id="cb15-73">    <span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">locations =</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">cells_body</span>(</span>
-<span id="cb17-74">      <span class="at" style="color: #657422;
+<span id="cb15-74">      <span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">columns =</span> fpr,</span>
-<span id="cb17-75">      <span class="at" style="color: #657422;
+<span id="cb15-75">      <span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">rows    =</span> fpr <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">&lt;</span> .<span class="dv" style="color: #AD0000;
 background-color: null;
 font-style: inherit;">22</span></span>
-<span id="cb17-76">    )</span>
-<span id="cb17-77">  ) <span class="sc" style="color: #5E5E5E;
+<span id="cb15-76">    )</span>
+<span id="cb15-77">  ) <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">%&gt;%</span></span>
-<span id="cb17-78">  <span class="fu" style="color: #4758AB;
+<span id="cb15-78">  <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">fmt_number</span>(<span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">columns =</span> <span class="fu" style="color: #4758AB;
 background-color: null;
-font-style: inherit;">c</span>(power, p_sign, type_m, fpr), <span class="at" style="color: #657422;
+font-style: inherit;">c</span>(power, sign_risk, exaggeration, fpr), <span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">suffixing =</span> <span class="cn" style="color: #8f5902;
 background-color: null;
 font-style: inherit;">TRUE</span>)</span></code></pre></div></div>
 <div class="cell-output-display">
-<div id="kbpjdflqkr" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#kbpjdflqkr table {
+<div id="ijfbkhtylz" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#ijfbkhtylz table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#kbpjdflqkr thead, #kbpjdflqkr tbody, #kbpjdflqkr tfoot, #kbpjdflqkr tr, #kbpjdflqkr td, #kbpjdflqkr th {
+#ijfbkhtylz thead, #ijfbkhtylz tbody, #ijfbkhtylz tfoot, #ijfbkhtylz tr, #ijfbkhtylz td, #ijfbkhtylz th {
   border-style: none;
 }
 
-#kbpjdflqkr p {
+#ijfbkhtylz p {
   margin: 0;
   padding: 0;
 }
 
-#kbpjdflqkr .gt_table {
+#ijfbkhtylz .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -1565,12 +1452,12 @@ font-style: inherit;">TRUE</span>)</span></code></pre></div></div>
   border-left-color: #D3D3D3;
 }
 
-#kbpjdflqkr .gt_caption {
+#ijfbkhtylz .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#kbpjdflqkr .gt_title {
+#ijfbkhtylz .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -1582,7 +1469,7 @@ font-style: inherit;">TRUE</span>)</span></code></pre></div></div>
   border-bottom-width: 0;
 }
 
-#kbpjdflqkr .gt_subtitle {
+#ijfbkhtylz .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -1594,7 +1481,7 @@ font-style: inherit;">TRUE</span>)</span></code></pre></div></div>
   border-top-width: 0;
 }
 
-#kbpjdflqkr .gt_heading {
+#ijfbkhtylz .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -1606,13 +1493,13 @@ font-style: inherit;">TRUE</span>)</span></code></pre></div></div>
   border-right-color: #D3D3D3;
 }
 
-#kbpjdflqkr .gt_bottom_border {
+#ijfbkhtylz .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#kbpjdflqkr .gt_col_headings {
+#ijfbkhtylz .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1627,7 +1514,7 @@ font-style: inherit;">TRUE</span>)</span></code></pre></div></div>
   border-right-color: #D3D3D3;
 }
 
-#kbpjdflqkr .gt_col_heading {
+#ijfbkhtylz .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1647,7 +1534,7 @@ font-style: inherit;">TRUE</span>)</span></code></pre></div></div>
   overflow-x: hidden;
 }
 
-#kbpjdflqkr .gt_column_spanner_outer {
+#ijfbkhtylz .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1659,15 +1546,15 @@ font-style: inherit;">TRUE</span>)</span></code></pre></div></div>
   padding-right: 4px;
 }
 
-#kbpjdflqkr .gt_column_spanner_outer:first-child {
+#ijfbkhtylz .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#kbpjdflqkr .gt_column_spanner_outer:last-child {
+#ijfbkhtylz .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#kbpjdflqkr .gt_column_spanner {
+#ijfbkhtylz .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -1679,11 +1566,11 @@ font-style: inherit;">TRUE</span>)</span></code></pre></div></div>
   width: 100%;
 }
 
-#kbpjdflqkr .gt_spanner_row {
+#ijfbkhtylz .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#kbpjdflqkr .gt_group_heading {
+#ijfbkhtylz .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1709,7 +1596,7 @@ font-style: inherit;">TRUE</span>)</span></code></pre></div></div>
   text-align: left;
 }
 
-#kbpjdflqkr .gt_empty_group_heading {
+#ijfbkhtylz .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -1724,15 +1611,15 @@ font-style: inherit;">TRUE</span>)</span></code></pre></div></div>
   vertical-align: middle;
 }
 
-#kbpjdflqkr .gt_from_md > :first-child {
+#ijfbkhtylz .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#kbpjdflqkr .gt_from_md > :last-child {
+#ijfbkhtylz .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#kbpjdflqkr .gt_row {
+#ijfbkhtylz .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1751,7 +1638,7 @@ font-style: inherit;">TRUE</span>)</span></code></pre></div></div>
   overflow-x: hidden;
 }
 
-#kbpjdflqkr .gt_stub {
+#ijfbkhtylz .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1764,7 +1651,7 @@ font-style: inherit;">TRUE</span>)</span></code></pre></div></div>
   padding-right: 5px;
 }
 
-#kbpjdflqkr .gt_stub_row_group {
+#ijfbkhtylz .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1778,15 +1665,15 @@ font-style: inherit;">TRUE</span>)</span></code></pre></div></div>
   vertical-align: top;
 }
 
-#kbpjdflqkr .gt_row_group_first td {
+#ijfbkhtylz .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#kbpjdflqkr .gt_row_group_first th {
+#ijfbkhtylz .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#kbpjdflqkr .gt_summary_row {
+#ijfbkhtylz .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1796,16 +1683,16 @@ font-style: inherit;">TRUE</span>)</span></code></pre></div></div>
   padding-right: 5px;
 }
 
-#kbpjdflqkr .gt_first_summary_row {
+#ijfbkhtylz .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#kbpjdflqkr .gt_first_summary_row.thick {
+#ijfbkhtylz .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#kbpjdflqkr .gt_last_summary_row {
+#ijfbkhtylz .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1815,7 +1702,7 @@ font-style: inherit;">TRUE</span>)</span></code></pre></div></div>
   border-bottom-color: #D3D3D3;
 }
 
-#kbpjdflqkr .gt_grand_summary_row {
+#ijfbkhtylz .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1825,7 +1712,7 @@ font-style: inherit;">TRUE</span>)</span></code></pre></div></div>
   padding-right: 5px;
 }
 
-#kbpjdflqkr .gt_first_grand_summary_row {
+#ijfbkhtylz .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1835,7 +1722,7 @@ font-style: inherit;">TRUE</span>)</span></code></pre></div></div>
   border-top-color: #D3D3D3;
 }
 
-#kbpjdflqkr .gt_last_grand_summary_row_top {
+#ijfbkhtylz .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1845,11 +1732,11 @@ font-style: inherit;">TRUE</span>)</span></code></pre></div></div>
   border-bottom-color: #D3D3D3;
 }
 
-#kbpjdflqkr .gt_striped {
+#ijfbkhtylz .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#kbpjdflqkr .gt_table_body {
+#ijfbkhtylz .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1858,7 +1745,7 @@ font-style: inherit;">TRUE</span>)</span></code></pre></div></div>
   border-bottom-color: #D3D3D3;
 }
 
-#kbpjdflqkr .gt_footnotes {
+#ijfbkhtylz .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1872,7 +1759,7 @@ font-style: inherit;">TRUE</span>)</span></code></pre></div></div>
   border-right-color: #D3D3D3;
 }
 
-#kbpjdflqkr .gt_footnote {
+#ijfbkhtylz .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -1881,7 +1768,7 @@ font-style: inherit;">TRUE</span>)</span></code></pre></div></div>
   padding-right: 5px;
 }
 
-#kbpjdflqkr .gt_sourcenotes {
+#ijfbkhtylz .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1895,7 +1782,7 @@ font-style: inherit;">TRUE</span>)</span></code></pre></div></div>
   border-right-color: #D3D3D3;
 }
 
-#kbpjdflqkr .gt_sourcenote {
+#ijfbkhtylz .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -1903,72 +1790,72 @@ font-style: inherit;">TRUE</span>)</span></code></pre></div></div>
   padding-right: 5px;
 }
 
-#kbpjdflqkr .gt_left {
+#ijfbkhtylz .gt_left {
   text-align: left;
 }
 
-#kbpjdflqkr .gt_center {
+#ijfbkhtylz .gt_center {
   text-align: center;
 }
 
-#kbpjdflqkr .gt_right {
+#ijfbkhtylz .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#kbpjdflqkr .gt_font_normal {
+#ijfbkhtylz .gt_font_normal {
   font-weight: normal;
 }
 
-#kbpjdflqkr .gt_font_bold {
+#ijfbkhtylz .gt_font_bold {
   font-weight: bold;
 }
 
-#kbpjdflqkr .gt_font_italic {
+#ijfbkhtylz .gt_font_italic {
   font-style: italic;
 }
 
-#kbpjdflqkr .gt_super {
+#ijfbkhtylz .gt_super {
   font-size: 65%;
 }
 
-#kbpjdflqkr .gt_footnote_marks {
+#ijfbkhtylz .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#kbpjdflqkr .gt_asterisk {
+#ijfbkhtylz .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#kbpjdflqkr .gt_indent_1 {
+#ijfbkhtylz .gt_indent_1 {
   text-indent: 5px;
 }
 
-#kbpjdflqkr .gt_indent_2 {
+#ijfbkhtylz .gt_indent_2 {
   text-indent: 10px;
 }
 
-#kbpjdflqkr .gt_indent_3 {
+#ijfbkhtylz .gt_indent_3 {
   text-indent: 15px;
 }
 
-#kbpjdflqkr .gt_indent_4 {
+#ijfbkhtylz .gt_indent_4 {
   text-indent: 20px;
 }
 
-#kbpjdflqkr .gt_indent_5 {
+#ijfbkhtylz .gt_indent_5 {
   text-indent: 25px;
 }
 
-#kbpjdflqkr .katex-display {
+#ijfbkhtylz .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#kbpjdflqkr div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#ijfbkhtylz div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -1998,10 +1885,10 @@ Design Statistics
 <tr class="gt_col_headings header">
 <th id="ncp" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">ncp</th>
 <th id="alpha" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">alpha</th>
-<th id="n" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">n</th>
+<th id="required_n_c" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">required_n_c</th>
 <th id="power" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" style="border-left-width: 2px; border-left-style: solid; border-left-color: black" scope="col">power</th>
-<th id="p_sign" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">p_sign</th>
-<th id="type_m" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">type_m</th>
+<th id="sign_risk" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">sign_risk</th>
+<th id="exaggeration" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">exaggeration</th>
 <th id="fpr" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">fpr</th>
 </tr>
 </thead>
@@ -2009,91 +1896,91 @@ Design Statistics
 <tr class="odd">
 <td class="gt_row gt_right" headers="ncp">3.4</td>
 <td class="gt_row gt_right" headers="alpha">0.01</td>
-<td class="gt_row gt_right" headers="n">2312</td>
+<td class="gt_row gt_right" headers="required_n_c">2312</td>
 <td class="gt_row gt_right" headers="power" style="border-left-width: 2px; border-left-style: solid; border-left-color: black; background-color: #00FF00; font-weight: bold">0.80</td>
-<td class="gt_row gt_right" headers="p_sign" style="background-color: #00FF00; font-weight: bold">0.00</td>
-<td class="gt_row gt_right" headers="type_m" style="background-color: #00FF00; font-weight: bold">1.11</td>
+<td class="gt_row gt_right" headers="sign_risk" style="background-color: #00FF00; font-weight: bold">0.00</td>
+<td class="gt_row gt_right" headers="exaggeration" style="background-color: #00FF00; font-weight: bold">1.11</td>
 <td class="gt_row gt_right" headers="fpr" style="background-color: #00FF00; font-weight: bold">0.01</td>
 </tr>
 <tr class="even">
 <td class="gt_row gt_right" headers="ncp">2.8</td>
 <td class="gt_row gt_right" headers="alpha">0.05</td>
-<td class="gt_row gt_right" headers="n">1568</td>
+<td class="gt_row gt_right" headers="required_n_c">1568</td>
 <td class="gt_row gt_right" headers="power" style="border-left-width: 2px; border-left-style: solid; border-left-color: black; background-color: #00FF00; font-weight: bold">0.80</td>
-<td class="gt_row gt_right" headers="p_sign" style="background-color: #00FF00; font-weight: bold">0.00</td>
-<td class="gt_row gt_right" headers="type_m">1.13</td>
+<td class="gt_row gt_right" headers="sign_risk" style="background-color: #00FF00; font-weight: bold">0.00</td>
+<td class="gt_row gt_right" headers="exaggeration">1.13</td>
 <td class="gt_row gt_right" headers="fpr" style="background-color: #00FF00; font-weight: bold">0.06</td>
 </tr>
 <tr class="odd">
 <td class="gt_row gt_right" headers="ncp">1.5</td>
 <td class="gt_row gt_right" headers="alpha">0.05</td>
-<td class="gt_row gt_right" headers="n">450</td>
+<td class="gt_row gt_right" headers="required_n_c">450</td>
 <td class="gt_row gt_right" headers="power" style="border-left-width: 2px; border-left-style: solid; border-left-color: black">0.32</td>
-<td class="gt_row gt_right" headers="p_sign" style="background-color: #00FF00; font-weight: bold">0.00</td>
-<td class="gt_row gt_right" headers="type_m">1.74</td>
+<td class="gt_row gt_right" headers="sign_risk" style="background-color: #00FF00; font-weight: bold">0.00</td>
+<td class="gt_row gt_right" headers="exaggeration">1.74</td>
 <td class="gt_row gt_right" headers="fpr" style="background-color: #00FF00; font-weight: bold">0.13</td>
 </tr>
 <tr class="even">
 <td class="gt_row gt_right" headers="ncp">1.5</td>
 <td class="gt_row gt_right" headers="alpha">0.10</td>
-<td class="gt_row gt_right" headers="n">450</td>
+<td class="gt_row gt_right" headers="required_n_c">450</td>
 <td class="gt_row gt_right" headers="power" style="border-left-width: 2px; border-left-style: solid; border-left-color: black">0.44</td>
-<td class="gt_row gt_right" headers="p_sign" style="background-color: #00FF00; font-weight: bold">0.00</td>
-<td class="gt_row gt_right" headers="type_m">1.59</td>
+<td class="gt_row gt_right" headers="sign_risk" style="background-color: #00FF00; font-weight: bold">0.00</td>
+<td class="gt_row gt_right" headers="exaggeration">1.59</td>
 <td class="gt_row gt_right" headers="fpr" style="background-color: #00FF00; font-weight: bold">0.18</td>
 </tr>
 <tr class="odd">
 <td class="gt_row gt_right" headers="ncp">1.5</td>
 <td class="gt_row gt_right" headers="alpha">0.20</td>
-<td class="gt_row gt_right" headers="n">450</td>
+<td class="gt_row gt_right" headers="required_n_c">450</td>
 <td class="gt_row gt_right" headers="power" style="border-left-width: 2px; border-left-style: solid; border-left-color: black">0.59</td>
-<td class="gt_row gt_right" headers="p_sign" style="background-color: #00FF00; font-weight: bold">0.00</td>
-<td class="gt_row gt_right" headers="type_m">1.44</td>
+<td class="gt_row gt_right" headers="sign_risk" style="background-color: #00FF00; font-weight: bold">0.00</td>
+<td class="gt_row gt_right" headers="exaggeration">1.44</td>
 <td class="gt_row gt_right" headers="fpr">0.25</td>
 </tr>
 <tr class="even">
 <td class="gt_row gt_right" headers="ncp">1.5</td>
 <td class="gt_row gt_right" headers="alpha">0.50</td>
-<td class="gt_row gt_right" headers="n">450</td>
+<td class="gt_row gt_right" headers="required_n_c">450</td>
 <td class="gt_row gt_right" headers="power" style="border-left-width: 2px; border-left-style: solid; border-left-color: black; background-color: #00FF00; font-weight: bold">0.81</td>
-<td class="gt_row gt_right" headers="p_sign">0.02</td>
-<td class="gt_row gt_right" headers="type_m">1.24</td>
+<td class="gt_row gt_right" headers="sign_risk">0.02</td>
+<td class="gt_row gt_right" headers="exaggeration">1.24</td>
 <td class="gt_row gt_right" headers="fpr">0.38</td>
 </tr>
 <tr class="odd">
 <td class="gt_row gt_right" headers="ncp">2.0</td>
 <td class="gt_row gt_right" headers="alpha">0.05</td>
-<td class="gt_row gt_right" headers="n">800</td>
+<td class="gt_row gt_right" headers="required_n_c">800</td>
 <td class="gt_row gt_right" headers="power" style="border-left-width: 2px; border-left-style: solid; border-left-color: black">0.52</td>
-<td class="gt_row gt_right" headers="p_sign" style="background-color: #00FF00; font-weight: bold">0.00</td>
-<td class="gt_row gt_right" headers="type_m">1.39</td>
+<td class="gt_row gt_right" headers="sign_risk" style="background-color: #00FF00; font-weight: bold">0.00</td>
+<td class="gt_row gt_right" headers="exaggeration">1.39</td>
 <td class="gt_row gt_right" headers="fpr" style="background-color: #00FF00; font-weight: bold">0.09</td>
 </tr>
 <tr class="even">
 <td class="gt_row gt_right" headers="ncp">2.0</td>
 <td class="gt_row gt_right" headers="alpha">0.10</td>
-<td class="gt_row gt_right" headers="n">800</td>
+<td class="gt_row gt_right" headers="required_n_c">800</td>
 <td class="gt_row gt_right" headers="power" style="border-left-width: 2px; border-left-style: solid; border-left-color: black">0.64</td>
-<td class="gt_row gt_right" headers="p_sign" style="background-color: #00FF00; font-weight: bold">0.00</td>
-<td class="gt_row gt_right" headers="type_m">1.29</td>
+<td class="gt_row gt_right" headers="sign_risk" style="background-color: #00FF00; font-weight: bold">0.00</td>
+<td class="gt_row gt_right" headers="exaggeration">1.29</td>
 <td class="gt_row gt_right" headers="fpr" style="background-color: #00FF00; font-weight: bold">0.14</td>
 </tr>
 <tr class="odd">
 <td class="gt_row gt_right" headers="ncp">2.0</td>
 <td class="gt_row gt_right" headers="alpha">0.20</td>
-<td class="gt_row gt_right" headers="n">800</td>
+<td class="gt_row gt_right" headers="required_n_c">800</td>
 <td class="gt_row gt_right" headers="power" style="border-left-width: 2px; border-left-style: solid; border-left-color: black; background-color: #00FF00; font-weight: bold">0.76</td>
-<td class="gt_row gt_right" headers="p_sign" style="background-color: #00FF00; font-weight: bold">0.00</td>
-<td class="gt_row gt_right" headers="type_m">1.20</td>
+<td class="gt_row gt_right" headers="sign_risk" style="background-color: #00FF00; font-weight: bold">0.00</td>
+<td class="gt_row gt_right" headers="exaggeration">1.20</td>
 <td class="gt_row gt_right" headers="fpr" style="background-color: #00FF00; font-weight: bold">0.21</td>
 </tr>
 <tr class="even">
 <td class="gt_row gt_right" headers="ncp">2.0</td>
 <td class="gt_row gt_right" headers="alpha">0.50</td>
-<td class="gt_row gt_right" headers="n">800</td>
+<td class="gt_row gt_right" headers="required_n_c">800</td>
 <td class="gt_row gt_right" headers="power" style="border-left-width: 2px; border-left-style: solid; border-left-color: black; background-color: #00FF00; font-weight: bold">0.91</td>
-<td class="gt_row gt_right" headers="p_sign" style="background-color: #00FF00; font-weight: bold">0.00</td>
-<td class="gt_row gt_right" headers="type_m" style="background-color: #00FF00; font-weight: bold">1.09</td>
+<td class="gt_row gt_right" headers="sign_risk" style="background-color: #00FF00; font-weight: bold">0.00</td>
+<td class="gt_row gt_right" headers="exaggeration" style="background-color: #00FF00; font-weight: bold">1.09</td>
 <td class="gt_row gt_right" headers="fpr">0.35</td>
 </tr>
 </tbody>
@@ -2107,7 +1994,7 @@ Design Statistics
 <section id="references" class="level1">
 <h1>References</h1>
 <ol type="1">
-<li>https://www.microsoft.com/en-us/research/wp-content/uploads/2020/09/LuQiuDeng-BJMSP2019.pdf</li>
+<li><a href="https://www.microsoft.com/en-us/research/wp-content/uploads/2020/09/LuQiuDeng-BJMSP2019.pdf">A Note on Type S/M Errors in Hypothesis Testing</a></li>
 </ol>
 
 
@@ -2224,7 +2111,7 @@ Design Statistics
 <p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0AZ%20%7C%20H_A%20&amp;=%20%5Cfrac%7B%5Cbar%7B%5CDelta%7D%7D%7Bse(%5Cbar%7B%5CDelta%7D)%7D%20%5Csim%20N(%5Cfrac%7Bk%7D%7Bse(%5Cbar%7B%5CDelta%7D)%7D,1)%20%5C%5C%0A%5Cend%7Balign%7D"></p>
 <p>Now we revisit the rejection rule: reject when <img src="https://latex.codecogs.com/png.latex?%7CZ%7C%20%5Cgeq%20z_%7B1-%5Calpha/2%7D">. Power is the probability of triggering the rejection rule when <img src="https://latex.codecogs.com/png.latex?H_A"> is true, so</p>
 <p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0APower%20&amp;=%20P(%7CZ%7C%20%5Cgeq%20z_%7B1-%5Calpha/2%7D%20%7C%20Z%20%5Csim%20N(%5Cfrac%7Bk%7D%7Bse(%5Cbar%7B%5CDelta%7D)%7D,%201))%0A%5Cend%7Balign%7D"></p>
-<p>Let <img src="https://latex.codecogs.com/png.latex?%5Cdelta%20=%20%5Cfrac%7B%5CDelta%20%7C%20H_A%7D%7Bse(%5Cbar%7B%5CDelta%7D)%7D"> be the noncentrality parameter, using the effect size we would like to detect under <img src="https://latex.codecogs.com/png.latex?H_A">. The final solution for power is <img src="https://latex.codecogs.com/png.latex?%0A%5Cboxed%7B%5Ctext%7BPower%7D%20=%20%5CPhi(%5Cdelta%20-%20z_%7B1-%5Calpha/2%7D)%20+%20%5CPhi(-%5Cdelta%20-%20z_%7B1-%5Calpha/2%7D)%7D%0A"></p>
+<p>Let <img src="https://latex.codecogs.com/png.latex?%5Cdelta%20=%20%5Cfrac%7B%5CDelta%20%7C%20H_A%7D%7Bse(%5Cbar%7B%5CDelta%7D)%7D"> be the noncentrality parameter (ncp), using the anticipated effect size we would like to detect under <img src="https://latex.codecogs.com/png.latex?H_A">. The ncp is a parameter we will revisit many times. The final solution for power is <img src="https://latex.codecogs.com/png.latex?%0A%5Cboxed%7B%5Ctext%7BPower%7D%20=%20%5CPhi(%5Cdelta%20-%20z_%7B1-%5Calpha/2%7D)%20+%20%5CPhi(-%5Cdelta%20-%20z_%7B1-%5Calpha/2%7D)%7D%0A"></p>
 <p>Using first principles, we can implement code as</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1">treatment_effect <span class="ot" style="color: #003B4F;
@@ -2499,7 +2386,7 @@ background-color: null;
 font-style: inherit;">mutate</span>(</span>
 <span id="cb6-11">    <span class="at" style="color: #657422;
 background-color: null;
-font-style: inherit;">t =</span> delta <span class="sc" style="color: #5E5E5E;
+font-style: inherit;">ncp =</span> delta <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">/</span> se,</span>
 <span id="cb6-12">    <span class="at" style="color: #657422;
@@ -2582,7 +2469,7 @@ font-style: inherit;">ggplot</span>(<span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">aes</span>(<span class="at" style="color: #657422;
 background-color: null;
-font-style: inherit;">x =</span> t, <span class="at" style="color: #657422;
+font-style: inherit;">x =</span> ncp, <span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">y =</span> power, <span class="at" style="color: #657422;
 background-color: null;
@@ -2625,9 +2512,9 @@ font-style: inherit;">16</span>)</span></code></pre></div></div>
 <p>This equation about the CDF can be simplified. The noncentrality parameter is distributed <img src="https://latex.codecogs.com/png.latex?%5Cdelta%20%5Csim%20N(0,%201)">, so it being greater than or equal to <img src="https://latex.codecogs.com/png.latex?z_%7B1-%5Calpha/2%7D"> is actually just <img src="https://latex.codecogs.com/png.latex?1%20-%20%5CPhi(z_%7B1-%5Calpha/2%7D%20-%20%5Cdelta)">. Then the derivation for the MDE is</p>
 <p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0A%5CPhi(z_%7B1-%5Calpha/2%7D%20-%20%5Cdelta)%20&amp;=%20%5Cbeta%20%5C%5C%0Az_%7B1-%5Calpha/2%7D%20-%20%5Cdelta%20&amp;=%20z_%7B%5Cbeta%7D%20%5C%5C%0A%5Cdelta%20&amp;=%20z_%7B1-%5Calpha/2%7D%20-%20z_%7B%5Cbeta%7D%20%5C%5C%0A%5CDelta%20&amp;=%20%5Cboxed%7B(z_%7B1-%5Calpha/2%7D%20-%20z_%7B%5Cbeta%7D)%20%5Ccdot%20SE%7D%0A%5Cend%7Balign%7D"></p>
 <p>Using common numbers, <img src="https://latex.codecogs.com/png.latex?%5Calpha%20=%200.05">, <img src="https://latex.codecogs.com/png.latex?%5Cbeta%20=%200.2">, the rule of thumb for MDE is</p>
-<p><img src="https://latex.codecogs.com/png.latex?%0AMDE%20=%202.8%20%5Ccdot%20SE%0A"></p>
+<p><img src="https://latex.codecogs.com/png.latex?%0AMDE%20=%202.8%20%5Ccdot%20SE%0A"> or equivalently we need a ncp of <img src="https://latex.codecogs.com/png.latex?2.8">.</p>
 <p>Let’s unpack this common rule of thumb explicitly. It says that the smallest effect size we can detect while ensuring an 80% power is <img src="https://latex.codecogs.com/png.latex?2.8%20%5Ccdot%20se(%5Cbar%7B%5CDelta%7D)">. (The SE here is the residual standard error after controlling for other variables.)</p>
-<p>This looks like a similar rule of thumb related to rejecting the null: reject if the effect size is larger than 1.96 SE. This separate rule of thumb can be very confusing. It describes when can we flag a result as stat sig while ensuring a different property: that under the null hypothesis there is less than a 5% chance of generating this effect by random. This rule of thumb is offering a different guarantee, not one about power. Ensuring 80% power at a specific effect size simply says that there is a good chance we can detect these effects, but it does not make it impossible. Even using power = 50% we will correctly flag some results as stat sig. (See multiple online discussions like this <a href="https://stats.stackexchange.com/questions/538590/reconciling-the-minimum-detectable-effect-calculation-with-the-experiment-result">one</a>) This is why we can reject at 1.96 SE, even though the minimum detectable effect using power = 80% is 2.8 SE. However, it is noteworthy that the scientific community is advocating for rejecting at 2.8 SE (See <a href="https://escholarship.org/content/qt1jx6091g/qt1jx6091g.pdf">Redefine Statistical Significance</a>)</p>
+<p>This looks like a similar rule of thumb related to rejecting the null: reject if the effect size is larger than 1.96 SE. This separate rule of thumb can be very confusing - why are there two different constants of 1.96 and 2.8? This rule describes when can we flag a result as stat sig while ensuring a different property: that under the null hypothesis there is less than a 5% chance of generating this effect by random. This rule of thumb is offering a different guarantee, not one about power. Ensuring 80% power at a specific effect size simply says that there is a good chance we can detect these effects, but it does not make it impossible. Even using power = 50% we will correctly flag some results as stat sig. (See multiple online discussions like this <a href="https://stats.stackexchange.com/questions/538590/reconciling-the-minimum-detectable-effect-calculation-with-the-experiment-result">one</a>) 1.96 SE is a rejection rule after the test executes, while 2.8 SE is a rule for planning to ensure 80% power. However, it is noteworthy that the scientific community is advocating for rejecting at 2.8 SE, or equivalently a p value of 0.005. (See <a href="https://escholarship.org/content/qt1jx6091g/qt1jx6091g.pdf">Redefine Statistical Significance</a>)</p>
 </section>
 <section id="sample-size-calculator" class="level1">
 <h1>Sample Size Calculator</h1>

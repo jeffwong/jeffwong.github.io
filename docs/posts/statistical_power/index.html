@@ -253,7 +253,7 @@ Z | H_A &amp;= \frac{\bar{\Delta}}{se(\bar{\Delta})} \sim N(\frac{k}{se(\bar{\De
 <p><span class="math display">\[\begin{align}
 Power &amp;= P(|Z| \geq z_{1-\alpha/2} | Z \sim N(\frac{k}{se(\bar{\Delta})}, 1))
 \end{align}\]</span></p>
-<p>Let <span class="math inline">\(\delta = \frac{\Delta | H_A}{se(\bar{\Delta})}\)</span> be the noncentrality parameter, using the effect size we would like to detect under <span class="math inline">\(H_A\)</span>. The final solution for power is <span class="math display">\[
+<p>Let <span class="math inline">\(\delta = \frac{\Delta | H_A}{se(\bar{\Delta})}\)</span> be the noncentrality parameter (ncp), using the anticipated effect size we would like to detect under <span class="math inline">\(H_A\)</span>. The ncp is a parameter we will revisit many times. The final solution for power is <span class="math display">\[
 \boxed{\text{Power} = \Phi(\delta - z_{1-\alpha/2}) + \Phi(-\delta - z_{1-\alpha/2})}
 \]</span></p>
 <p>Using first principles, we can implement code as</p>
@@ -333,7 +333,7 @@ NOTE: n is number in *each* group</code></pre>
 <span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>})</span>
 <span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="fu">cbind</span>(params, <span class="at">power =</span> output) <span class="sc">%&gt;%</span></span>
 <span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">t =</span> delta <span class="sc">/</span> se,</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">ncp =</span> delta <span class="sc">/</span> se,</span>
 <span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">crit =</span> <span class="fu">qnorm</span>(<span class="dv">1</span><span class="sc">-</span>alpha<span class="sc">/</span><span class="dv">2</span>)</span>
 <span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
 <span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
@@ -348,7 +348,7 @@ NOTE: n is number in *each* group</code></pre>
 <span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>    <span class="at">incremental_power =</span> power <span class="sc">-</span> power_prev</span>
 <span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
 <span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(incremental_power)) <span class="sc">%&gt;%</span> </span>
-<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> t, <span class="at">y =</span> power, <span class="at">color =</span> is_stat_sig)) <span class="sc">+</span></span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> ncp, <span class="at">y =</span> power, <span class="at">color =</span> is_stat_sig)) <span class="sc">+</span></span>
 <span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span></span>
 <span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span> alpha) <span class="sc">+</span></span>
 <span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>(<span class="at">base_size =</span> <span class="dv">16</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -378,9 +378,9 @@ z_{1-\alpha/2} - \delta &amp;= z_{\beta} \\
 <p>Using common numbers, <span class="math inline">\(\alpha = 0.05\)</span>, <span class="math inline">\(\beta = 0.2\)</span>, the rule of thumb for MDE is</p>
 <p><span class="math display">\[
 MDE = 2.8 \cdot SE
-\]</span></p>
+\]</span> or equivalently we need a ncp of <span class="math inline">\(2.8\)</span>.</p>
 <p>Let’s unpack this common rule of thumb explicitly. It says that the smallest effect size we can detect while ensuring an 80% power is <span class="math inline">\(2.8 \cdot se(\bar{\Delta})\)</span>. (The SE here is the residual standard error after controlling for other variables.)</p>
-<p>This looks like a similar rule of thumb related to rejecting the null: reject if the effect size is larger than 1.96 SE. This separate rule of thumb can be very confusing. It describes when can we flag a result as stat sig while ensuring a different property: that under the null hypothesis there is less than a 5% chance of generating this effect by random. This rule of thumb is offering a different guarantee, not one about power. Ensuring 80% power at a specific effect size simply says that there is a good chance we can detect these effects, but it does not make it impossible. Even using power = 50% we will correctly flag some results as stat sig. (See multiple online discussions like this <a href="https://stats.stackexchange.com/questions/538590/reconciling-the-minimum-detectable-effect-calculation-with-the-experiment-result">one</a>) This is why we can reject at 1.96 SE, even though the minimum detectable effect using power = 80% is 2.8 SE. However, it is noteworthy that the scientific community is advocating for rejecting at 2.8 SE (See <a href="https://escholarship.org/content/qt1jx6091g/qt1jx6091g.pdf">Redefine Statistical Significance</a>)</p>
+<p>This looks like a similar rule of thumb related to rejecting the null: reject if the effect size is larger than 1.96 SE. This separate rule of thumb can be very confusing - why are there two different constants of 1.96 and 2.8? This rule describes when can we flag a result as stat sig while ensuring a different property: that under the null hypothesis there is less than a 5% chance of generating this effect by random. This rule of thumb is offering a different guarantee, not one about power. Ensuring 80% power at a specific effect size simply says that there is a good chance we can detect these effects, but it does not make it impossible. Even using power = 50% we will correctly flag some results as stat sig. (See multiple online discussions like this <a href="https://stats.stackexchange.com/questions/538590/reconciling-the-minimum-detectable-effect-calculation-with-the-experiment-result">one</a>) 1.96 SE is a rejection rule after the test executes, while 2.8 SE is a rule for planning to ensure 80% power. However, it is noteworthy that the scientific community is advocating for rejecting at 2.8 SE, or equivalently a p value of 0.005. (See <a href="https://escholarship.org/content/qt1jx6091g/qt1jx6091g.pdf">Redefine Statistical Significance</a>)</p>
 </section>
 <section id="sample-size-calculator" class="level1">
 <h1>Sample Size Calculator</h1>

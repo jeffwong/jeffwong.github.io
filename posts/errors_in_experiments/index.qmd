@@ -338,7 +338,7 @@ rbind(
     title = "Experimentation Design Statistics"
   ) %>%
   tab_spanner(label = "Design Statistics", columns = c(power, sign_risk, exaggeration, fpr)) %>%
-  tab_spanner(label = "Design Inputs", columns = c(ncp, alpha, n)) %>% 
+  tab_spanner(label = "Design Inputs", columns = c(ncp, alpha, required_n_c)) %>% 
   tab_style(
     style = cell_borders(
       sides  = "left",
@@ -399,4 +399,4 @@ rbind(
 
 # References
 
-1. https://www.microsoft.com/en-us/research/wp-content/uploads/2020/09/LuQiuDeng-BJMSP2019.pdf
+1. [A Note on Type S/M Errors in Hypothesis Testing](https://www.microsoft.com/en-us/research/wp-content/uploads/2020/09/LuQiuDeng-BJMSP2019.pdf)

@@ -1,0 +1,402 @@
+---
+title: "Errors in Experiments"
+author: "Jeffrey Wong"
+date: "2025-09-15"
+categories: [experimentation, statistics]
+---
+
+```{r setup, include=FALSE}
+require(purrr)
+require(ggplot2)
+require(dplyr)
+require(tidyr)
+require(gt)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+An experiment can make many errors. What error do we care about?
+How do we design an experiment that can make guarantees that
+those errors are small? 
+While a randomized and controlled experiment lets us report
+an unbiased estimate of the treatment effect, the reported effect
+may still
+
+1. Have the wrong sign.
+2. Have an exagerated effect size.
+3. Be a false positive.
+
+We'll describe each case from first principles, and how to design an experiment
+when one of the errors is especially important.
+
+# Sign Error
+
+[Andrew Gelman](https://sites.stat.columbia.edu/gelman/research/published/retropower_final.pdf)
+says that we should not only plan an experiment for power,
+we should also plan to control for a type S error as well as an exaggeration 
+factor. A type S error is when we flag stat sig, but the estimated effect has the
+wrong sign. The probability of a type S error conditions on stat sig,
+where the denominator is power and the numerator has
+
+\begin{align}
+Power &= \Phi(\delta - z_{1-\alpha/2}) + \Phi(-\delta - z_{1-\alpha/2}) \\
+P(\text{Sign Error} | Sig) &= \frac{\Phi(-\delta - z_{1-\alpha/2})}{\Phi(\delta - z_{1-\alpha/2}) + \Phi(-\delta - z_{1-\alpha/2})}
+\end{align}
+
+Power is a function of the ncp, and $\alpha$. The probability
+of a sign error is a function of the same variables. So they can be computed
+at the same time. Below we will show that the exaggeration ratio can also
+be computed at the same time.
+
+# Exaggeration (Type M Error)
+
+When we publish only stat sig results, we run into a winner's curse
+problem. The results will tend to be exaggerated. The mere fact that a collection
+of results are all stat sig is correlated with the results all having large effect
+sizes. Remember that the underlying effect has randomness around it, and can appear
+in data as a large effect or a small effect. Conditioning our reporting
+on stat sig results means we are masking the small effect, creating the incorrect
+perception that the underlying effect is large. The exaggeration factor tries to
+measure the difference between the reported effect and the underlying effect.
+
+Say that we measure a treatment effect $\hat{\Delta}$ with standard error $se(\hat{\Delta})$.
+Without loss of generality, say $\Delta > 0$, and since we condition on stat sig we also
+have $Z \geq z_{1 - \alpha/2}$. The estimated effect size can be expressed in terms of
+standard errors $\hat{\Delta} = Z se(\hat{\Delta})$. The exaggeration is
+
+\begin{align}
+M &= E[\frac{\hat{\Delta}}{\Delta} | Z \geq z_{1 - \alpha/2}]\\
+  &= \frac{se(\hat{\Delta})}{\Delta} E[Z | Z \geq z_{1 - \alpha/2}]
+\end{align}
+
+We know that $Z \sim N(ncp, 1)$ itself is a normally distributed variable, and the portion of this
+distribution with $Z \geq z_{1 - \alpha/2}$ is a truncated normal. The expectation
+of this truncated normal is $ncp + \frac{\phi(z_{1-\alpha/2} - ncp)}{1 - \Phi(z_{1-\alpha/2} - ncp)}$.
+So the final expression for the exaggeration is
+
+$$
+\boxed{M = 1 + \frac{\phi(z_{1-\alpha/2} - ncp)}{ncp(1 - \Phi(z_{1-\alpha/2} - ncp)}}
+$$
+
+An interesting thing to note is that the exaggeration decreases when $\alpha$ increases.
+When we open up $\alpha$ and allow more results to be flagged as stat sig,
+then the winner's curse problem naturally dissipates, reducing the exaggeration.
+
+Type M is also a function of only the ncp and $\alpha$, so can be computed at the same
+time as power and type S.
+
+```{r}
+retrodesign = function(ncp, alpha = .05) {
+  crit = qnorm(1-alpha/2)
+  power = pnorm(-crit - ncp) + pnorm(-crit + ncp)
+  sign_risk = pnorm(-crit - ncp) / power
+  exaggeration_numerator = dnorm(crit - ncp)
+  exaggeration_denominator = ncp * (1 - pnorm(crit - ncp))
+  data.frame(
+    ncp = ncp, alpha = alpha,
+    power = power, sign_risk = sign_risk, exaggeration = 1 + exaggeration_numerator / exaggeration_denominator
+  )
+}
+```
+
+# False Positive Risk
+
+We can use the formula for [false positive risk](https://exp-platform.com/abtestingintuitionbusters/) (FPR)
+to estimate a probability that a stat sig result is actually a false positive.
+For a test with $\alpha = 0.05$, 80% power,  and a 80% chance that the 
+null hypothesis is true, the FPR is 20%
+This is an important risk to understand, and it is frequently confused with $\alpha$.
+Many people think that $\alpha$ controls the false positive rate among significant results,
+but actually what it controls is a false positive rate under the null hypothesis.
+The FPR is actually what most people think of when they think of the false positive risk.
+
+\begin{align}
+\text{P(H0 is true | stat sig)} &= \text{P(stat sig | H0 is true)} \cdot \frac{\text{P(H0 is true)}}{\text{P(stat sig)}} \\
+  &= \frac{\alpha \text{P(H0 is true)}}{\alpha \text{P(H0 is true)} + (1 - \beta) (1 - \text{P(H0 is true)})}
+\end{align}
+
+Unlike type S or type M functions, FPR is normally written in terms of $\alpha$ and power.
+However, power is a function of $\alpha$ and ncp. So we can cast FPR to look like it has
+similar arguments to type S and type M functions. This casting is going to be very
+convenient later.
+
+```{r}
+# Traditional implementation of fpr
+fpr_traditional = function(prior_h0_true, alpha = 0.05, power = 0.8) {
+  numerator = alpha * prior_h0_true
+  denominator = alpha * prior_h0_true + power * (1 - prior_h0_true)
+  numerator/denominator
+}
+# More convenient implementation of fpr
+fpr_alternative = function(ncp, prior_h0_true, alpha = 0.05) {
+  crit = qnorm(1-alpha/2)
+  power = pnorm(-crit - ncp) + pnorm(-crit + ncp)
+  numerator = alpha * prior_h0_true
+  denominator = alpha * prior_h0_true + power * (1 - prior_h0_true)
+  numerator/denominator
+}
+
+data.frame(
+  prior_h0_true = seq(from = 0, to = 1, by = 0.01)
+) %>%
+  mutate(
+    fpr = fpr_traditional(prior_h0_true)
+  ) %>%
+  ggplot(
+    aes(x = prior_h0_true, y = fpr)
+  ) +
+  geom_point() +
+  theme_bw(base_size = 16) +
+  xlab("Prior that H0 is True") +
+  ylab("False Positive Risk")
+```
+
+# Contrast in Experimental Design
+
+So far we have described many different types of errors that can occur
+while designing an experiment. We tend to take for granted why conventional
+wisdom says to plan a test to achieve 80% power while holding $\alpha = 0.05$.
+We will explore why those values were chosen and what properties do they yield.
+
+Practitioners tend to say we need to design a high powered test.
+If we wanted to simply achieve high power, we could easily achieve that by setting
+$\alpha = 1$. Then every result, regardless of effect size, is flagged as stat sig
+with power = 100%. However, there would be many false positives, and there would
+be no clear understanding of which results to report. So power, false positives,
+sign errors, and exaggeration all need to be balanced. Is pinning $\alpha = 0.05$
+and power = 80% the right balance? We will explore that.
+
+To make the study simple, we note that power, FPR, sign errors, and exaggeration
+can all be computed by using the planned ncp, $\alpha$, and the prior that
+the null is true. We will scan 3 inputs and study how the 4 design statistics vary.
+
+```{r}
+exp_design_statistics = function(ncp = 2.8, alpha = 0.05, prior_h0_true = 0.5) {
+  cbind(
+    retrodesign(ncp = ncp, alpha = alpha),
+    fpr = fpr_alternative(ncp = ncp, prior_h0_true = prior_h0_true, alpha = alpha)
+  ) %>%
+    mutate(
+      required_n_c = ncp^2 * 1 * (1 + 1/1) / (.1^2)
+    )
+}
+```
+
+## Traditional Designs
+
+Say that we want to be able to detect a effect of 0.1.
+The standard deviation of the outcome is 1.
+We pin $\alpha = 0.05$ and $\beta = 0.2$.
+Data is randomly split 50/50 between treatment and control.
+
+The amount of data needed was described in 
+[Foundations of Statistical Power](https://jeffwong.github.io/posts/statistical_power/) 
+
+$$n_C = n_T = 2 \frac{(z_{1-\alpha/2} - z_{\beta})^2 \sigma^2}{MDE^2}$$
+
+which produces a $n_C + n_T \approx 32 \frac{1}{(.1)^2} = 3200$
+To confirm this design has 80% power, we can verify in code
+
+```{r}
+n_c = 1600
+k = 1
+delta = 0.1
+alpha = 0.05
+sigma2 = 1
+
+pooled_se = sqrt(sigma2 / n_c * (1 + 1/k))
+pooled_ncp = delta / pooled_se
+
+crit = qnorm(1-alpha/2)
+power = pnorm(-crit - pooled_ncp) + (pnorm(-crit + pooled_ncp))
+print(power)
+```
+
+We can learn much more about this particular design other than that it achieves
+80% power. It also has a $\approx 0$% sign error rate, an exaggeration
+of $1.125$ and false positive risk of 6% when the prior for the null is 50/50.
+This is a good design.
+
+```{r}
+exp_design_statistics(ncp = 2.8, alpha = 0.05, prior_h0_true = 0.5)
+```
+
+However there are other configurations that can also yield 80% power. If we
+allow $\alpha$ to vary, then any configuration that yields an ncp of $(z_{1 - \alpha/2} - z_\beta)$ will also achieve 80%.
+We want to explore other configurations and see how type S errors, exaggeration, and fpr change.
+
+## Alternative Design
+
+In this section we explore alternative configurations to experimental design.
+We will let $\alpha$ and the ncp vary, and compute the changes to power, FPR,
+type S error rates, and exaggeration. We will do this with a 50/50 prior
+that the null is true. The results are charted below.
+
+```{r}
+exp_design_statistics_sweep = map_dfr(seq(from = 0, to = 3, by = .1), function(ncp) {
+  map_dfr(seq(from = 0.05, to = .25, by = 0.05), function(alpha) {
+    exp_design_statistics(ncp, alpha, prior_h0_true = 0.5)
+  })
+}) %>%
+  pivot_longer(
+    c(power, sign_risk, exaggeration, fpr)
+  )
+
+exp_design_statistics_sweep  %>%
+  filter(name == 'power') %>%
+  ggplot(aes(x = ncp, y = value, color = as.factor(alpha))) +
+  geom_point() +
+  geom_smooth() +
+  geom_hline(yintercept = 0.8, linetype = 'dashed') +
+  theme_bw(base_size = 16) +
+  theme(legend.position = 'top') +
+  guides(color=guide_legend(title="alpha")) +
+  ylab("Power")
+
+exp_design_statistics_sweep  %>%
+  filter(name == 'sign_risk') %>%
+  ggplot(aes(x = ncp, y = value, color = as.factor(alpha))) +
+  geom_point() +
+  geom_smooth() +
+  geom_hline(yintercept = 0.01, linetype = 'dashed') +
+  theme_bw(base_size = 16) +
+  theme(legend.position = 'top') +
+  guides(color=guide_legend(title="alpha")) +
+  ylab("Sign Error Risk")
+
+exp_design_statistics_sweep  %>%
+  filter(name == 'fpr') %>%
+  ggplot(aes(x = ncp, y = value, color = as.factor(alpha))) +
+  geom_point() +
+  geom_smooth() +
+  geom_hline(yintercept = 0.2, linetype = 'dashed') +
+  geom_hline(yintercept = 0.1, linetype = 'dashed') +
+  theme_bw(base_size = 16) +
+  theme(legend.position = 'top') +
+  guides(color=guide_legend(title="alpha")) +
+  ylab("False Positive Risk")
+
+exp_design_statistics_sweep  %>%
+  filter(name == 'exaggeration') %>%
+  ggplot(aes(x = ncp, y = value, color = as.factor(alpha))) +
+  geom_point() +
+  #geom_smooth() +
+  geom_hline(yintercept = 1.1, linetype = 'dashed') +
+  theme_bw(base_size = 16) +
+  theme(legend.position = 'top') +
+  guides(color=guide_legend(title="alpha")) +
+  ylab("Exaggeration")
+```
+There are patterns in the charts that are noteworthy:
+
+1. Power increases as ncp increases. Power also increases as $\alpha$ increases.
+Power is very sensitive to ncp in the range $ncp \in [0.5, 2.5]$,
+small improvements to the ncp can change power by a lot.
+In order to achieve 80% statistical power, we must plan for $ncp \geq 1.5$ or
+higher depending on $\alpha$.\\
+2. Once $ncp \geq 1.5$, sign error rates are fairly small, regardless of $\alpha$.
+3. FPR decreases as ncp increases. FPR also increases when $\alpha$ increases,
+holding ncp constant.
+When $\alpha$ is small, the FPR is sensitive to small changes in the ncp,
+but FPR can be flat when $\alpha$ is large.
+To have $FPR \leq 0.2$, we need $ncp \geq 1.1$ or higher depending on $\alpha$.
+Similarly to have $FPR \leq 0.1$ we need $ncp \geq 1.9$ or higher.
+4. Exaggeration decreases as ncp increases. It also decreases when $\alpha$ increases.
+Achieving $M \leq 1.1$ can be very hard, requiring ncp to be between 2.0 and 2.8.
+At high values of ncp, exaggeration is not sensitive to $\alpha$.
+
+All of these charts are nonlinear curves. There are diminishing returns to
+increasing the ncp. Yet, a doubling of the ncp requires a 4x in the data volume,
+since $ncp = \frac{\Delta}{se(\hat{\Delta})}$. Below is a table of 
+configurations that range from "good" to "reasonably acceptable" to "bad", and
+how data volume vaaries the quality.
+
+The standard practice of $\alpha = 0.05$, and power = 80%, is a good practice.
+Many others actually even advocate for more data. However, it is important
+to understand how we arrived here, and whether there is flexibility
+when designing your own experiment. Understanding the first principles
+is crucial.
+
+```{r}
+rbind(
+  # Ideal world
+  exp_design_statistics(3.4, 0.01, prior_h0_true = 0.5),
+  # status quo
+  exp_design_statistics(2.8, 0.05, prior_h0_true = 0.5),
+  #
+  exp_design_statistics(1.5, 0.05, prior_h0_true = 0.5),
+  exp_design_statistics(1.5, 0.1, prior_h0_true = 0.5),
+  exp_design_statistics(1.5, 0.2, prior_h0_true = 0.5),
+  exp_design_statistics(1.5, 0.5, prior_h0_true = 0.5),
+  #
+  exp_design_statistics(2, 0.05, prior_h0_true = 0.5),
+  exp_design_statistics(2, 0.1, prior_h0_true = 0.5),
+  exp_design_statistics(2, 0.2, prior_h0_true = 0.5),
+  exp_design_statistics(2, 0.5, prior_h0_true = 0.5)
+) %>%
+  gt() %>%
+  tab_header(
+    title = "Experimentation Design Statistics"
+  ) %>%
+  tab_spanner(label = "Design Statistics", columns = c(power, sign_risk, exaggeration, fpr)) %>%
+  tab_spanner(label = "Design Inputs", columns = c(ncp, alpha, n)) %>% 
+  tab_style(
+    style = cell_borders(
+      sides  = "left",
+      color  = "black",
+      weight = px(2)
+    ),
+    locations = list(
+      cells_body(columns = power),
+      cells_column_labels(columns = power)
+    )
+  ) %>%
+  # Formatting for power
+  tab_style(
+    style = list(
+      cell_fill(color = "green"),
+      cell_text(weight = "bold")
+    ),
+    locations = cells_body(
+      columns = power,
+      rows    = power > .75
+    )
+  ) %>%
+  # Formatting for p sign
+  tab_style(
+    style = list(
+      cell_fill(color = "green"),
+      cell_text(weight = "bold")
+    ),
+    locations = cells_body(
+      columns = sign_risk,
+      rows    = sign_risk < .01
+    )
+  ) %>%
+  # Formatting for type m
+  tab_style(
+    style = list(
+      cell_fill(color = "green"),
+      cell_text(weight = "bold")
+    ),
+    locations = cells_body(
+      columns = exaggeration,
+      rows    = exaggeration < 1.12
+    )
+  ) %>%
+  # Formatting for ppr
+  tab_style(
+    style = list(
+      cell_fill(color = "green"),
+      cell_text(weight = "bold")
+    ),
+    locations = cells_body(
+      columns = fpr,
+      rows    = fpr < .22
+    )
+  ) %>%
+  fmt_number(columns = c(power, sign_risk, exaggeration, fpr), suffixing = TRUE)
+```
+
+# References
+
+1. https://www.microsoft.com/en-us/research/wp-content/uploads/2020/09/LuQiuDeng-BJMSP2019.pdf

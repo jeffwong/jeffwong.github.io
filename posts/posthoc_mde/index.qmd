@@ -1,0 +1,10 @@
+---
+title: "Posthoc MDE"
+author: "Jeffrey Wong"
+date: "2025-09-15"
+categories: [experimentation, statistics]
+---
+
+# References
+
+1. https://blogs.worldbank.org/en/impactevaluations/why-ex-post-power-using-estimated-effect-sizes-bad-ex-post-mde-not

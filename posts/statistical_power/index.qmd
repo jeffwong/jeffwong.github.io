@@ -96,8 +96,10 @@ Power is the probability of triggering the rejection rule when $H_A$ is true, so
 Power &= P(|Z| \geq z_{1-\alpha/2} | Z \sim N(\frac{k}{se(\bar{\Delta})}, 1))
 \end{align}
 
-Let $\delta = \frac{\Delta | H_A}{se(\bar{\Delta})}$ be the noncentrality parameter, using the effect
-size we would like to detect under $H_A$. The final solution for power is
+Let $\delta = \frac{\Delta | H_A}{se(\bar{\Delta})}$ be the noncentrality parameter
+(ncp), using the anticipated effect size we would like to detect under $H_A$.
+The ncp is a parameter we will revisit many times.
+The final solution for power is
 $$
 \boxed{\text{Power} = \Phi(\delta - z_{1-\alpha/2}) + \Phi(-\delta - z_{1-\alpha/2})}
 $$
@@ -235,6 +237,7 @@ Using common numbers, $\alpha = 0.05$, $\beta = 0.2$, the rule of thumb for MDE 
 $$
 MDE = 2.8 \cdot SE
 $$
+or equivalently we need a ncp of $2.8$.
 
 Let's unpack this common rule of thumb explicitly. It says that the
 smallest effect size we can detect while ensuring an 80% power is $2.8 \cdot se(\bar{\Delta})$.
@@ -242,16 +245,17 @@ smallest effect size we can detect while ensuring an 80% power is $2.8 \cdot se(
 
 This looks like a similar rule of thumb related to rejecting the null:
 reject if the effect size is larger than 1.96 SE. This separate rule of thumb
-can be very confusing. It describes when can we flag a result as stat sig while ensuring
+can be very confusing - why are there two different constants of 1.96 and 2.8?
+This rule describes when can we flag a result as stat sig while ensuring
 a different property: that under the null hypothesis there is less than a 5% chance
 of generating this effect by random. This rule of thumb is offering a different guarantee,
 not one about power. Ensuring 80% power at a specific effect size
 simply says that there is a good chance we can detect these effects, but it does not
 make it impossible. Even using power = 50% we will correctly flag some results as stat sig.
 (See multiple online discussions like this [one](https://stats.stackexchange.com/questions/538590/reconciling-the-minimum-detectable-effect-calculation-with-the-experiment-result))
-This is why we can reject at 1.96 SE, even though the minimum detectable effect using
-power = 80% is 2.8 SE. However, it is noteworthy that the scientific community is advocating
-for rejecting at 2.8 SE (See [Redefine Statistical Significance](https://escholarship.org/content/qt1jx6091g/qt1jx6091g.pdf))
+1.96 SE is a rejection rule after the test executes, while 2.8 SE is a rule for
+planning to ensure 80% power. However, it is noteworthy that the scientific community is advocating
+for rejecting at 2.8 SE, or equivalently a p value of 0.005. (See [Redefine Statistical Significance](https://escholarship.org/content/qt1jx6091g/qt1jx6091g.pdf))
 
 # Sample Size Calculator
 

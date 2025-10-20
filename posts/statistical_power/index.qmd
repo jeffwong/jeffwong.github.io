@@ -168,6 +168,8 @@ sensitivity to standard error, we could say the sensitivity of power to standard
 & -\frac{\mu_0 - \mu_1}{SE^2} \Bigl[ \phi (\delta - z_{1-\alpha/2}) - \phi(-\delta - z_{1-\alpha/2}) \Bigr]
 \end{align}
 
+It is a function of ncp and $\alpha$, and the sensitivity is charted below.
+
 ```{r}
 power = function(delta, se, alpha = .05) {
   pooled_ncp = delta / se
@@ -177,6 +179,7 @@ power = function(delta, se, alpha = .05) {
 ```
 
 ```{r}
+#| echo: false
 delta = .5
 se = seq(from = .1, to = 1, by = .01)
 alpha = c(.005, .01, .05, .1, .2, .3)

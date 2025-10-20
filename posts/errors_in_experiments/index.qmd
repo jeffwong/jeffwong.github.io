@@ -232,6 +232,7 @@ type S error rates, and exaggeration. We will do this with a 50/50 prior
 that the null is true. The results are charted below.
 
 ```{r}
+#| echo: false
 exp_design_statistics_sweep = map_dfr(seq(from = 0, to = 3, by = .1), function(ncp) {
   map_dfr(seq(from = 0.05, to = .25, by = 0.05), function(alpha) {
     exp_design_statistics(ncp, alpha, prior_h0_true = 0.5)
@@ -317,6 +318,7 @@ when designing your own experiment. Understanding the first principles
 is crucial.
 
 ```{r}
+#| echo: false
 rbind(
   # Ideal world
   exp_design_statistics(3.4, 0.01, prior_h0_true = 0.5),
@@ -399,4 +401,6 @@ rbind(
 
 # References
 
-1. [A Note on Type S/M Errors in Hypothesis Testing](https://www.microsoft.com/en-us/research/wp-content/uploads/2020/09/LuQiuDeng-BJMSP2019.pdf)
+1. [A Note on Type S/M Errors in Hypothesis Testing](https://www.microsoft.com/en-us/research/wp-content/uploads/2020/09/LuQiuDeng-BJMSP2019.pdf) \\
+2. [Beyond Power Calculations: Assessing Type S (Sign) and Type M (Magnitude) Errors](https://sites.stat.columbia.edu/gelman/research/published/retropower_final.pdf) \\
+3. [AB Testing Intuition Busters](https://exp-platform.com/abtestingintuitionbusters/)

@@ -361,25 +361,6 @@ M &amp;= E[\frac{\hat{\Delta}}{\Delta} | Z \geq z_{1 - \alpha/2}]\\
 <h2 class="anchored" data-anchor-id="alternative-design">Alternative Design</h2>
 <p>In this section we explore alternative configurations to experimental design. We will let <span class="math inline">\(\alpha\)</span> and the ncp vary, and compute the changes to power, FPR, type S error rates, and exaggeration. We will do this with a 50/50 prior that the null is true. The results are charted below.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>exp_design_statistics_sweep <span class="ot">=</span> <span class="fu">map_dfr</span>(<span class="fu">seq</span>(<span class="at">from =</span> <span class="dv">0</span>, <span class="at">to =</span> <span class="dv">3</span>, <span class="at">by =</span> .<span class="dv">1</span>), <span class="cf">function</span>(ncp) {</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">map_dfr</span>(<span class="fu">seq</span>(<span class="at">from =</span> <span class="fl">0.05</span>, <span class="at">to =</span> .<span class="dv">25</span>, <span class="at">by =</span> <span class="fl">0.05</span>), <span class="cf">function</span>(alpha) {</span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">exp_design_statistics</span>(ncp, alpha, <span class="at">prior_h0_true =</span> <span class="fl">0.5</span>)</span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  })</span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>}) <span class="sc">%&gt;%</span></span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(</span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">c</span>(power, sign_risk, exaggeration, fpr)</span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>exp_design_statistics_sweep  <span class="sc">%&gt;%</span></span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(name <span class="sc">==</span> <span class="st">'power'</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> ncp, <span class="at">y =</span> value, <span class="at">color =</span> <span class="fu">as.factor</span>(alpha))) <span class="sc">+</span></span>
-<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span></span>
-<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>() <span class="sc">+</span></span>
-<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="fl">0.8</span>, <span class="at">linetype =</span> <span class="st">'dashed'</span>) <span class="sc">+</span></span>
-<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>(<span class="at">base_size =</span> <span class="dv">16</span>) <span class="sc">+</span></span>
-<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">'top'</span>) <span class="sc">+</span></span>
-<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">guides</span>(<span class="at">color=</span><span class="fu">guide_legend</span>(<span class="at">title=</span><span class="st">"alpha"</span>)) <span class="sc">+</span></span>
-<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="st">"Power"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>`geom_smooth()` using method = 'loess' and formula = 'y ~ x'</code></pre>
 </div>
@@ -390,16 +371,6 @@ M &amp;= E[\frac{\hat{\Delta}}{\Delta} | Z \geq z_{1 - \alpha/2}]\\
 </figure>
 </div>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>exp_design_statistics_sweep  <span class="sc">%&gt;%</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(name <span class="sc">==</span> <span class="st">'sign_risk'</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> ncp, <span class="at">y =</span> value, <span class="at">color =</span> <span class="fu">as.factor</span>(alpha))) <span class="sc">+</span></span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span></span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>() <span class="sc">+</span></span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="fl">0.01</span>, <span class="at">linetype =</span> <span class="st">'dashed'</span>) <span class="sc">+</span></span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>(<span class="at">base_size =</span> <span class="dv">16</span>) <span class="sc">+</span></span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">'top'</span>) <span class="sc">+</span></span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">guides</span>(<span class="at">color=</span><span class="fu">guide_legend</span>(<span class="at">title=</span><span class="st">"alpha"</span>)) <span class="sc">+</span></span>
-<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="st">"Sign Error Risk"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>`geom_smooth()` using method = 'loess' and formula = 'y ~ x'</code></pre>
 </div>
@@ -410,17 +381,6 @@ M &amp;= E[\frac{\hat{\Delta}}{\Delta} | Z \geq z_{1 - \alpha/2}]\\
 </figure>
 </div>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>exp_design_statistics_sweep  <span class="sc">%&gt;%</span></span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(name <span class="sc">==</span> <span class="st">'fpr'</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> ncp, <span class="at">y =</span> value, <span class="at">color =</span> <span class="fu">as.factor</span>(alpha))) <span class="sc">+</span></span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span></span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>() <span class="sc">+</span></span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="fl">0.2</span>, <span class="at">linetype =</span> <span class="st">'dashed'</span>) <span class="sc">+</span></span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="fl">0.1</span>, <span class="at">linetype =</span> <span class="st">'dashed'</span>) <span class="sc">+</span></span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>(<span class="at">base_size =</span> <span class="dv">16</span>) <span class="sc">+</span></span>
-<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">'top'</span>) <span class="sc">+</span></span>
-<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">guides</span>(<span class="at">color=</span><span class="fu">guide_legend</span>(<span class="at">title=</span><span class="st">"alpha"</span>)) <span class="sc">+</span></span>
-<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="st">"False Positive Risk"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>`geom_smooth()` using method = 'loess' and formula = 'y ~ x'</code></pre>
 </div>
@@ -431,16 +391,6 @@ M &amp;= E[\frac{\hat{\Delta}}{\Delta} | Z \geq z_{1 - \alpha/2}]\\
 </figure>
 </div>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>exp_design_statistics_sweep  <span class="sc">%&gt;%</span></span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(name <span class="sc">==</span> <span class="st">'exaggeration'</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> ncp, <span class="at">y =</span> value, <span class="at">color =</span> <span class="fu">as.factor</span>(alpha))) <span class="sc">+</span></span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span></span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>  <span class="co">#geom_smooth() +</span></span>
-<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="fl">1.1</span>, <span class="at">linetype =</span> <span class="st">'dashed'</span>) <span class="sc">+</span></span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>(<span class="at">base_size =</span> <span class="dv">16</span>) <span class="sc">+</span></span>
-<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">'top'</span>) <span class="sc">+</span></span>
-<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">guides</span>(<span class="at">color=</span><span class="fu">guide_legend</span>(<span class="at">title=</span><span class="st">"alpha"</span>)) <span class="sc">+</span></span>
-<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="st">"Exaggeration"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -459,102 +409,24 @@ M &amp;= E[\frac{\hat{\Delta}}{\Delta} | Z \geq z_{1 - \alpha/2}]\\
 <p>All of these charts are nonlinear curves. There are diminishing returns to increasing the ncp. Yet, a doubling of the ncp requires a 4x in the data volume, since <span class="math inline">\(ncp = \frac{\Delta}{se(\hat{\Delta})}\)</span>. Below is a table of configurations that range from “good” to “reasonably acceptable” to “bad”, and how data volume vaaries the quality.</p>
 <p>The standard practice of <span class="math inline">\(\alpha = 0.05\)</span>, and power = 80%, is a good practice. Many others actually even advocate for more data. However, it is important to understand how we arrived here, and whether there is flexibility when designing your own experiment. Understanding the first principles is crucial.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">rbind</span>(</span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Ideal world</span></span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">exp_design_statistics</span>(<span class="fl">3.4</span>, <span class="fl">0.01</span>, <span class="at">prior_h0_true =</span> <span class="fl">0.5</span>),</span>
-<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>  <span class="co"># status quo</span></span>
-<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">exp_design_statistics</span>(<span class="fl">2.8</span>, <span class="fl">0.05</span>, <span class="at">prior_h0_true =</span> <span class="fl">0.5</span>),</span>
-<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>  <span class="co">#</span></span>
-<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">exp_design_statistics</span>(<span class="fl">1.5</span>, <span class="fl">0.05</span>, <span class="at">prior_h0_true =</span> <span class="fl">0.5</span>),</span>
-<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">exp_design_statistics</span>(<span class="fl">1.5</span>, <span class="fl">0.1</span>, <span class="at">prior_h0_true =</span> <span class="fl">0.5</span>),</span>
-<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">exp_design_statistics</span>(<span class="fl">1.5</span>, <span class="fl">0.2</span>, <span class="at">prior_h0_true =</span> <span class="fl">0.5</span>),</span>
-<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">exp_design_statistics</span>(<span class="fl">1.5</span>, <span class="fl">0.5</span>, <span class="at">prior_h0_true =</span> <span class="fl">0.5</span>),</span>
-<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>  <span class="co">#</span></span>
-<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">exp_design_statistics</span>(<span class="dv">2</span>, <span class="fl">0.05</span>, <span class="at">prior_h0_true =</span> <span class="fl">0.5</span>),</span>
-<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">exp_design_statistics</span>(<span class="dv">2</span>, <span class="fl">0.1</span>, <span class="at">prior_h0_true =</span> <span class="fl">0.5</span>),</span>
-<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">exp_design_statistics</span>(<span class="dv">2</span>, <span class="fl">0.2</span>, <span class="at">prior_h0_true =</span> <span class="fl">0.5</span>),</span>
-<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">exp_design_statistics</span>(<span class="dv">2</span>, <span class="fl">0.5</span>, <span class="at">prior_h0_true =</span> <span class="fl">0.5</span>)</span>
-<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a>) <span class="sc">%&gt;%</span></span>
-<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">gt</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tab_header</span>(</span>
-<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"Experimentation Design Statistics"</span></span>
-<span id="cb15-20"><a href="#cb15-20" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
-<span id="cb15-21"><a href="#cb15-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tab_spanner</span>(<span class="at">label =</span> <span class="st">"Design Statistics"</span>, <span class="at">columns =</span> <span class="fu">c</span>(power, sign_risk, exaggeration, fpr)) <span class="sc">%&gt;%</span></span>
-<span id="cb15-22"><a href="#cb15-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tab_spanner</span>(<span class="at">label =</span> <span class="st">"Design Inputs"</span>, <span class="at">columns =</span> <span class="fu">c</span>(ncp, alpha, required_n_c)) <span class="sc">%&gt;%</span> </span>
-<span id="cb15-23"><a href="#cb15-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tab_style</span>(</span>
-<span id="cb15-24"><a href="#cb15-24" aria-hidden="true" tabindex="-1"></a>    <span class="at">style =</span> <span class="fu">cell_borders</span>(</span>
-<span id="cb15-25"><a href="#cb15-25" aria-hidden="true" tabindex="-1"></a>      <span class="at">sides  =</span> <span class="st">"left"</span>,</span>
-<span id="cb15-26"><a href="#cb15-26" aria-hidden="true" tabindex="-1"></a>      <span class="at">color  =</span> <span class="st">"black"</span>,</span>
-<span id="cb15-27"><a href="#cb15-27" aria-hidden="true" tabindex="-1"></a>      <span class="at">weight =</span> <span class="fu">px</span>(<span class="dv">2</span>)</span>
-<span id="cb15-28"><a href="#cb15-28" aria-hidden="true" tabindex="-1"></a>    ),</span>
-<span id="cb15-29"><a href="#cb15-29" aria-hidden="true" tabindex="-1"></a>    <span class="at">locations =</span> <span class="fu">list</span>(</span>
-<span id="cb15-30"><a href="#cb15-30" aria-hidden="true" tabindex="-1"></a>      <span class="fu">cells_body</span>(<span class="at">columns =</span> power),</span>
-<span id="cb15-31"><a href="#cb15-31" aria-hidden="true" tabindex="-1"></a>      <span class="fu">cells_column_labels</span>(<span class="at">columns =</span> power)</span>
-<span id="cb15-32"><a href="#cb15-32" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb15-33"><a href="#cb15-33" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
-<span id="cb15-34"><a href="#cb15-34" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Formatting for power</span></span>
-<span id="cb15-35"><a href="#cb15-35" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tab_style</span>(</span>
-<span id="cb15-36"><a href="#cb15-36" aria-hidden="true" tabindex="-1"></a>    <span class="at">style =</span> <span class="fu">list</span>(</span>
-<span id="cb15-37"><a href="#cb15-37" aria-hidden="true" tabindex="-1"></a>      <span class="fu">cell_fill</span>(<span class="at">color =</span> <span class="st">"green"</span>),</span>
-<span id="cb15-38"><a href="#cb15-38" aria-hidden="true" tabindex="-1"></a>      <span class="fu">cell_text</span>(<span class="at">weight =</span> <span class="st">"bold"</span>)</span>
-<span id="cb15-39"><a href="#cb15-39" aria-hidden="true" tabindex="-1"></a>    ),</span>
-<span id="cb15-40"><a href="#cb15-40" aria-hidden="true" tabindex="-1"></a>    <span class="at">locations =</span> <span class="fu">cells_body</span>(</span>
-<span id="cb15-41"><a href="#cb15-41" aria-hidden="true" tabindex="-1"></a>      <span class="at">columns =</span> power,</span>
-<span id="cb15-42"><a href="#cb15-42" aria-hidden="true" tabindex="-1"></a>      <span class="at">rows    =</span> power <span class="sc">&gt;</span> .<span class="dv">75</span></span>
-<span id="cb15-43"><a href="#cb15-43" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb15-44"><a href="#cb15-44" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
-<span id="cb15-45"><a href="#cb15-45" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Formatting for p sign</span></span>
-<span id="cb15-46"><a href="#cb15-46" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tab_style</span>(</span>
-<span id="cb15-47"><a href="#cb15-47" aria-hidden="true" tabindex="-1"></a>    <span class="at">style =</span> <span class="fu">list</span>(</span>
-<span id="cb15-48"><a href="#cb15-48" aria-hidden="true" tabindex="-1"></a>      <span class="fu">cell_fill</span>(<span class="at">color =</span> <span class="st">"green"</span>),</span>
-<span id="cb15-49"><a href="#cb15-49" aria-hidden="true" tabindex="-1"></a>      <span class="fu">cell_text</span>(<span class="at">weight =</span> <span class="st">"bold"</span>)</span>
-<span id="cb15-50"><a href="#cb15-50" aria-hidden="true" tabindex="-1"></a>    ),</span>
-<span id="cb15-51"><a href="#cb15-51" aria-hidden="true" tabindex="-1"></a>    <span class="at">locations =</span> <span class="fu">cells_body</span>(</span>
-<span id="cb15-52"><a href="#cb15-52" aria-hidden="true" tabindex="-1"></a>      <span class="at">columns =</span> sign_risk,</span>
-<span id="cb15-53"><a href="#cb15-53" aria-hidden="true" tabindex="-1"></a>      <span class="at">rows    =</span> sign_risk <span class="sc">&lt;</span> .<span class="dv">01</span></span>
-<span id="cb15-54"><a href="#cb15-54" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb15-55"><a href="#cb15-55" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
-<span id="cb15-56"><a href="#cb15-56" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Formatting for type m</span></span>
-<span id="cb15-57"><a href="#cb15-57" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tab_style</span>(</span>
-<span id="cb15-58"><a href="#cb15-58" aria-hidden="true" tabindex="-1"></a>    <span class="at">style =</span> <span class="fu">list</span>(</span>
-<span id="cb15-59"><a href="#cb15-59" aria-hidden="true" tabindex="-1"></a>      <span class="fu">cell_fill</span>(<span class="at">color =</span> <span class="st">"green"</span>),</span>
-<span id="cb15-60"><a href="#cb15-60" aria-hidden="true" tabindex="-1"></a>      <span class="fu">cell_text</span>(<span class="at">weight =</span> <span class="st">"bold"</span>)</span>
-<span id="cb15-61"><a href="#cb15-61" aria-hidden="true" tabindex="-1"></a>    ),</span>
-<span id="cb15-62"><a href="#cb15-62" aria-hidden="true" tabindex="-1"></a>    <span class="at">locations =</span> <span class="fu">cells_body</span>(</span>
-<span id="cb15-63"><a href="#cb15-63" aria-hidden="true" tabindex="-1"></a>      <span class="at">columns =</span> exaggeration,</span>
-<span id="cb15-64"><a href="#cb15-64" aria-hidden="true" tabindex="-1"></a>      <span class="at">rows    =</span> exaggeration <span class="sc">&lt;</span> <span class="fl">1.12</span></span>
-<span id="cb15-65"><a href="#cb15-65" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb15-66"><a href="#cb15-66" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
-<span id="cb15-67"><a href="#cb15-67" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Formatting for ppr</span></span>
-<span id="cb15-68"><a href="#cb15-68" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tab_style</span>(</span>
-<span id="cb15-69"><a href="#cb15-69" aria-hidden="true" tabindex="-1"></a>    <span class="at">style =</span> <span class="fu">list</span>(</span>
-<span id="cb15-70"><a href="#cb15-70" aria-hidden="true" tabindex="-1"></a>      <span class="fu">cell_fill</span>(<span class="at">color =</span> <span class="st">"green"</span>),</span>
-<span id="cb15-71"><a href="#cb15-71" aria-hidden="true" tabindex="-1"></a>      <span class="fu">cell_text</span>(<span class="at">weight =</span> <span class="st">"bold"</span>)</span>
-<span id="cb15-72"><a href="#cb15-72" aria-hidden="true" tabindex="-1"></a>    ),</span>
-<span id="cb15-73"><a href="#cb15-73" aria-hidden="true" tabindex="-1"></a>    <span class="at">locations =</span> <span class="fu">cells_body</span>(</span>
-<span id="cb15-74"><a href="#cb15-74" aria-hidden="true" tabindex="-1"></a>      <span class="at">columns =</span> fpr,</span>
-<span id="cb15-75"><a href="#cb15-75" aria-hidden="true" tabindex="-1"></a>      <span class="at">rows    =</span> fpr <span class="sc">&lt;</span> .<span class="dv">22</span></span>
-<span id="cb15-76"><a href="#cb15-76" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb15-77"><a href="#cb15-77" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
-<span id="cb15-78"><a href="#cb15-78" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fmt_number</span>(<span class="at">columns =</span> <span class="fu">c</span>(power, sign_risk, exaggeration, fpr), <span class="at">suffixing =</span> <span class="cn">TRUE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
-<div id="ijfbkhtylz" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#ijfbkhtylz table {
+<div id="ishjwoznvo" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#ishjwoznvo table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#ijfbkhtylz thead, #ijfbkhtylz tbody, #ijfbkhtylz tfoot, #ijfbkhtylz tr, #ijfbkhtylz td, #ijfbkhtylz th {
+#ishjwoznvo thead, #ishjwoznvo tbody, #ishjwoznvo tfoot, #ishjwoznvo tr, #ishjwoznvo td, #ishjwoznvo th {
   border-style: none;
 }
 
-#ijfbkhtylz p {
+#ishjwoznvo p {
   margin: 0;
   padding: 0;
 }
 
-#ijfbkhtylz .gt_table {
+#ishjwoznvo .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -580,12 +452,12 @@ M &amp;= E[\frac{\hat{\Delta}}{\Delta} | Z \geq z_{1 - \alpha/2}]\\
   border-left-color: #D3D3D3;
 }
 
-#ijfbkhtylz .gt_caption {
+#ishjwoznvo .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#ijfbkhtylz .gt_title {
+#ishjwoznvo .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -597,7 +469,7 @@ M &amp;= E[\frac{\hat{\Delta}}{\Delta} | Z \geq z_{1 - \alpha/2}]\\
   border-bottom-width: 0;
 }
 
-#ijfbkhtylz .gt_subtitle {
+#ishjwoznvo .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -609,7 +481,7 @@ M &amp;= E[\frac{\hat{\Delta}}{\Delta} | Z \geq z_{1 - \alpha/2}]\\
   border-top-width: 0;
 }
 
-#ijfbkhtylz .gt_heading {
+#ishjwoznvo .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -621,13 +493,13 @@ M &amp;= E[\frac{\hat{\Delta}}{\Delta} | Z \geq z_{1 - \alpha/2}]\\
   border-right-color: #D3D3D3;
 }
 
-#ijfbkhtylz .gt_bottom_border {
+#ishjwoznvo .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#ijfbkhtylz .gt_col_headings {
+#ishjwoznvo .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -642,7 +514,7 @@ M &amp;= E[\frac{\hat{\Delta}}{\Delta} | Z \geq z_{1 - \alpha/2}]\\
   border-right-color: #D3D3D3;
 }
 
-#ijfbkhtylz .gt_col_heading {
+#ishjwoznvo .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -662,7 +534,7 @@ M &amp;= E[\frac{\hat{\Delta}}{\Delta} | Z \geq z_{1 - \alpha/2}]\\
   overflow-x: hidden;
 }
 
-#ijfbkhtylz .gt_column_spanner_outer {
+#ishjwoznvo .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -674,15 +546,15 @@ M &amp;= E[\frac{\hat{\Delta}}{\Delta} | Z \geq z_{1 - \alpha/2}]\\
   padding-right: 4px;
 }
 
-#ijfbkhtylz .gt_column_spanner_outer:first-child {
+#ishjwoznvo .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#ijfbkhtylz .gt_column_spanner_outer:last-child {
+#ishjwoznvo .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#ijfbkhtylz .gt_column_spanner {
+#ishjwoznvo .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -694,11 +566,11 @@ M &amp;= E[\frac{\hat{\Delta}}{\Delta} | Z \geq z_{1 - \alpha/2}]\\
   width: 100%;
 }
 
-#ijfbkhtylz .gt_spanner_row {
+#ishjwoznvo .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#ijfbkhtylz .gt_group_heading {
+#ishjwoznvo .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -724,7 +596,7 @@ M &amp;= E[\frac{\hat{\Delta}}{\Delta} | Z \geq z_{1 - \alpha/2}]\\
   text-align: left;
 }
 
-#ijfbkhtylz .gt_empty_group_heading {
+#ishjwoznvo .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -739,15 +611,15 @@ M &amp;= E[\frac{\hat{\Delta}}{\Delta} | Z \geq z_{1 - \alpha/2}]\\
   vertical-align: middle;
 }
 
-#ijfbkhtylz .gt_from_md > :first-child {
+#ishjwoznvo .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#ijfbkhtylz .gt_from_md > :last-child {
+#ishjwoznvo .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#ijfbkhtylz .gt_row {
+#ishjwoznvo .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -766,7 +638,7 @@ M &amp;= E[\frac{\hat{\Delta}}{\Delta} | Z \geq z_{1 - \alpha/2}]\\
   overflow-x: hidden;
 }
 
-#ijfbkhtylz .gt_stub {
+#ishjwoznvo .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -779,7 +651,7 @@ M &amp;= E[\frac{\hat{\Delta}}{\Delta} | Z \geq z_{1 - \alpha/2}]\\
   padding-right: 5px;
 }
 
-#ijfbkhtylz .gt_stub_row_group {
+#ishjwoznvo .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -793,15 +665,15 @@ M &amp;= E[\frac{\hat{\Delta}}{\Delta} | Z \geq z_{1 - \alpha/2}]\\
   vertical-align: top;
 }
 
-#ijfbkhtylz .gt_row_group_first td {
+#ishjwoznvo .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#ijfbkhtylz .gt_row_group_first th {
+#ishjwoznvo .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#ijfbkhtylz .gt_summary_row {
+#ishjwoznvo .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -811,16 +683,16 @@ M &amp;= E[\frac{\hat{\Delta}}{\Delta} | Z \geq z_{1 - \alpha/2}]\\
   padding-right: 5px;
 }
 
-#ijfbkhtylz .gt_first_summary_row {
+#ishjwoznvo .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#ijfbkhtylz .gt_first_summary_row.thick {
+#ishjwoznvo .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#ijfbkhtylz .gt_last_summary_row {
+#ishjwoznvo .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -830,7 +702,7 @@ M &amp;= E[\frac{\hat{\Delta}}{\Delta} | Z \geq z_{1 - \alpha/2}]\\
   border-bottom-color: #D3D3D3;
 }
 
-#ijfbkhtylz .gt_grand_summary_row {
+#ishjwoznvo .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -840,7 +712,7 @@ M &amp;= E[\frac{\hat{\Delta}}{\Delta} | Z \geq z_{1 - \alpha/2}]\\
   padding-right: 5px;
 }
 
-#ijfbkhtylz .gt_first_grand_summary_row {
+#ishjwoznvo .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -850,7 +722,7 @@ M &amp;= E[\frac{\hat{\Delta}}{\Delta} | Z \geq z_{1 - \alpha/2}]\\
   border-top-color: #D3D3D3;
 }
 
-#ijfbkhtylz .gt_last_grand_summary_row_top {
+#ishjwoznvo .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -860,11 +732,11 @@ M &amp;= E[\frac{\hat{\Delta}}{\Delta} | Z \geq z_{1 - \alpha/2}]\\
   border-bottom-color: #D3D3D3;
 }
 
-#ijfbkhtylz .gt_striped {
+#ishjwoznvo .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#ijfbkhtylz .gt_table_body {
+#ishjwoznvo .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -873,7 +745,7 @@ M &amp;= E[\frac{\hat{\Delta}}{\Delta} | Z \geq z_{1 - \alpha/2}]\\
   border-bottom-color: #D3D3D3;
 }
 
-#ijfbkhtylz .gt_footnotes {
+#ishjwoznvo .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -887,7 +759,7 @@ M &amp;= E[\frac{\hat{\Delta}}{\Delta} | Z \geq z_{1 - \alpha/2}]\\
   border-right-color: #D3D3D3;
 }
 
-#ijfbkhtylz .gt_footnote {
+#ishjwoznvo .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -896,7 +768,7 @@ M &amp;= E[\frac{\hat{\Delta}}{\Delta} | Z \geq z_{1 - \alpha/2}]\\
   padding-right: 5px;
 }
 
-#ijfbkhtylz .gt_sourcenotes {
+#ishjwoznvo .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -910,7 +782,7 @@ M &amp;= E[\frac{\hat{\Delta}}{\Delta} | Z \geq z_{1 - \alpha/2}]\\
   border-right-color: #D3D3D3;
 }
 
-#ijfbkhtylz .gt_sourcenote {
+#ishjwoznvo .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -918,72 +790,72 @@ M &amp;= E[\frac{\hat{\Delta}}{\Delta} | Z \geq z_{1 - \alpha/2}]\\
   padding-right: 5px;
 }
 
-#ijfbkhtylz .gt_left {
+#ishjwoznvo .gt_left {
   text-align: left;
 }
 
-#ijfbkhtylz .gt_center {
+#ishjwoznvo .gt_center {
   text-align: center;
 }
 
-#ijfbkhtylz .gt_right {
+#ishjwoznvo .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#ijfbkhtylz .gt_font_normal {
+#ishjwoznvo .gt_font_normal {
   font-weight: normal;
 }
 
-#ijfbkhtylz .gt_font_bold {
+#ishjwoznvo .gt_font_bold {
   font-weight: bold;
 }
 
-#ijfbkhtylz .gt_font_italic {
+#ishjwoznvo .gt_font_italic {
   font-style: italic;
 }
 
-#ijfbkhtylz .gt_super {
+#ishjwoznvo .gt_super {
   font-size: 65%;
 }
 
-#ijfbkhtylz .gt_footnote_marks {
+#ishjwoznvo .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#ijfbkhtylz .gt_asterisk {
+#ishjwoznvo .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#ijfbkhtylz .gt_indent_1 {
+#ishjwoznvo .gt_indent_1 {
   text-indent: 5px;
 }
 
-#ijfbkhtylz .gt_indent_2 {
+#ishjwoznvo .gt_indent_2 {
   text-indent: 10px;
 }
 
-#ijfbkhtylz .gt_indent_3 {
+#ishjwoznvo .gt_indent_3 {
   text-indent: 15px;
 }
 
-#ijfbkhtylz .gt_indent_4 {
+#ishjwoznvo .gt_indent_4 {
   text-indent: 20px;
 }
 
-#ijfbkhtylz .gt_indent_5 {
+#ishjwoznvo .gt_indent_5 {
   text-indent: 25px;
 }
 
-#ijfbkhtylz .katex-display {
+#ishjwoznvo .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#ijfbkhtylz div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#ishjwoznvo div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -1122,7 +994,9 @@ Design Statistics
 <section id="references" class="level1">
 <h1>References</h1>
 <ol type="1">
-<li><a href="https://www.microsoft.com/en-us/research/wp-content/uploads/2020/09/LuQiuDeng-BJMSP2019.pdf">A Note on Type S/M Errors in Hypothesis Testing</a></li>
+<li><a href="https://www.microsoft.com/en-us/research/wp-content/uploads/2020/09/LuQiuDeng-BJMSP2019.pdf">A Note on Type S/M Errors in Hypothesis Testing</a> \</li>
+<li><a href="https://sites.stat.columbia.edu/gelman/research/published/retropower_final.pdf">Beyond Power Calculations: Assessing Type S (Sign) and Type M (Magnitude) Errors</a> \</li>
+<li><a href="https://exp-platform.com/abtestingintuitionbusters/">AB Testing Intuition Busters</a></li>
 </ol>
 
 

@@ -2,7 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://jeffwong.github.io/posts/statistical_power/index.html</loc>
-    <lastmod>2025-10-16T00:56:33.785Z</lastmod>
+    <lastmod>2025-10-20T17:09:33.890Z</lastmod>
   </url>
   <url>
     <loc>https://jeffwong.github.io/posts/l2_gaussian_prior/index.html</loc>
@@ -22,6 +22,14 @@
   </url>
   <url>
     <loc>https://jeffwong.github.io/posts/power_noncompliance/index.html</loc>
-    <lastmod>2025-10-16T00:57:05.066Z</lastmod>
+    <lastmod>2025-10-20T17:09:44.702Z</lastmod>
+  </url>
+  <url>
+    <loc>https://jeffwong.github.io/posts/errors_in_experiments/index.html</loc>
+    <lastmod>2025-10-20T17:08:32.965Z</lastmod>
+  </url>
+  <url>
+    <loc>https://jeffwong.github.io/posts/posthoc_mde/index.html</loc>
+    <lastmod>2025-10-20T17:08:38.397Z</lastmod>
   </url>
 </urlset>

@@ -9,7 +9,7 @@
 <meta name="author" content="Jeffrey Wong">
 <meta name="dcterms.date" content="2025-09-15">
 
-<title>Posthoc MDE – From First Principles</title>
+<title>Aggregations and Arrival Times Affect Convergence – From First Principles</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -143,7 +143,7 @@ window.Quarto = {
 <header id="title-block-header" class="quarto-title-block default page-columns page-full">
   <div class="quarto-title-banner page-columns page-full">
     <div class="quarto-title column-body">
-      <h1 class="title">Posthoc MDE</h1>
+      <h1 class="title">Aggregations and Arrival Times Affect Convergence</h1>
                                 <div class="quarto-categories">
                 <div class="quarto-category">experimentation</div>
                 <div class="quarto-category">statistics</div>
@@ -183,26 +183,71 @@ window.Quarto = {
 
 
 
-<p>Credits: This post is a summary of the World Bank <a href="https://blogs.worldbank.org/en/impactevaluations/why-ex-post-power-using-estimated-effect-sizes-bad-ex-post-mde-not">blog post</a> written by David McKenzie. There is no additional innovation in the post here. It is a natural follow up to our type S/M discussion in <a href="https://jeffwong.github.io/posts/errors_in_experiments/">Errors in Experiments</a></p>
-<p>During experiment planning, we say that we need a sample size of <span class="math inline">\(n\)</span> in order to achieve 80% power. We will usually track the number of days it will take to observe <span class="math inline">\(n\)</span> samples. However, in real online environments, we cannot forecast exactly how much traffic we will really get. It is tempting to monitor how much statistical power we have achieved so far. This is a bad practice, and is misleading. However, monitoring the MDE midway through a test is OK. This post will summarize why.</p>
-<section id="ex-post-statistical-power" class="level1">
-<h1>Ex post statistical power</h1>
-<p>Ex post statistical power says to plug in the observed effect size into the power formula, in place of the anticipated effect size. When we do this, ex post power is literally a function of <span class="math inline">\(Z\)</span>, the test statistic. At the same time, it is noisy because of the noise on the estimated effect size, as well as type M exaggeration. So stat sig results will have large ex post power, whereas results that are not stat sig will have low ex post power. This is dangerous. It can perpetuate the trap that the “lack of evidence of an effect” is not the same as “evidence for the lack of an effect”, e.g. you can and should expect that high powered tests still do not reveal stat sig results.</p>
-<p><span class="math display">\[
-\boxed{\text{Power} = \Phi(\delta - z_{1-\alpha/2}) + \Phi(-\delta - z_{1-\alpha/2})}
-\]</span></p>
+<p>In this post we study the convergence speed of an experiment. Over time, we accumulate sample size. As that sample size increases, statistical power is supposed to increase and MDE decreases. But over time, what conditions make this guarantee? Can variance over time increase, for example due to nonstationarity, seasonality or trends? And if so, how does that affect the power that is being accumulated over time? How does the aggregation over time affect this process? What if our ability to collect samples decreases over time? We study how aggregations like means and variances, the inputs into statistical tests, are actually stochastic processes and how that affects the standard error, the key input into the MDE.</p>
+<section id="accumulating-data-and-aggregating-it" class="level1">
+<h1>Accumulating Data and Aggregating it</h1>
+<p>Different cohorts of subjects enter the experiment at different times. Say that cohort <span class="math inline">\(c\)</span> arrives at the experiment at time <span class="math inline">\(A(c) = c\)</span>, so cohort 1 arrives on day 1, cohort 2 arrives on day 2, etc. We can consider this statement widely true in different experiments, so we don’t consider any other form of arrival times. Say the size of the cohort that is arriving on day <span class="math inline">\(t\)</span> is <span class="math inline">\(n(t)\)</span>. The experiment ends on day <span class="math inline">\(T\)</span>, where <span class="math inline">\(N(T) = \sum_{t=1}^T n(t)\)</span> subjects have been accumulated.</p>
+<p>Let <span class="math inline">\(y_c(t)\)</span> be the metric value for cohort <span class="math inline">\(c\)</span> at time <span class="math inline">\(t\)</span>, and <span class="math inline">\(Y_c(T) = \sum_{t=c}^T y_c(t)\)</span>. In this sum, the cohort that enters on day 1 is observed for <span class="math inline">\(T\)</span> days, while the cohort on day 2 is observed for <span class="math inline">\(T-1\)</span> days and the cohort on day <span class="math inline">\(T\)</span> is observed for 1 day. (Note that this is not an average over time, it is simply a sum; we will discuss how this sum has adverse effects on convergence and shine light on why averages are very useful.)</p>
+<p>Say that <span class="math inline">\(y\)</span> is normally distributed iid so <span class="math inline">\(y \sim N(\mu, \sigma^2)\)</span> and for simplicity is not a function of the cohort. Then the distribution of the sum is <span class="math inline">\(Y_c(T) \sim N((T - t + 1)\mu, (T - t + 1)\sigma^2)\)</span> where we emphasize cohort <span class="math inline">\(c\)</span> arrives at time <span class="math inline">\(t\)</span>. By the time the experiment ends on day <span class="math inline">\(T\)</span>, the data in <span class="math inline">\(Y(T)\)</span> that we observe follows a mixture distribution. The <span class="math inline">\(t^{th}\)</span> component has mean <span class="math inline">\(\mu_t = (T - t + 1)\mu\)</span> and variance <span class="math inline">\(\sigma_t^2 = (T - t + 1)\sigma^2\)</span>. Using the sizes of the components, <span class="math inline">\(n(t)\)</span>, we can compute the overall mean and variance of this mixture distribution.</p>
+<p>Given <span class="math inline">\(T\)</span> components with mixture weights <span class="math inline">\(\pi_t\)</span>, the mean and variance of the mixture distribution are generically</p>
+<p><span class="math display">\[\begin{align}
+\tilde{\mu}(T) &amp;= \sum_{t=1}^T \pi_t \mu_t \\
+\tilde{\sigma}^2(T) &amp;= \sum_{t=1}^T \Bigl(\pi_t (\sigma_t^2 + \mu_t^2)\Bigr) - \tilde{\mu}(T)^2
+\end{align}\]</span></p>
+<p>Applying this to our data generating process, we have the system</p>
+<p><span class="math display">\[\begin{align}
+\mu_t &amp;= (T - t + 1) \mu \\
+\sigma_t^2 &amp;= (T - t + 1) \sigma^2 \\
+\pi(t) &amp;= \frac{n(t)}{N(T)} \\
+\tilde{\mu}(T) &amp;= \sum_{t=1}^T \pi(t) \mu_t \\
+\tilde{\sigma}^2(T) &amp;= \sum_{t=1}^T \pi(t) (\sigma_t^2 + \mu_t^2) - \tilde{\mu}(T)^2 \\
+\end{align}\]</span></p>
 </section>
-<section id="ex-post-mde" class="level1">
-<h1>Ex post MDE</h1>
-<p>Pivoting the problem from power to MDE avoids the need to plug in the estimated effect size for the anticipated effect size. This is the procedure that we want to avoid in order to not inherit noise and type M errors.</p>
-<p>In ex post MDE, we use the current sample size and the current variance to estimate the current MDE. Unlike power, there is no anticipated effect size or the need to estimate it from observed data, hence ex post MDE is more robust and is not vulnerable to type M exaggeration.</p>
-<p><span class="math display">\[\boxed{MDE = (z_{1-\alpha/2} - z_{\beta}) \cdot SE}\]</span></p>
-</section>
-<section id="references" class="level1">
-<h1>References</h1>
+<section id="convergence" class="level1">
+<h1>Convergence</h1>
+<p>Other than the effect size, the standard error is the key statistic that drives the accumulation of statistical power. It has a lever that we can control, how much time do we dedicate to accumulate <span class="math inline">\(n\)</span>. The standard error process, <span class="math inline">\(SE(T) = \frac{\tilde{\sigma}^2(T)}{N(T)}\)</span>, is charted below. We note some interesting patterns:</p>
 <ol type="1">
-<li>https://blogs.worldbank.org/en/impactevaluations/why-ex-post-power-using-estimated-effect-sizes-bad-ex-post-mde-not</li>
+<li>The standard error can decrease over time, and then increase. This is a peculiar behavior.</li>
+<li><span class="math inline">\(\mu\)</span> and <span class="math inline">\(\sigma^2\)</span> influence what regime we are in, a decreasing standard error or an increasing standard error. When <span class="math inline">\(\sigma^2\)</span> is large, a small increment in <span class="math inline">\(n\)</span> can tame the standard error and decrease it. However, eventually the growth in <span class="math inline">\(\tilde{\sigma}^2\)</span> outpaces <span class="math inline">\(n\)</span> causing the standard error to increase.</li>
+<li>If we are accumulating <span class="math inline">\(n(t)\)</span> quickly, in a superlinear way, the standard error process always goes down.</li>
 </ol>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="index_files/figure-html/unnamed-chunk-2-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="index_files/figure-html/unnamed-chunk-3-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="index_files/figure-html/unnamed-chunk-4-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="aggregation-method-is-important." class="level1">
+<h1>Aggregation method is important.</h1>
+<p>The pattern that the standard error can go up as you accumulate <span class="math inline">\(n\)</span> is a strange pattern. As we illustrate, this can happen even when <span class="math inline">\(y(t)\)</span> is a random variable with fixed mean. The core reason for why the SE process can increase is that <span class="math inline">\(\tilde{\sigma}^2(T)\)</span> is growing faster than <span class="math inline">\(N(T)\)</span> is growing. This is due to the unbounded growth in <span class="math inline">\(Y_c(T)\)</span>, combined with the form of <span class="math inline">\(n(t)\)</span>. When <span class="math inline">\(n\)</span> is accumulating from a finite pool, the ability for <span class="math inline">\(N(T)\)</span> to grow slows down whereas <span class="math inline">\(\tilde{\sigma}^2(T)\)</span> continues to grow in an unbounded way. If <span class="math inline">\(n\)</span> is accumulating from an infinite pool, or is in a regime with fast growth, it is possible to be in a regime where the standard error process is going down.</p>
+<p>Aggregation is important. We need to prevent <span class="math inline">\(\tilde{\sigma}^2(T)\)</span> from growing unbounded. There are multiple ways to do this. In the simple case, each component can divide the term <span class="math inline">\((T - c + 1)\)</span>, so that all components are identically distributed as <span class="math inline">\(N(\mu, \sigma^2)\)</span>, collapsing the mixture to a single normal distribution. Using this aggregation, <span class="math inline">\(Y_c(t)\)</span> does not grow as <span class="math inline">\(T\)</span> increases. At the same time, the denominator <span class="math inline">\(N(T)\)</span> increases, even if slowly, creating a guarantee that the SE process decreases.</p>
+<p>Another way to do this is to aggregate <span class="math inline">\(y(t)\)</span> using a window with a fixed size, <span class="math inline">\(S\)</span>, and limiting the analysis of the experiment to subjects who have been in the experiment for at least <span class="math inline">\(S\)</span> days.</p>
+</section>
+<section id="what-if-yt-is-nonstationary" class="level1">
+<h1>What if y(t) is nonstationary?</h1>
+<p>The above strategies can create guarantees due to the fact that the underlying <span class="math inline">\(y(t) \sim N(\mu, \sigma^2)\)</span> where <span class="math inline">\(\mu\)</span> and <span class="math inline">\(\sigma^2\)</span> were constants. This created a guarantee that <span class="math inline">\(Y_c(T)\)</span> would not grow unbounded. However, if <span class="math inline">\(y(t)\)</span> has a trend, it is possible for <span class="math inline">\(Y_c(T)\)</span> to grow unbounded again. That is content for a different post.</p>
 
 
 </section>

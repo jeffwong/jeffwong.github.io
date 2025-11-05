@@ -12,6 +12,82 @@
 <generator>quarto-1.8.24</generator>
 <lastBuildDate>Mon, 15 Sep 2025 00:00:00 GMT</lastBuildDate>
 <item>
+  <title>Aggregations and Arrival Times Affect Convergence</title>
+  <dc:creator>Jeffrey Wong</dc:creator>
+  <link>https://jeffwong.github.io/posts/arrival_bias_in_accounting/</link>
+  <description><![CDATA[ 
+
+
+
+
+
+<p>In this post we study the convergence speed of an experiment. Over time, we accumulate sample size. As that sample size increases, statistical power is supposed to increase and MDE decreases. But over time, what conditions make this guarantee? Can variance over time increase, for example due to nonstationarity, seasonality or trends? And if so, how does that affect the power that is being accumulated over time? How does the aggregation over time affect this process? What if our ability to collect samples decreases over time? We study how aggregations like means and variances, the inputs into statistical tests, are actually stochastic processes and how that affects the standard error, the key input into the MDE.</p>
+<section id="accumulating-data-and-aggregating-it" class="level1">
+<h1>Accumulating Data and Aggregating it</h1>
+<p>Different cohorts of subjects enter the experiment at different times. Say that cohort <img src="https://latex.codecogs.com/png.latex?c"> arrives at the experiment at time <img src="https://latex.codecogs.com/png.latex?A(c)%20=%20c">, so cohort 1 arrives on day 1, cohort 2 arrives on day 2, etc. We can consider this statement widely true in different experiments, so we don’t consider any other form of arrival times. Say the size of the cohort that is arriving on day <img src="https://latex.codecogs.com/png.latex?t"> is <img src="https://latex.codecogs.com/png.latex?n(t)">. The experiment ends on day <img src="https://latex.codecogs.com/png.latex?T">, where <img src="https://latex.codecogs.com/png.latex?N(T)%20=%20%5Csum_%7Bt=1%7D%5ET%20n(t)"> subjects have been accumulated.</p>
+<p>Let <img src="https://latex.codecogs.com/png.latex?y_c(t)"> be the metric value for cohort <img src="https://latex.codecogs.com/png.latex?c"> at time <img src="https://latex.codecogs.com/png.latex?t">, and <img src="https://latex.codecogs.com/png.latex?Y_c(T)%20=%20%5Csum_%7Bt=c%7D%5ET%20y_c(t)">. In this sum, the cohort that enters on day 1 is observed for <img src="https://latex.codecogs.com/png.latex?T"> days, while the cohort on day 2 is observed for <img src="https://latex.codecogs.com/png.latex?T-1"> days and the cohort on day <img src="https://latex.codecogs.com/png.latex?T"> is observed for 1 day. (Note that this is not an average over time, it is simply a sum; we will discuss how this sum has adverse effects on convergence and shine light on why averages are very useful.)</p>
+<p>Say that <img src="https://latex.codecogs.com/png.latex?y"> is normally distributed iid so <img src="https://latex.codecogs.com/png.latex?y%20%5Csim%20N(%5Cmu,%20%5Csigma%5E2)"> and for simplicity is not a function of the cohort. Then the distribution of the sum is <img src="https://latex.codecogs.com/png.latex?Y_c(T)%20%5Csim%20N((T%20-%20t%20+%201)%5Cmu,%20(T%20-%20t%20+%201)%5Csigma%5E2)"> where we emphasize cohort <img src="https://latex.codecogs.com/png.latex?c"> arrives at time <img src="https://latex.codecogs.com/png.latex?t">. By the time the experiment ends on day <img src="https://latex.codecogs.com/png.latex?T">, the data in <img src="https://latex.codecogs.com/png.latex?Y(T)"> that we observe follows a mixture distribution. The <img src="https://latex.codecogs.com/png.latex?t%5E%7Bth%7D"> component has mean <img src="https://latex.codecogs.com/png.latex?%5Cmu_t%20=%20(T%20-%20t%20+%201)%5Cmu"> and variance <img src="https://latex.codecogs.com/png.latex?%5Csigma_t%5E2%20=%20(T%20-%20t%20+%201)%5Csigma%5E2">. Using the sizes of the components, <img src="https://latex.codecogs.com/png.latex?n(t)">, we can compute the overall mean and variance of this mixture distribution.</p>
+<p>Given <img src="https://latex.codecogs.com/png.latex?T"> components with mixture weights <img src="https://latex.codecogs.com/png.latex?%5Cpi_t">, the mean and variance of the mixture distribution are generically</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0A%5Ctilde%7B%5Cmu%7D(T)%20&amp;=%20%5Csum_%7Bt=1%7D%5ET%20%5Cpi_t%20%5Cmu_t%20%5C%5C%0A%5Ctilde%7B%5Csigma%7D%5E2(T)%20&amp;=%20%5Csum_%7Bt=1%7D%5ET%20%5CBigl(%5Cpi_t%20(%5Csigma_t%5E2%20+%20%5Cmu_t%5E2)%5CBigr)%20-%20%5Ctilde%7B%5Cmu%7D(T)%5E2%0A%5Cend%7Balign%7D"></p>
+<p>Applying this to our data generating process, we have the system</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0A%5Cmu_t%20&amp;=%20(T%20-%20t%20+%201)%20%5Cmu%20%5C%5C%0A%5Csigma_t%5E2%20&amp;=%20(T%20-%20t%20+%201)%20%5Csigma%5E2%20%5C%5C%0A%5Cpi(t)%20&amp;=%20%5Cfrac%7Bn(t)%7D%7BN(T)%7D%20%5C%5C%0A%5Ctilde%7B%5Cmu%7D(T)%20&amp;=%20%5Csum_%7Bt=1%7D%5ET%20%5Cpi(t)%20%5Cmu_t%20%5C%5C%0A%5Ctilde%7B%5Csigma%7D%5E2(T)%20&amp;=%20%5Csum_%7Bt=1%7D%5ET%20%5Cpi(t)%20(%5Csigma_t%5E2%20+%20%5Cmu_t%5E2)%20-%20%5Ctilde%7B%5Cmu%7D(T)%5E2%20%5C%5C%0A%5Cend%7Balign%7D"></p>
+</section>
+<section id="convergence" class="level1">
+<h1>Convergence</h1>
+<p>Other than the effect size, the standard error is the key statistic that drives the accumulation of statistical power. It has a lever that we can control, how much time do we dedicate to accumulate <img src="https://latex.codecogs.com/png.latex?n">. The standard error process, <img src="https://latex.codecogs.com/png.latex?SE(T)%20=%20%5Cfrac%7B%5Ctilde%7B%5Csigma%7D%5E2(T)%7D%7BN(T)%7D">, is charted below. We note some interesting patterns:</p>
+<ol type="1">
+<li>The standard error can decrease over time, and then increase. This is a peculiar behavior.</li>
+<li><img src="https://latex.codecogs.com/png.latex?%5Cmu"> and <img src="https://latex.codecogs.com/png.latex?%5Csigma%5E2"> influence what regime we are in, a decreasing standard error or an increasing standard error. When <img src="https://latex.codecogs.com/png.latex?%5Csigma%5E2"> is large, a small increment in <img src="https://latex.codecogs.com/png.latex?n"> can tame the standard error and decrease it. However, eventually the growth in <img src="https://latex.codecogs.com/png.latex?%5Ctilde%7B%5Csigma%7D%5E2"> outpaces <img src="https://latex.codecogs.com/png.latex?n"> causing the standard error to increase.</li>
+<li>If we are accumulating <img src="https://latex.codecogs.com/png.latex?n(t)"> quickly, in a superlinear way, the standard error process always goes down.</li>
+</ol>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="https://jeffwong.github.io/posts/arrival_bias_in_accounting/index_files/figure-html/unnamed-chunk-2-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="https://jeffwong.github.io/posts/arrival_bias_in_accounting/index_files/figure-html/unnamed-chunk-3-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="https://jeffwong.github.io/posts/arrival_bias_in_accounting/index_files/figure-html/unnamed-chunk-4-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="aggregation-method-is-important." class="level1">
+<h1>Aggregation method is important.</h1>
+<p>The pattern that the standard error can go up as you accumulate <img src="https://latex.codecogs.com/png.latex?n"> is a strange pattern. As we illustrate, this can happen even when <img src="https://latex.codecogs.com/png.latex?y(t)"> is a random variable with fixed mean. The core reason for why the SE process can increase is that <img src="https://latex.codecogs.com/png.latex?%5Ctilde%7B%5Csigma%7D%5E2(T)"> is growing faster than <img src="https://latex.codecogs.com/png.latex?N(T)"> is growing. This is due to the unbounded growth in <img src="https://latex.codecogs.com/png.latex?Y_c(T)">, combined with the form of <img src="https://latex.codecogs.com/png.latex?n(t)">. When <img src="https://latex.codecogs.com/png.latex?n"> is accumulating from a finite pool, the ability for <img src="https://latex.codecogs.com/png.latex?N(T)"> to grow slows down whereas <img src="https://latex.codecogs.com/png.latex?%5Ctilde%7B%5Csigma%7D%5E2(T)"> continues to grow in an unbounded way. If <img src="https://latex.codecogs.com/png.latex?n"> is accumulating from an infinite pool, or is in a regime with fast growth, it is possible to be in a regime where the standard error process is going down.</p>
+<p>Aggregation is important. We need to prevent <img src="https://latex.codecogs.com/png.latex?%5Ctilde%7B%5Csigma%7D%5E2(T)"> from growing unbounded. There are multiple ways to do this. In the simple case, each component can divide the term <img src="https://latex.codecogs.com/png.latex?(T%20-%20c%20+%201)">, so that all components are identically distributed as <img src="https://latex.codecogs.com/png.latex?N(%5Cmu,%20%5Csigma%5E2)">, collapsing the mixture to a single normal distribution. Using this aggregation, <img src="https://latex.codecogs.com/png.latex?Y_c(t)"> does not grow as <img src="https://latex.codecogs.com/png.latex?T"> increases. At the same time, the denominator <img src="https://latex.codecogs.com/png.latex?N(T)"> increases, even if slowly, creating a guarantee that the SE process decreases.</p>
+<p>Another way to do this is to aggregate <img src="https://latex.codecogs.com/png.latex?y(t)"> using a window with a fixed size, <img src="https://latex.codecogs.com/png.latex?S">, and limiting the analysis of the experiment to subjects who have been in the experiment for at least <img src="https://latex.codecogs.com/png.latex?S"> days.</p>
+</section>
+<section id="what-if-yt-is-nonstationary" class="level1">
+<h1>What if y(t) is nonstationary?</h1>
+<p>The above strategies can create guarantees due to the fact that the underlying <img src="https://latex.codecogs.com/png.latex?y(t)%20%5Csim%20N(%5Cmu,%20%5Csigma%5E2)"> where <img src="https://latex.codecogs.com/png.latex?%5Cmu"> and <img src="https://latex.codecogs.com/png.latex?%5Csigma%5E2"> were constants. This created a guarantee that <img src="https://latex.codecogs.com/png.latex?Y_c(T)"> would not grow unbounded. However, if <img src="https://latex.codecogs.com/png.latex?y(t)"> has a trend, it is possible for <img src="https://latex.codecogs.com/png.latex?Y_c(T)"> to grow unbounded again. That is content for a different post.</p>
+
+
+</section>
+
+ ]]></description>
+  <category>experimentation</category>
+  <category>statistics</category>
+  <guid>https://jeffwong.github.io/posts/arrival_bias_in_accounting/</guid>
+  <pubDate>Mon, 15 Sep 2025 00:00:00 GMT</pubDate>
+</item>
+<item>
   <title>Errors in Experiments</title>
   <dc:creator>Jeffrey Wong</dc:creator>
   <link>https://jeffwong.github.io/posts/errors_in_experiments/</link>
@@ -1196,8 +1272,21 @@ Design Statistics
 
 
 
+<p>Credits: This post is a summary of the World Bank <a href="https://blogs.worldbank.org/en/impactevaluations/why-ex-post-power-using-estimated-effect-sizes-bad-ex-post-mde-not">blog post</a> written by David McKenzie. There is no additional innovation in the post here. It is a natural follow up to our type S/M discussion in <a href="https://jeffwong.github.io/posts/errors_in_experiments/">Errors in Experiments</a></p>
+<p>During experiment planning, we say that we need a sample size of <img src="https://latex.codecogs.com/png.latex?n"> in order to achieve 80% power. We will usually track the number of days it will take to observe <img src="https://latex.codecogs.com/png.latex?n"> samples. However, in real online environments, we cannot forecast exactly how much traffic we will really get. It is tempting to monitor how much statistical power we have achieved so far. This is a bad practice, and is misleading. However, monitoring the MDE midway through a test is OK. This post will summarize why.</p>
+<section id="ex-post-statistical-power" class="level1">
+<h1>Ex post statistical power</h1>
+<p>Ex post statistical power says to plug in the observed effect size into the power formula, in place of the anticipated effect size. When we do this, ex post power is literally a function of <img src="https://latex.codecogs.com/png.latex?Z">, the test statistic. At the same time, it is noisy because of the noise on the estimated effect size, as well as type M exaggeration. So stat sig results will have large ex post power, whereas results that are not stat sig will have low ex post power. This is dangerous. It can perpetuate the trap that the “lack of evidence of an effect” is not the same as “evidence for the lack of an effect”, e.g. you can and should expect that high powered tests still do not reveal stat sig results.</p>
+<p><img src="https://latex.codecogs.com/png.latex?%0A%5Cboxed%7B%5Ctext%7BPower%7D%20=%20%5CPhi(%5Cdelta%20-%20z_%7B1-%5Calpha/2%7D)%20+%20%5CPhi(-%5Cdelta%20-%20z_%7B1-%5Calpha/2%7D)%7D%0A"></p>
+</section>
+<section id="ex-post-mde" class="level1">
+<h1>Ex post MDE</h1>
+<p>Pivoting the problem from power to MDE avoids the need to plug in the estimated effect size for the anticipated effect size. This is the procedure that we want to avoid in order to not inherit noise and type M errors.</p>
+<p>In ex post MDE, we use the current sample size and the current variance to estimate the current MDE. Unlike power, there is no anticipated effect size or the need to estimate it from observed data, hence ex post MDE is more robust and is not vulnerable to type M exaggeration.</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cboxed%7BMDE%20=%20(z_%7B1-%5Calpha/2%7D%20-%20z_%7B%5Cbeta%7D)%20%5Ccdot%20SE%7D"></p>
+</section>
 <section id="references" class="level1">
-
+<h1>References</h1>
 <ol type="1">
 <li>https://blogs.worldbank.org/en/impactevaluations/why-ex-post-power-using-estimated-effect-sizes-bad-ex-post-mde-not</li>
 </ol>

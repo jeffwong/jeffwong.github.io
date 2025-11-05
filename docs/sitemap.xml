@@ -2,23 +2,27 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://jeffwong.github.io/posts/statistical_power/index.html</loc>
-    <lastmod>2025-10-20T20:26:39.909Z</lastmod>
+    <lastmod>2025-10-21T01:25:46.888Z</lastmod>
   </url>
   <url>
     <loc>https://jeffwong.github.io/posts/posthoc_mde/index.html</loc>
-    <lastmod>2025-10-20T20:25:03.602Z</lastmod>
+    <lastmod>2025-11-04T06:30:29.326Z</lastmod>
   </url>
   <url>
     <loc>https://jeffwong.github.io/posts/errors_in_experiments/index.html</loc>
-    <lastmod>2025-10-20T20:26:30.737Z</lastmod>
+    <lastmod>2025-10-21T01:20:54.470Z</lastmod>
   </url>
   <url>
-    <loc>https://jeffwong.github.io/index.html</loc>
-    <lastmod>2025-10-08T04:56:28.596Z</lastmod>
+    <loc>https://jeffwong.github.io/posts/arrival_bias_in_accounting/index.html</loc>
+    <lastmod>2025-11-05T19:20:37.676Z</lastmod>
   </url>
   <url>
     <loc>https://jeffwong.github.io/about.html</loc>
     <lastmod>2025-10-08T04:56:28.588Z</lastmod>
+  </url>
+  <url>
+    <loc>https://jeffwong.github.io/index.html</loc>
+    <lastmod>2025-10-08T04:56:28.596Z</lastmod>
   </url>
   <url>
     <loc>https://jeffwong.github.io/posts/elastic_net/index.html</loc>
@@ -30,6 +34,6 @@
   </url>
   <url>
     <loc>https://jeffwong.github.io/posts/power_noncompliance/index.html</loc>
-    <lastmod>2025-10-20T20:25:07.798Z</lastmod>
+    <lastmod>2025-11-04T06:30:34.275Z</lastmod>
   </url>
 </urlset>

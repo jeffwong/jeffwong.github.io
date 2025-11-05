@@ -5,6 +5,47 @@ date: "2025-09-15"
 categories: [experimentation, statistics]
 ---
 
+Credits: This post is a summary of the World Bank [blog post](https://blogs.worldbank.org/en/impactevaluations/why-ex-post-power-using-estimated-effect-sizes-bad-ex-post-mde-not) 
+written by David McKenzie. There is no additional innovation in the post here.
+It is a natural follow up to our type S/M discussion in [Errors in Experiments](https://jeffwong.github.io/posts/errors_in_experiments/)
+
+During experiment planning, we say that we need a sample size of $n$ in order
+to achieve 80% power. We will usually track the number of days it will take
+to observe $n$ samples. However, in real online environments, we cannot
+forecast exactly how much traffic we will really get. It is tempting to monitor
+how much statistical power we have achieved so far. This is a bad practice, and
+is misleading. However, monitoring the MDE midway through a test is OK.
+This post will summarize why.
+
+# Ex post statistical power
+
+Ex post statistical power says to plug in the observed effect size into the power formula,
+in place of the anticipated effect size. When we do this, ex post power is literally
+a function of $Z$, the test statistic. At the same time, it is noisy because of the
+noise on the estimated effect size, as well as type M exaggeration.
+So stat sig results will have large ex post power, 
+whereas results that are not stat sig will have low ex post power. This is dangerous.
+It can perpetuate the trap that the
+"lack of evidence of an effect" is not the same as "evidence for the lack of an effect", e.g.
+you can and should expect that high powered tests still do not reveal stat sig results.
+
+$$
+\boxed{\text{Power} = \Phi(\delta - z_{1-\alpha/2}) + \Phi(-\delta - z_{1-\alpha/2})}
+$$
+
+# Ex post MDE
+
+Pivoting the problem from power to MDE avoids the need to plug in the 
+estimated effect size for the anticipated effect size. This is the procedure
+that we want to avoid in order to not inherit noise and type M errors.
+
+In ex post MDE, we use the current sample size and the current variance to estimate
+the current MDE. Unlike power, there is no anticipated effect size or the need to
+estimate it from observed data, hence ex post MDE is more robust and is not
+vulnerable to type M exaggeration.
+
+$$\boxed{MDE = (z_{1-\alpha/2} - z_{\beta}) \cdot SE}$$
+
 # References
 
 1. https://blogs.worldbank.org/en/impactevaluations/why-ex-post-power-using-estimated-effect-sizes-bad-ex-post-mde-not

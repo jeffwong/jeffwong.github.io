@@ -14,7 +14,7 @@
 <item>
   <title>Aggregations and Arrival Times Affect Convergence</title>
   <dc:creator>Jeffrey Wong</dc:creator>
-  <link>https://jeffwong.github.io/posts/arrival_bias_in_accounting/</link>
+  <link>https://jeffwong.github.io/posts/aggregation_arrival_convergence/</link>
   <description><![CDATA[ 
 
 
@@ -44,7 +44,7 @@
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="https://jeffwong.github.io/posts/arrival_bias_in_accounting/index_files/figure-html/unnamed-chunk-2-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="https://jeffwong.github.io/posts/aggregation_arrival_convergence/index_files/figure-html/unnamed-chunk-2-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
@@ -53,7 +53,7 @@
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="https://jeffwong.github.io/posts/arrival_bias_in_accounting/index_files/figure-html/unnamed-chunk-3-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="https://jeffwong.github.io/posts/aggregation_arrival_convergence/index_files/figure-html/unnamed-chunk-3-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
@@ -62,7 +62,7 @@
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="https://jeffwong.github.io/posts/arrival_bias_in_accounting/index_files/figure-html/unnamed-chunk-4-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="https://jeffwong.github.io/posts/aggregation_arrival_convergence/index_files/figure-html/unnamed-chunk-4-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
@@ -84,7 +84,7 @@
  ]]></description>
   <category>experimentation</category>
   <category>statistics</category>
-  <guid>https://jeffwong.github.io/posts/arrival_bias_in_accounting/</guid>
+  <guid>https://jeffwong.github.io/posts/aggregation_arrival_convergence/</guid>
   <pubDate>Mon, 15 Sep 2025 00:00:00 GMT</pubDate>
 </item>
 <item>

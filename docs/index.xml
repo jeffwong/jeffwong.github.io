@@ -9,8 +9,106 @@
 <link>https://jeffwong.github.io/</link>
 <atom:link href="https://jeffwong.github.io/index.xml" rel="self" type="application/rss+xml"/>
 <description>Data science innovation from first principles.</description>
-<generator>quarto-1.8.24</generator>
-<lastBuildDate>Mon, 15 Sep 2025 00:00:00 GMT</lastBuildDate>
+<generator>quarto-1.8.27</generator>
+<lastBuildDate>Sun, 08 Feb 2026 00:00:00 GMT</lastBuildDate>
+<item>
+  <title>Make Experimentation Planning Simple Again</title>
+  <dc:creator>Jeffrey Wong</dc:creator>
+  <link>https://jeffwong.github.io/posts/anytime_valid_inference_ols/</link>
+  <description><![CDATA[ 
+
+
+
+
+
+<p>We want to learn as quickly as possible from experiments. But most experiments are designed as fixed horizon tests, meaning we meticulously plan for statistical power, schedule a specific time window for the test, patiently wait, and only measure the outcome at the end of that time window. Any intermediate results, regardless of what they can teach us, are deemed untrustworthy, due to not accumulating sufficient power. Intermediate results also have the burden of multiple hypothesis testing, inflating the number of false positives in the readouts. The more intermediate results that are reported, the higher the chance of acting on a false positive.</p>
+<p>In the post on <a href="https://jeffwong.github.io/posts/posthoc_mde/">posthoc mde</a> David McKenzie describes that it is OK to reference in-experiment data to measure your current MDE. This lets you determine whether or not you have accumulated enough power for the effect sizes you are observing in the experiment. What remains then, is a need to solve for peeking and mitigating multiple hypothesis testing. If that is solved, experimentation planning becomes a lot simpler - you can always see what MDE your data can read, and you can also stop without worrying about peeking. (Note: while you can peek, it doesn’t mean that those individual peeks have high power)</p>
+<p>This blog post will walk through how to use anytime valid inference, especially with linear models, so that it is safe to peek at any time. The novelty of this work was created by Michael Lindon in his paper <a href="https://arxiv.org/abs/2210.08589">Anytime-Valid Linear Models and Regression Adjusted Causal Inference in Randomized Experiments</a>.</p>
+<section id="linear-model-formulation" class="level1">
+<h1>Linear Model Formulation</h1>
+<p>Linear models are great for modeling treatment effects. Start with the least squares formulation:</p>
+<p><img src="https://latex.codecogs.com/png.latex?y%20=%20%5Calpha%20+%20T%20%5Cbeta_1%20+%20X%20%5Cbeta_2%20+%20%5Cvarepsilon."></p>
+<p>In a RCT, <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Cbeta_1%7D"> is the treatment effect. The addition of the <img src="https://latex.codecogs.com/png.latex?X%20%5Cbeta_2"> term allows us to absorb variance and reduce the standard error on <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Cbeta_1%7D">. When we do the hypothesis test for</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0AH_0:%20%5Cbeta_1%20&amp;=%200%20%5C%5C%0AH_A:%20%5Cbeta_1%20&amp;=%201%0A%5Cend%7Balign%7D"></p>
+<p>we get a p value that tells us if the treatment effect is significant or not. This process is only useful if we measure the effect with statistical power, and if we measure the effect only once. If we are measuring the effect daily, then benchmarking the p value against <img src="https://latex.codecogs.com/png.latex?%5Calpha"> becomes meaningless, because we no longer control the false positive rate under the null to be less than <img src="https://latex.codecogs.com/png.latex?%5Calpha">. This is called peeking. Anytime valid inference uses the same regression model, the same regression coefficients, but changes the procedure for inferring the effect. The result is the ability to peak, and stop early if there is strong evidence.</p>
+</section>
+<section id="background-leading-up-to-anytime-valid-inference" class="level1">
+<h1>Background leading up to anytime valid inference</h1>
+<p>The first principles derivation for anytime valid inference is a very mathematically heavy exercise. The following concepts will play a significant role in deriving the anytime valid formula.</p>
+<section id="wald-test" class="level2">
+<h2 class="anchored" data-anchor-id="wald-test">Wald test</h2>
+<p>The Wald test is a generalization of the t test, where we can test the combination of coefficients in a regression. This is especially relevant for anytime valid inference in regression, where the model may take arbitrary form. The treatment effect is not always the single coefficient <img src="https://latex.codecogs.com/png.latex?%5Cbeta_1">.</p>
+</section>
+<section id="bayes-factor" class="level2">
+<h2 class="anchored" data-anchor-id="bayes-factor">Bayes Factor</h2>
+<p>A p value is a statistic specifically associated with a hypothesis test. When the p value is small, we reject a specific null in favor of a specific alternative. The p value is a probability that describes how likely it would be to draw a value as extreme as the test statistic under the null distribution. When we reject a null hypothesis, the p value is saying that the data unlikely came from the null.</p>
+<p>The p value is not quantifying evidence though. It does not say that the alternative is 10x more likely than the null. There is a different way to quantify that. A Bayes Factor, from a Bayesian model, is a ratio of marginal likelihoods, defined as</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0Ap(y%20%7C%20M)%20&amp;=%20%5Cint_%5Ctheta%20p(y%20%7C%20%5Ctheta,%20M)%20p(%5Ctheta%20%7C%20M)%20d%5Ctheta%20%5C%5C%0ABF%20&amp;=%20%5Cfrac%7Bp(y%20%7C%20H_A)%7D%7Bp(y%20%7C%20H_0)%7D%0A%5Cend%7Balign%7D"></p>
+<p>where <img src="https://latex.codecogs.com/png.latex?p(y%20%7C%20M)"> is the marginal likelihood of the data given a model. The ratio is a statistic about evidence. In the case of a linear model, we can say that the null hypothesis is that all coefficients are 0, and the alternative hypothesis is that the coefficients are a nonzero vector. This is the classic F test. If the Bayes Factor is 1, then the likelihood of the null and alternative hypotheses are equal and there is no evidence that they are different. However, if the Bayes Factor is a large number, it means there is evidence that the alternative hypothesis is a better fit than the null hypothesis.</p>
+</section>
+<section id="g-prior" class="level2">
+<h2 class="anchored" data-anchor-id="g-prior">g prior</h2>
+<p>The g prior is a normal-normal prior on the regression parameters. Though it is an uninformative prior, it is a convenient prior for the exercise.</p>
+<p>The prior is</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0A%5Cbeta%20%7C%20%5Csigma%5E2,%20g%20&amp;%5Csim%20N(0,%20g%5Csigma%5E2,%20(X%5ET%20X)%5E%7B-1%7D)%20%5C%5C%0A%5Cpi(%5Calpha,%20%5Csigma%5E2)%20&amp;%5Cpropto%201/%5Csigma%5E2%0A%5Cend%7Balign%7D"></p>
+<p>In this model, the Bayes factor is</p>
+<p><img src="https://latex.codecogs.com/png.latex?%0ABF%20=%20%5Csqrt%7B%5Cfrac%7Bg%7D%7Bg%20+%20n%7D%7D%20%5CBig(%20%5Cfrac%7B1%20+%20t%5E2%20/%20%5Cnu%7D%7B1%20+%20%5Cfrac%7Bg%7D%7Bg%20+%20n%7D%20t%5E2%20/%20%5Cnu%7D%20%5CBig)%5E%5Cfrac%7B%5Cnu%20+%201%7D%7B2%7D%0A"></p>
+<p>In this formula, <img src="https://latex.codecogs.com/png.latex?%5Cnu%20=%20n%20-%20p%20-%201"> is degrees of freedom and <img src="https://latex.codecogs.com/png.latex?t%5E2"> is the squared t stat from the hypothesis test. The log of this Bayes Factor is exactly captured in the <a href="https://github.com/michaellindon/avlm/blob/main/R/e_variables.R#L21">avlm function log_G_t</a>.</p>
+</section>
+<section id="e-variables" class="level2">
+<h2 class="anchored" data-anchor-id="e-variables">E Variables</h2>
+<p>One interpretation of an <a href="https://en.wikipedia.org/wiki/E-values#As_generalizations_of_likelihood_ratios">e-variable</a> is the generalization of the likelihood ratio. The ratio itself is not always an e-variable, though in the exercise below Lindon shows the connection between the Bayes Factor, e-variables, and martingales.</p>
+</section>
+<section id="martingales" class="level2">
+<h2 class="anchored" data-anchor-id="martingales">Martingales</h2>
+<p>A martingale is a sequence of random variables that has the property</p>
+<p><img src="https://latex.codecogs.com/png.latex?E%5BX_%7Bt+1%7D%20%7C%20X_1,%20X_2,%20...,%20X_t%5D%20=%20X_t"></p>
+<p>For example, say a person visits a casino and plays the slot machines. Say that every time they play, they can either lose $1 or win $1. If the slot machines are fair, then the expected payouts are <img src="https://latex.codecogs.com/png.latex?0">. The amount of money the person has at <img src="https://latex.codecogs.com/png.latex?t+1"> is centered around their current holdings, <img src="https://latex.codecogs.com/png.latex?X_t">.</p>
+<p>This concept will be useful later because when we peek into an experiment, the new intermediate statistics we will use is a martingale.</p>
+</section>
+<section id="villes-inequality" class="level2">
+<h2 class="anchored" data-anchor-id="villes-inequality">Ville’s Inequality</h2>
+<p>Given a martingale <img src="https://latex.codecogs.com/png.latex?X_1,%20...,%20X_n"> with initial value <img src="https://latex.codecogs.com/png.latex?X_1">, we have</p>
+<p><img src="https://latex.codecogs.com/png.latex?P(%5Ctext%7Bany%20value%20in%20%7DX_n%20%5Cgeq%20%5Calpha)%20%5Cleq%20%5Cfrac%7BE%5BX_1%5D%7D%7B%5Calpha%7D"></p>
+</section>
+</section>
+<section id="first-principles-approach-to-anytime-valid-inference" class="level1">
+<h1>First Principles approach to Anytime Valid Inference</h1>
+<p>The construction of anytime valid inference under linear models is as follows.</p>
+<section id="step-1-write-the-bayes-factor-using-a-distribution-for-beta." class="level2">
+<h2 class="anchored" data-anchor-id="step-1-write-the-bayes-factor-using-a-distribution-for-beta.">Step 1: Write the Bayes Factor using a distribution for <img src="https://latex.codecogs.com/png.latex?%5Cbeta">.</h2>
+<p>We’ll use the uninformative g prior to construct a distribution for <img src="https://latex.codecogs.com/png.latex?%5Cbeta">. This is used to compute the marginal likelihood of the data, and therefore a Bayes Factor. The Bayes Factor, under a null hypothesis of no treatment effect, is</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0AH_0:%20%5Cbeta_1%20&amp;=%200%20%5C%5C%0AH_A:%20%5Cbeta_1%20&amp;=%201%0A%5Cend%7Balign%7D"></p>
+<p><img src="https://latex.codecogs.com/png.latex?BF%20=%20%5Cfrac%7B%5Cint%20p(y%20%7C%20%5Ctheta)%20p(%5Ctheta)%20d%5Ctheta%7D%7Bp(y%20%7C%20%5Ctheta_0)%7D"></p>
+</section>
+<section id="step-2-a-bayes-factor-is-an-e-variable." class="level2">
+<h2 class="anchored" data-anchor-id="step-2-a-bayes-factor-is-an-e-variable.">Step 2: A Bayes Factor is an e-variable.</h2>
+<p>We need to show <img src="https://latex.codecogs.com/png.latex?E_%7BH_0%7D%5BBF%5D%20%5Cleq%201">. Proof:</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0AE_%7BH_0%7D%5BBF%5D%20&amp;=%20%5Cint%20%5CBig(%20%5Cfrac%7B%5Cint%20p(y%20%7C%20%5Ctheta)%20p(%5Ctheta)%20d%5Ctheta%7D%7Bp(y%20%7C%20%5Ctheta_0)%7D%20%5CBig)%20p(y%20%7C%20%5Ctheta_0)%20dy%20%5C%5C%0A%20%20&amp;=%20%5Cint%20(%5Cint%20p(y%20%7C%20%5Ctheta)%20p(%5Ctheta)%20d%5Ctheta)%20dy%20%5C%5C%0A%20%20&amp;=%20%5Cint%20(%5Cint%20p(y%20%7C%20theta)%20dy)%20p(%5Ctheta)%20d%5Ctheta%20%5C%5C%0A%20%20&amp;=%201%0A%5Cend%7Balign%7D"></p>
+<p>The order of integration was changed using <a href="https://en.wikipedia.org/wiki/Fubini%27s_theorem">Fubini’s Theorem</a>. Thus a Bayes Factor is an e-variable.</p>
+</section>
+<section id="step-3-e-variables-are-robust-to-peeking.-they-form-a-test-martingale." class="level2">
+<h2 class="anchored" data-anchor-id="step-3-e-variables-are-robust-to-peeking.-they-form-a-test-martingale.">Step 3: e-variables are robust to peeking. They form a test martingale.</h2>
+<p>The Bayes Factor is not just an e-variable. The sequence of Bayes Factors produced by peeking at the data stream forms a test martingale.</p>
+<p>We can argue that <img src="https://latex.codecogs.com/png.latex?BF_n%20=%20BF_%7Bn-1%7D%20%5Ccdot%20%5Ctext%7BLikelihood%20of%20the%20nth%20observation%7D."> Under the null, the likelihood of the next Bayes Factor has expectation 1, so the expected value at time <img src="https://latex.codecogs.com/png.latex?n"> is simply <img src="https://latex.codecogs.com/png.latex?BF_%7Bn-1%7D">. Showing that a particular Bayes Factor at time <img src="https://latex.codecogs.com/png.latex?t"> was an e-variable was also an important step to showing that the sequence of Bayes Factors is a test martingale.</p>
+</section>
+<section id="invoke-villes-inequality-to-get-the-anytime-valid-p-value" class="level2">
+<h2 class="anchored" data-anchor-id="invoke-villes-inequality-to-get-the-anytime-valid-p-value">Invoke Ville’s Inequality to get the Anytime Valid P Value</h2>
+<p>Imagine that we construct a sequence of ordinary p values. This sequence is not anytime valid, due to not controlling the false positive rate. In order to be anytime valid, we want the probability that any stat sig result has a controlled probability where the p value falling below the <img src="https://latex.codecogs.com/png.latex?%5Calpha"> significance level to be equal to <img src="https://latex.codecogs.com/png.latex?%5Calpha">. From first principles, we would want</p>
+<p><img src="https://latex.codecogs.com/png.latex?P(p_t%20%5Cleq%20%5Calpha)%20%5Cleq%20%5Calpha"></p>
+<p>Note that for the ordinary p value, <img src="https://latex.codecogs.com/png.latex?P(p_t%20%5Cleq%20%5Calpha)"> is actually much larger than <img src="https://latex.codecogs.com/png.latex?%5Calpha">, since across multiple t in the sequence we ought to be able to find a stat sig result. The condition for anytime valid p values here is much more strict.</p>
+<p>To construct this property out of a Bayes Factor, we invoke <a href="https://en.wikipedia.org/wiki/Ville%27s_inequality">Ville’s inequality</a>. The probability for a value in the <img src="https://latex.codecogs.com/png.latex?BF_n"> sequence to be greater than <img src="https://latex.codecogs.com/png.latex?%5Calpha"> is bounded by <img src="https://latex.codecogs.com/png.latex?1%20/%20%5Calpha">. The beauty is: the inverse of the Bayes Factor is the anytime valid p value! At the typical <img src="https://latex.codecogs.com/png.latex?%5Calpha%20=%200.05"> value, a Bayes Factor of 20 would indicate that the RCT can be concluded early.</p>
+
+
+</section>
+</section>
+
+ ]]></description>
+  <category>experimentation</category>
+  <category>statistics</category>
+  <guid>https://jeffwong.github.io/posts/anytime_valid_inference_ols/</guid>
+  <pubDate>Sun, 08 Feb 2026 00:00:00 GMT</pubDate>
+</item>
 <item>
   <title>Aggregations and Arrival Times Affect Convergence</title>
   <dc:creator>Jeffrey Wong</dc:creator>

@@ -2,6 +2,7 @@
   {
     "listing": "/index.html",
     "items": [
+      "/posts/anytime_valid_inference_ols/index.html",
       "/posts/aggregation_arrival_convergence/index.html",
       "/posts/errors_in_experiments/index.html",
       "/posts/posthoc_mde/index.html",

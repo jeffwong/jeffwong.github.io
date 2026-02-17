@@ -1,3 +1,6 @@
+Create a blog post by adding a directory to posts/ with a quarto file called
+`index.qmd`.
+
 Deployment notes:
 
 To view the site locally, run

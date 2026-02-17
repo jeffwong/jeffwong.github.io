@@ -7,9 +7,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Jeffrey Wong">
-<meta name="dcterms.date" content="2025-09-15">
+<meta name="dcterms.date" content="2026-02-08">
 
-<title>Aggregations and Arrival Times Affect Convergence – From First Principles</title>
+<title>Make Experimentation Planning Simple Again – From First Principles</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -141,7 +141,7 @@ window.Quarto = {
 <header id="title-block-header" class="quarto-title-block default page-columns page-full">
   <div class="quarto-title-banner page-columns page-full">
     <div class="quarto-title column-body">
-      <h1 class="title">Aggregations and Arrival Times Affect Convergence</h1>
+      <h1 class="title">Make Experimentation Planning Simple Again</h1>
                                 <div class="quarto-categories">
                 <div class="quarto-category">experimentation</div>
                 <div class="quarto-category">statistics</div>
@@ -162,7 +162,7 @@ window.Quarto = {
       <div>
       <div class="quarto-title-meta-heading">Published</div>
       <div class="quarto-title-meta-contents">
-        <p class="date">September 15, 2025</p>
+        <p class="date">February 8, 2026</p>
       </div>
     </div>
     
@@ -181,73 +181,105 @@ window.Quarto = {
 
 
 
-<p>In this post we study the convergence speed of an experiment. Over time, we accumulate sample size. As that sample size increases, statistical power is supposed to increase and MDE decreases. But over time, what conditions make this guarantee? Can variance over time increase, for example due to nonstationarity, seasonality or trends? And if so, how does that affect the power that is being accumulated over time? How does the aggregation over time affect this process? What if our ability to collect samples decreases over time? We study how aggregations like means and variances, the inputs into statistical tests, are actually stochastic processes and how that affects the standard error, the key input into the MDE.</p>
-<section id="accumulating-data-and-aggregating-it" class="level1">
-<h1>Accumulating Data and Aggregating it</h1>
-<p>Different cohorts of subjects enter the experiment at different times. Say that cohort <span class="math inline">\(c\)</span> arrives at the experiment at time <span class="math inline">\(A(c) = c\)</span>, so cohort 1 arrives on day 1, cohort 2 arrives on day 2, etc. We can consider this statement widely true in different experiments, so we don’t consider any other form of arrival times. Say the size of the cohort that is arriving on day <span class="math inline">\(t\)</span> is <span class="math inline">\(n(t)\)</span>. The experiment ends on day <span class="math inline">\(T\)</span>, where <span class="math inline">\(N(T) = \sum_{t=1}^T n(t)\)</span> subjects have been accumulated.</p>
-<p>Let <span class="math inline">\(y_c(t)\)</span> be the metric value for cohort <span class="math inline">\(c\)</span> at time <span class="math inline">\(t\)</span>, and <span class="math inline">\(Y_c(T) = \sum_{t=c}^T y_c(t)\)</span>. In this sum, the cohort that enters on day 1 is observed for <span class="math inline">\(T\)</span> days, while the cohort on day 2 is observed for <span class="math inline">\(T-1\)</span> days and the cohort on day <span class="math inline">\(T\)</span> is observed for 1 day. (Note that this is not an average over time, it is simply a sum; we will discuss how this sum has adverse effects on convergence and shine light on why averages are very useful.)</p>
-<p>Say that <span class="math inline">\(y\)</span> is normally distributed iid so <span class="math inline">\(y \sim N(\mu, \sigma^2)\)</span> and for simplicity is not a function of the cohort. Then the distribution of the sum is <span class="math inline">\(Y_c(T) \sim N((T - t + 1)\mu, (T - t + 1)\sigma^2)\)</span> where we emphasize cohort <span class="math inline">\(c\)</span> arrives at time <span class="math inline">\(t\)</span>. By the time the experiment ends on day <span class="math inline">\(T\)</span>, the data in <span class="math inline">\(Y(T)\)</span> that we observe follows a mixture distribution. The <span class="math inline">\(t^{th}\)</span> component has mean <span class="math inline">\(\mu_t = (T - t + 1)\mu\)</span> and variance <span class="math inline">\(\sigma_t^2 = (T - t + 1)\sigma^2\)</span>. Using the sizes of the components, <span class="math inline">\(n(t)\)</span>, we can compute the overall mean and variance of this mixture distribution.</p>
-<p>Given <span class="math inline">\(T\)</span> components with mixture weights <span class="math inline">\(\pi_t\)</span>, the mean and variance of the mixture distribution are generically</p>
+<p>We want to learn as quickly as possible from experiments. But most experiments are designed as fixed horizon tests, meaning we meticulously plan for statistical power, schedule a specific time window for the test, patiently wait, and only measure the outcome at the end of that time window. Any intermediate results, regardless of what they can teach us, are deemed untrustworthy, due to not accumulating sufficient power. Intermediate results also have the burden of multiple hypothesis testing, inflating the number of false positives in the readouts. The more intermediate results that are reported, the higher the chance of acting on a false positive.</p>
+<p>In the post on <a href="https://jeffwong.github.io/posts/posthoc_mde/">posthoc mde</a> David McKenzie describes that it is OK to reference in-experiment data to measure your current MDE. This lets you determine whether or not you have accumulated enough power for the effect sizes you are observing in the experiment. What remains then, is a need to solve for peeking and mitigating multiple hypothesis testing. If that is solved, experimentation planning becomes a lot simpler - you can always see what MDE your data can read, and you can also stop without worrying about peeking. (Note: while you can peek, it doesn’t mean that those individual peeks have high power)</p>
+<p>This blog post will walk through how to use anytime valid inference, especially with linear models, so that it is safe to peek at any time. The novelty of this work was created by Michael Lindon in his paper <a href="https://arxiv.org/abs/2210.08589">Anytime-Valid Linear Models and Regression Adjusted Causal Inference in Randomized Experiments</a>.</p>
+<section id="linear-model-formulation" class="level1">
+<h1>Linear Model Formulation</h1>
+<p>Linear models are great for modeling treatment effects. Start with the least squares formulation:</p>
+<p><span class="math display">\[y = \alpha + T \beta_1 + X \beta_2 + \varepsilon.\]</span></p>
+<p>In a RCT, <span class="math inline">\(\hat{\beta_1}\)</span> is the treatment effect. The addition of the <span class="math inline">\(X \beta_2\)</span> term allows us to absorb variance and reduce the standard error on <span class="math inline">\(\hat{\beta_1}\)</span>. When we do the hypothesis test for</p>
 <p><span class="math display">\[\begin{align}
-\tilde{\mu}(T) &amp;= \sum_{t=1}^T \pi_t \mu_t \\
-\tilde{\sigma}^2(T) &amp;= \sum_{t=1}^T \Bigl(\pi_t (\sigma_t^2 + \mu_t^2)\Bigr) - \tilde{\mu}(T)^2
+H_0: \beta_1 &amp;= 0 \\
+H_A: \beta_1 &amp;= 1
 \end{align}\]</span></p>
-<p>Applying this to our data generating process, we have the system</p>
+<p>we get a p value that tells us if the treatment effect is significant or not. This process is only useful if we measure the effect with statistical power, and if we measure the effect only once. If we are measuring the effect daily, then benchmarking the p value against <span class="math inline">\(\alpha\)</span> becomes meaningless, because we no longer control the false positive rate under the null to be less than <span class="math inline">\(\alpha\)</span>. This is called peeking. Anytime valid inference uses the same regression model, the same regression coefficients, but changes the procedure for inferring the effect. The result is the ability to peak, and stop early if there is strong evidence.</p>
+</section>
+<section id="background-leading-up-to-anytime-valid-inference" class="level1">
+<h1>Background leading up to anytime valid inference</h1>
+<p>The first principles derivation for anytime valid inference is a very mathematically heavy exercise. The following concepts will play a significant role in deriving the anytime valid formula.</p>
+<section id="wald-test" class="level2">
+<h2 class="anchored" data-anchor-id="wald-test">Wald test</h2>
+<p>The Wald test is a generalization of the t test, where we can test the combination of coefficients in a regression. This is especially relevant for anytime valid inference in regression, where the model may take arbitrary form. The treatment effect is not always the single coefficient <span class="math inline">\(\beta_1\)</span>.</p>
+</section>
+<section id="bayes-factor" class="level2">
+<h2 class="anchored" data-anchor-id="bayes-factor">Bayes Factor</h2>
+<p>A p value is a statistic specifically associated with a hypothesis test. When the p value is small, we reject a specific null in favor of a specific alternative. The p value is a probability that describes how likely it would be to draw a value as extreme as the test statistic under the null distribution. When we reject a null hypothesis, the p value is saying that the data unlikely came from the null.</p>
+<p>The p value is not quantifying evidence though. It does not say that the alternative is 10x more likely than the null. There is a different way to quantify that. A Bayes Factor, from a Bayesian model, is a ratio of marginal likelihoods, defined as</p>
 <p><span class="math display">\[\begin{align}
-\mu_t &amp;= (T - t + 1) \mu \\
-\sigma_t^2 &amp;= (T - t + 1) \sigma^2 \\
-\pi(t) &amp;= \frac{n(t)}{N(T)} \\
-\tilde{\mu}(T) &amp;= \sum_{t=1}^T \pi(t) \mu_t \\
-\tilde{\sigma}^2(T) &amp;= \sum_{t=1}^T \pi(t) (\sigma_t^2 + \mu_t^2) - \tilde{\mu}(T)^2 \\
+p(y | M) &amp;= \int_\theta p(y | \theta, M) p(\theta | M) d\theta \\
+BF &amp;= \frac{p(y | H_A)}{p(y | H_0)}
 \end{align}\]</span></p>
+<p>where <span class="math inline">\(p(y | M)\)</span> is the marginal likelihood of the data given a model. The ratio is a statistic about evidence. In the case of a linear model, we can say that the null hypothesis is that all coefficients are 0, and the alternative hypothesis is that the coefficients are a nonzero vector. This is the classic F test. If the Bayes Factor is 1, then the likelihood of the null and alternative hypotheses are equal and there is no evidence that they are different. However, if the Bayes Factor is a large number, it means there is evidence that the alternative hypothesis is a better fit than the null hypothesis.</p>
 </section>
-<section id="convergence" class="level1">
-<h1>Convergence</h1>
-<p>Other than the effect size, the standard error is the key statistic that drives the accumulation of statistical power. It has a lever that we can control, how much time do we dedicate to accumulate <span class="math inline">\(n\)</span>. The standard error process, <span class="math inline">\(SE(T) = \frac{\tilde{\sigma}^2(T)}{N(T)}\)</span>, is charted below. We note some interesting patterns:</p>
-<ol type="1">
-<li>The standard error can decrease over time, and then increase. This is a peculiar behavior.</li>
-<li><span class="math inline">\(\mu\)</span> and <span class="math inline">\(\sigma^2\)</span> influence what regime we are in, a decreasing standard error or an increasing standard error. When <span class="math inline">\(\sigma^2\)</span> is large, a small increment in <span class="math inline">\(n\)</span> can tame the standard error and decrease it. However, eventually the growth in <span class="math inline">\(\tilde{\sigma}^2\)</span> outpaces <span class="math inline">\(n\)</span> causing the standard error to increase.</li>
-<li>If we are accumulating <span class="math inline">\(n(t)\)</span> quickly, in a superlinear way, the standard error process always goes down.</li>
-</ol>
-<div class="cell">
-<div class="cell-output-display">
-<div>
-<figure class="figure">
-<p><img src="index_files/figure-html/unnamed-chunk-2-1.png" class="img-fluid figure-img" width="672"></p>
-</figure>
-</div>
-</div>
-</div>
-<div class="cell">
-<div class="cell-output-display">
-<div>
-<figure class="figure">
-<p><img src="index_files/figure-html/unnamed-chunk-3-1.png" class="img-fluid figure-img" width="672"></p>
-</figure>
-</div>
-</div>
-</div>
-<div class="cell">
-<div class="cell-output-display">
-<div>
-<figure class="figure">
-<p><img src="index_files/figure-html/unnamed-chunk-4-1.png" class="img-fluid figure-img" width="672"></p>
-</figure>
-</div>
-</div>
-</div>
+<section id="g-prior" class="level2">
+<h2 class="anchored" data-anchor-id="g-prior">g prior</h2>
+<p>The g prior is a normal-normal prior on the regression parameters. Though it is an uninformative prior, it is a convenient prior for the exercise.</p>
+<p>The prior is</p>
+<p><span class="math display">\[\begin{align}
+\beta | \sigma^2, g &amp;\sim N(0, g\sigma^2, (X^T X)^{-1}) \\
+\pi(\alpha, \sigma^2) &amp;\propto 1/\sigma^2
+\end{align}\]</span></p>
+<p>In this model, the Bayes factor is</p>
+<p><span class="math display">\[
+BF = \sqrt{\frac{g}{g + n}} \Big( \frac{1 + t^2 / \nu}{1 + \frac{g}{g + n} t^2 / \nu} \Big)^\frac{\nu + 1}{2}
+\]</span></p>
+<p>In this formula, <span class="math inline">\(\nu = n - p - 1\)</span> is degrees of freedom and <span class="math inline">\(t^2\)</span> is the squared t stat from the hypothesis test. The log of this Bayes Factor is exactly captured in the <a href="https://github.com/michaellindon/avlm/blob/main/R/e_variables.R#L21">avlm function log_G_t</a>.</p>
 </section>
-<section id="aggregation-method-is-important." class="level1">
-<h1>Aggregation method is important.</h1>
-<p>The pattern that the standard error can go up as you accumulate <span class="math inline">\(n\)</span> is a strange pattern. As we illustrate, this can happen even when <span class="math inline">\(y(t)\)</span> is a random variable with fixed mean. The core reason for why the SE process can increase is that <span class="math inline">\(\tilde{\sigma}^2(T)\)</span> is growing faster than <span class="math inline">\(N(T)\)</span> is growing. This is due to the unbounded growth in <span class="math inline">\(Y_c(T)\)</span>, combined with the form of <span class="math inline">\(n(t)\)</span>. When <span class="math inline">\(n\)</span> is accumulating from a finite pool, the ability for <span class="math inline">\(N(T)\)</span> to grow slows down whereas <span class="math inline">\(\tilde{\sigma}^2(T)\)</span> continues to grow in an unbounded way. If <span class="math inline">\(n\)</span> is accumulating from an infinite pool, or is in a regime with fast growth, it is possible to be in a regime where the standard error process is going down.</p>
-<p>Aggregation is important. We need to prevent <span class="math inline">\(\tilde{\sigma}^2(T)\)</span> from growing unbounded. There are multiple ways to do this. In the simple case, each component can divide the term <span class="math inline">\((T - c + 1)\)</span>, so that all components are identically distributed as <span class="math inline">\(N(\mu, \sigma^2)\)</span>, collapsing the mixture to a single normal distribution. Using this aggregation, <span class="math inline">\(Y_c(t)\)</span> does not grow as <span class="math inline">\(T\)</span> increases. At the same time, the denominator <span class="math inline">\(N(T)\)</span> increases, even if slowly, creating a guarantee that the SE process decreases.</p>
-<p>Another way to do this is to aggregate <span class="math inline">\(y(t)\)</span> using a window with a fixed size, <span class="math inline">\(S\)</span>, and limiting the analysis of the experiment to subjects who have been in the experiment for at least <span class="math inline">\(S\)</span> days.</p>
+<section id="e-variables" class="level2">
+<h2 class="anchored" data-anchor-id="e-variables">E Variables</h2>
+<p>One interpretation of an <a href="https://en.wikipedia.org/wiki/E-values#As_generalizations_of_likelihood_ratios">e-variable</a> is the generalization of the likelihood ratio. The ratio itself is not always an e-variable, though in the exercise below Lindon shows the connection between the Bayes Factor, e-variables, and martingales.</p>
 </section>
-<section id="what-if-yt-is-nonstationary" class="level1">
-<h1>What if y(t) is nonstationary?</h1>
-<p>The above strategies can create guarantees due to the fact that the underlying <span class="math inline">\(y(t) \sim N(\mu, \sigma^2)\)</span> where <span class="math inline">\(\mu\)</span> and <span class="math inline">\(\sigma^2\)</span> were constants. This created a guarantee that <span class="math inline">\(Y_c(T)\)</span> would not grow unbounded. However, if <span class="math inline">\(y(t)\)</span> has a trend, it is possible for <span class="math inline">\(Y_c(T)\)</span> to grow unbounded again. That is content for a different post.</p>
+<section id="martingales" class="level2">
+<h2 class="anchored" data-anchor-id="martingales">Martingales</h2>
+<p>A martingale is a sequence of random variables that has the property</p>
+<p><span class="math display">\[E[X_{t+1} | X_1, X_2, ..., X_t] = X_t\]</span></p>
+<p>For example, say a person visits a casino and plays the slot machines. Say that every time they play, they can either lose $1 or win $1. If the slot machines are fair, then the expected payouts are <span class="math inline">\(0\)</span>. The amount of money the person has at <span class="math inline">\(t+1\)</span> is centered around their current holdings, <span class="math inline">\(X_t\)</span>.</p>
+<p>This concept will be useful later because when we peek into an experiment, the new intermediate statistics we will use is a martingale.</p>
+</section>
+<section id="villes-inequality" class="level2">
+<h2 class="anchored" data-anchor-id="villes-inequality">Ville’s Inequality</h2>
+<p>Given a martingale <span class="math inline">\(X_1, ..., X_n\)</span> with initial value <span class="math inline">\(X_1\)</span>, we have</p>
+<p><span class="math display">\[P(\text{any value in }X_n \geq \alpha) \leq \frac{E[X_1]}{\alpha}\]</span></p>
+</section>
+</section>
+<section id="first-principles-approach-to-anytime-valid-inference" class="level1">
+<h1>First Principles approach to Anytime Valid Inference</h1>
+<p>The construction of anytime valid inference under linear models is as follows.</p>
+<section id="step-1-write-the-bayes-factor-using-a-distribution-for-beta." class="level2">
+<h2 class="anchored" data-anchor-id="step-1-write-the-bayes-factor-using-a-distribution-for-beta.">Step 1: Write the Bayes Factor using a distribution for <span class="math inline">\(\beta\)</span>.</h2>
+<p>We’ll use the uninformative g prior to construct a distribution for <span class="math inline">\(\beta\)</span>. This is used to compute the marginal likelihood of the data, and therefore a Bayes Factor. The Bayes Factor, under a null hypothesis of no treatment effect, is</p>
+<p><span class="math display">\[\begin{align}
+H_0: \beta_1 &amp;= 0 \\
+H_A: \beta_1 &amp;= 1
+\end{align}\]</span></p>
+<p><span class="math display">\[BF = \frac{\int p(y | \theta) p(\theta) d\theta}{p(y | \theta_0)}\]</span></p>
+</section>
+<section id="step-2-a-bayes-factor-is-an-e-variable." class="level2">
+<h2 class="anchored" data-anchor-id="step-2-a-bayes-factor-is-an-e-variable.">Step 2: A Bayes Factor is an e-variable.</h2>
+<p>We need to show <span class="math inline">\(E_{H_0}[BF] \leq 1\)</span>. Proof:</p>
+<p><span class="math display">\[\begin{align}
+E_{H_0}[BF] &amp;= \int \Big( \frac{\int p(y | \theta) p(\theta) d\theta}{p(y | \theta_0)} \Big) p(y | \theta_0) dy \\
+  &amp;= \int (\int p(y | \theta) p(\theta) d\theta) dy \\
+  &amp;= \int (\int p(y | theta) dy) p(\theta) d\theta \\
+  &amp;= 1
+\end{align}\]</span></p>
+<p>The order of integration was changed using <a href="https://en.wikipedia.org/wiki/Fubini%27s_theorem">Fubini’s Theorem</a>. Thus a Bayes Factor is an e-variable.</p>
+</section>
+<section id="step-3-e-variables-are-robust-to-peeking.-they-form-a-test-martingale." class="level2">
+<h2 class="anchored" data-anchor-id="step-3-e-variables-are-robust-to-peeking.-they-form-a-test-martingale.">Step 3: e-variables are robust to peeking. They form a test martingale.</h2>
+<p>The Bayes Factor is not just an e-variable. The sequence of Bayes Factors produced by peeking at the data stream forms a test martingale.</p>
+<p>We can argue that <span class="math inline">\(BF_n = BF_{n-1} \cdot \text{Likelihood of the nth observation}.\)</span> Under the null, the likelihood of the next Bayes Factor has expectation 1, so the expected value at time <span class="math inline">\(n\)</span> is simply <span class="math inline">\(BF_{n-1}\)</span>. Showing that a particular Bayes Factor at time <span class="math inline">\(t\)</span> was an e-variable was also an important step to showing that the sequence of Bayes Factors is a test martingale.</p>
+</section>
+<section id="invoke-villes-inequality-to-get-the-anytime-valid-p-value" class="level2">
+<h2 class="anchored" data-anchor-id="invoke-villes-inequality-to-get-the-anytime-valid-p-value">Invoke Ville’s Inequality to get the Anytime Valid P Value</h2>
+<p>Imagine that we construct a sequence of ordinary p values. This sequence is not anytime valid, due to not controlling the false positive rate. In order to be anytime valid, we want the probability that any stat sig result has a controlled probability where the p value falling below the <span class="math inline">\(\alpha\)</span> significance level to be equal to <span class="math inline">\(\alpha\)</span>. From first principles, we would want</p>
+<p><span class="math display">\[P(p_t \leq \alpha) \leq \alpha\]</span></p>
+<p>Note that for the ordinary p value, <span class="math inline">\(P(p_t \leq \alpha)\)</span> is actually much larger than <span class="math inline">\(\alpha\)</span>, since across multiple t in the sequence we ought to be able to find a stat sig result. The condition for anytime valid p values here is much more strict.</p>
+<p>To construct this property out of a Bayes Factor, we invoke <a href="https://en.wikipedia.org/wiki/Ville%27s_inequality">Ville’s inequality</a>. The probability for a value in the <span class="math inline">\(BF_n\)</span> sequence to be greater than <span class="math inline">\(\alpha\)</span> is bounded by <span class="math inline">\(1 / \alpha\)</span>. The beauty is: the inverse of the Bayes Factor is the anytime valid p value! At the typical <span class="math inline">\(\alpha = 0.05\)</span> value, a Bayes Factor of 20 would indicate that the RCT can be concluded early.</p>
 
 
+</section>
 </section>
 
 </main> <!-- /main -->

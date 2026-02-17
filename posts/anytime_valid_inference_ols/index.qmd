@@ -1,0 +1,214 @@
+---
+title: "Make Experimentation Planning Simple Again"
+author: "Jeffrey Wong"
+date: "2026-02-08"
+categories: [experimentation, statistics]
+---
+
+We want to learn as quickly as possible from experiments.
+But most experiments are designed as fixed horizon tests, meaning we 
+meticulously plan for statistical power, schedule a specific time window for the
+test, patiently wait, and only measure the outcome at the end of that time window.
+Any intermediate results, regardless of what they can teach us, 
+are deemed untrustworthy, due to not accumulating sufficient power.
+Intermediate results also have the burden of multiple hypothesis testing,
+inflating the number of false positives in the readouts. The more intermediate
+results that are reported, the higher the chance of acting on a false positive.
+
+In the post on [posthoc mde](https://jeffwong.github.io/posts/posthoc_mde/)
+David McKenzie describes that it is OK to reference in-experiment data to
+measure your current MDE. This lets you determine whether or not you have
+accumulated enough power for the effect sizes you are observing in the
+experiment. What remains then, is a need to solve for peeking and mitigating
+multiple hypothesis testing. If that is solved, experimentation planning
+becomes a lot simpler - you can always see what MDE your data can read, and you
+can also stop without worrying about peeking. (Note: while you can peek, it doesn't mean
+that those individual peeks have high power)
+
+This blog post will walk through how to use
+anytime valid inference, especially with linear models, so that it is safe
+to peek at any time. The novelty of this work was created by Michael Lindon
+in his paper
+[Anytime-Valid Linear Models and Regression Adjusted Causal Inference in Randomized Experiments](https://arxiv.org/abs/2210.08589).
+
+# Linear Model Formulation
+
+Linear models are great for modeling treatment effects. Start with the least
+squares formulation:
+
+$$y = \alpha + T \beta_1 + X \beta_2 + \varepsilon.$$
+
+In a RCT, $\hat{\beta_1}$ is the treatment effect. The addition of the $X \beta_2$ term
+allows us to absorb variance and reduce the standard error on $\hat{\beta_1}$.
+When we do the hypothesis test for
+
+\begin{align}
+H_0: \beta_1 &= 0 \\
+H_A: \beta_1 &= 1
+\end{align}
+
+we get a p value that tells us if the treatment effect is significant or not.
+This process is only useful if we measure the effect with statistical power, and
+if we measure the effect only once. If we are measuring the effect daily, then
+benchmarking the p value against $\alpha$ becomes meaningless, because we no longer
+control the false positive rate under the null to be less than $\alpha$. 
+This is called peeking. Anytime valid inference uses the same regression model,
+the same regression coefficients, but changes the procedure for inferring the effect.
+The result is the ability to peak, and stop early if there is strong evidence.
+
+# Background leading up to anytime valid inference
+
+The first principles derivation for anytime valid inference is a very mathematically
+heavy exercise. The following concepts will play a significant role in deriving
+the anytime valid formula.
+
+## Wald test
+
+The Wald test is a generalization of the t test, where we can test the combination
+of coefficients in a regression. This is especially relevant for anytime valid inference
+in regression, where the model may take arbitrary form. The treatment effect is not always
+the single coefficient $\beta_1$.
+
+## Bayes Factor
+
+A p value is a statistic specifically associated with a hypothesis test. 
+When the p value is small, we reject a specific null in favor of a specific alternative.
+The p value is a probability that describes how likely it would be to draw a value
+as extreme as the test statistic under the null distribution. When we reject
+a null hypothesis, the p value is saying that the data unlikely came from the null.
+
+The p value is not quantifying evidence though. It does not say that the alternative
+is 10x more likely than the null. There is a different way to quantify that.
+A Bayes Factor, from a Bayesian model, is a ratio of marginal likelihoods,
+defined as
+
+\begin{align}
+p(y | M) &= \int_\theta p(y | \theta, M) p(\theta | M) d\theta \\
+BF &= \frac{p(y | H_A)}{p(y | H_0)}
+\end{align}
+
+where $p(y | M)$ is the marginal likelihood of the data given a model.
+The ratio is a statistic about evidence.
+In the case of a linear model, we can say that the null hypothesis
+is that all coefficients are 0, and the alternative hypothesis is that the coefficients
+are a nonzero vector. This is the classic F test. 
+If the Bayes Factor is 1, then the likelihood of the
+null and alternative hypotheses are equal and there is no evidence that they are different.
+However, if the Bayes Factor is a large number, it means there is evidence that the
+alternative hypothesis is a better fit than the null hypothesis.
+
+## g prior
+
+The g prior is a normal-normal prior on the regression parameters.
+Though it is an uninformative prior, it is a convenient prior for the exercise.
+
+The prior is 
+
+\begin{align}
+\beta | \sigma^2, g &\sim N(0, g\sigma^2, (X^T X)^{-1}) \\
+\pi(\alpha, \sigma^2) &\propto 1/\sigma^2
+\end{align}
+
+In this model, the Bayes factor is 
+
+$$
+BF = \sqrt{\frac{g}{g + n}} \Big( \frac{1 + t^2 / \nu}{1 + \frac{g}{g + n} t^2 / \nu} \Big)^\frac{\nu + 1}{2}
+$$
+
+In this formula, $\nu = n - p - 1$ is degrees of freedom and $t^2$ is the squared t stat from the hypothesis test.
+The log of this Bayes Factor is exactly captured in the 
+[avlm function log_G_t](https://github.com/michaellindon/avlm/blob/main/R/e_variables.R#L21).
+
+
+## E Variables
+
+One interpretation of an [e-variable](https://en.wikipedia.org/wiki/E-values#As_generalizations_of_likelihood_ratios) 
+is the generalization of the likelihood ratio. The ratio itself is not always an e-variable,
+though in the exercise below Lindon shows the connection between the Bayes Factor,
+e-variables, and martingales.
+
+## Martingales
+
+A martingale is a sequence of random variables that has the property
+
+$$E[X_{t+1} | X_1, X_2, ..., X_t] = X_t$$
+
+For example, say a person visits a casino and plays the slot machines.
+Say that every time they play, they can either lose \$1 or win \$1.
+If the slot machines are fair, then the expected payouts are $0$. 
+The amount of money the person has at $t+1$ is centered around their 
+current holdings, $X_t$.
+
+This concept will be useful later because when we peek into an experiment,
+the new intermediate statistics we will use is a martingale.
+
+## Ville’s Inequality
+
+Given a martingale $X_1, ..., X_n$ with initial value $X_1$, we have
+
+$$P(\text{any value in }X_n \geq \alpha) \leq \frac{E[X_1]}{\alpha}$$
+
+
+
+# First Principles approach to Anytime Valid Inference
+
+The construction of anytime valid inference under linear models is as follows.
+
+## Step 1: Write the Bayes Factor using a distribution for $\beta$.
+
+We'll use the uninformative g prior to construct a distribution for $\beta$.
+This is used to compute the marginal likelihood of the data, and therefore
+a Bayes Factor. The Bayes Factor, under a null hypothesis of no treatment effect, is
+
+\begin{align}
+H_0: \beta_1 &= 0 \\
+H_A: \beta_1 &= 1
+\end{align} 
+
+$$BF = \frac{\int p(y | \theta) p(\theta) d\theta}{p(y | \theta_0)}$$
+
+## Step 2: A Bayes Factor is an e-variable.
+
+We need to show $E_{H_0}[BF] \leq 1$.
+Proof:
+
+\begin{align}
+E_{H_0}[BF] &= \int \Big( \frac{\int p(y | \theta) p(\theta) d\theta}{p(y | \theta_0)} \Big) p(y | \theta_0) dy \\
+  &= \int (\int p(y | \theta) p(\theta) d\theta) dy \\
+  &= \int (\int p(y | theta) dy) p(\theta) d\theta \\
+  &= 1
+\end{align}
+
+The order of integration was changed using [Fubini's Theorem](https://en.wikipedia.org/wiki/Fubini%27s_theorem).
+Thus a Bayes Factor is an e-variable.
+
+## Step 3: e-variables are robust to peeking. They form a test martingale.
+
+The Bayes Factor is not just an e-variable. The sequence of Bayes Factors
+produced by peeking at the data stream forms a test martingale.
+
+We can argue that $BF_n = BF_{n-1} \cdot \text{Likelihood of the nth observation}.$
+Under the null, the likelihood of the next Bayes Factor has expectation 1, so
+the expected value at time $n$ is simply $BF_{n-1}$. Showing that a particular Bayes Factor
+at time $t$ was an e-variable was also an important step to showing that the sequence
+of Bayes Factors is a test martingale.
+
+## Invoke Ville’s Inequality to get the Anytime Valid P Value
+
+Imagine that we construct a sequence of ordinary p values. This sequence
+is not anytime valid, due to not controlling the false positive rate.
+In order to be anytime valid, we want the probability that any stat sig result
+has a controlled probability where the p value falling below the $\alpha$
+significance level to be equal to $\alpha$. From first principles, we would want
+
+$$P(p_t \leq \alpha) \leq \alpha$$
+
+Note that for the ordinary p value, $P(p_t \leq \alpha)$ is actually much larger
+than $\alpha$, since across multiple t in the sequence we ought to be able to find
+a stat sig result. The condition for anytime valid p values here is much more strict.
+
+To construct this property out of a Bayes Factor, we invoke [Ville's inequality](https://en.wikipedia.org/wiki/Ville%27s_inequality).
+The probability for a value in the $BF_n$ sequence to be greater than
+$\alpha$ is bounded by $1 / \alpha$. The beauty is: the inverse of the Bayes Factor
+is the anytime valid p value! At the typical $\alpha = 0.05$ value, a Bayes Factor
+of 20 would indicate that the RCT can be concluded early.

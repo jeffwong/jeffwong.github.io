@@ -50,21 +50,23 @@ and will subsequently decrease the power.
 
 # Variance
 
-The variance of $y$ is broken into
+The variance of $y$ is broken down using the 
+[law of total variance](https://en.wikipedia.org/wiki/Law_of_total_variance)
 
 $$Var(y) = E[var(y  | X)] + Var(E[y | X])$$
 
 The first term can be simplified and reduced to just $\sigma^2$.
 We can argue that the variance of $y$ is not a function of the artificially generated assignment variable, $Z$. It is only a function
-of whether or not the unit actually received the treatment. For simplicity, we say that the variance is independent of the treatment received.
+of whether or not the unit actually received the treatment. This is a homoskedasticity assumption.
 
-$$E[var(y | X = 1)] + E[var(y | X = 0)] = \sigma^2.$$
-The conditioning on a binary X is like a mixture of bernoulli random
-variables. In this case the mixture has 2 equal components so it reduces to $\sigma^2$.
+The second term is the variance of a mixture. The mixture has 2 parts: 
+$E[y | X = 0] =\mu_0$ and $E[y | X = 1] = \mu_1 = \mu_0 + \Delta$ and each part
+is a function of a bernoulli random variable, $X$. We leverage the identity
 
-Next, is the variance of a mixture of bernoulli variables: $E[y | X = 0] =\mu_0$ and $E[y | X = 1] = \mu_1 = \mu_0 + \Delta$. The variance of this
-mixture is a function of the mixing probabilities and the difference in the individual means, which in this case will be $\Delta$. Then we have
-the key pieces we need to measure statistical power based on the observed data
+$$Var(f(X) | Z = 1) = p_1 (1 - p_1) (f(X = 1) - f(X = 0))^2.$$
+
+We have the key pieces we need to express statistical power in terms of variables
+that we can plan for, namely the assignment $Z$ and approximations for the compliance rate.
 
 \begin{align}
 \mu_1 | Z = 1 &= p_1 \mu_1 + (1 - p_1) \mu_0 \\

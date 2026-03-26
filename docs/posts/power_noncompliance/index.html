@@ -181,7 +181,7 @@ window.Quarto = {
 
 
 
-<p>This is an extension of a previous post on statistical power. In that post we derived the formula for statistical power using</p>
+<p>This is an extension of a previous post on <a href="https://jeffwong.github.io/posts/statistical_power/">statistical power</a>. In that post we derived the formula for statistical power using</p>
 <ol type="1">
 <li>The effect size</li>
 <li>The standard error of the effect. Alternatively, this can be stated as the variance and the sample size.</li>
@@ -205,11 +205,12 @@ p_0 &amp;= P(X = 0 | Z = 0)
 </section>
 <section id="variance" class="level1">
 <h1>Variance</h1>
-<p>The variance of <span class="math inline">\(y\)</span> is broken into</p>
+<p>The variance of <span class="math inline">\(y\)</span> is broken down using the <a href="https://en.wikipedia.org/wiki/Law_of_total_variance">law of total variance</a></p>
 <p><span class="math display">\[Var(y) = E[var(y  | X)] + Var(E[y | X])\]</span></p>
-<p>The first term can be simplified and reduced to just <span class="math inline">\(\sigma^2\)</span>. We can argue that the variance of <span class="math inline">\(y\)</span> is not a function of the artificially generated assignment variable, <span class="math inline">\(Z\)</span>. It is only a function of whether or not the unit actually received the treatment. For simplicity, we say that the variance is independent of the treatment received.</p>
-<p><span class="math display">\[E[var(y | X = 1)] + E[var(y | X = 0)] = \sigma^2.\]</span> The conditioning on a binary X is like a mixture of bernoulli random variables. In this case the mixture has 2 equal components so it reduces to <span class="math inline">\(\sigma^2\)</span>.</p>
-<p>Next, is the variance of a mixture of bernoulli variables: <span class="math inline">\(E[y | X = 0] =\mu_0\)</span> and <span class="math inline">\(E[y | X = 1] = \mu_1 = \mu_0 + \Delta\)</span>. The variance of this mixture is a function of the mixing probabilities and the difference in the individual means, which in this case will be <span class="math inline">\(\Delta\)</span>. Then we have the key pieces we need to measure statistical power based on the observed data</p>
+<p>The first term can be simplified and reduced to just <span class="math inline">\(\sigma^2\)</span>. We can argue that the variance of <span class="math inline">\(y\)</span> is not a function of the artificially generated assignment variable, <span class="math inline">\(Z\)</span>. It is only a function of whether or not the unit actually received the treatment. This is a homoskedasticity assumption.</p>
+<p>The second term is the variance of a mixture. The mixture has 2 parts: <span class="math inline">\(E[y | X = 0] =\mu_0\)</span> and <span class="math inline">\(E[y | X = 1] = \mu_1 = \mu_0 + \Delta\)</span> and each part is a function of a bernoulli random variable, <span class="math inline">\(X\)</span>. We leverage the identity</p>
+<p><span class="math display">\[Var(f(X) | Z = 1) = p_1 (1 - p_1) (f(X = 1) - f(X = 0))^2.\]</span></p>
+<p>We have the key pieces we need to express statistical power in terms of variables that we can plan for, namely the assignment <span class="math inline">\(Z\)</span> and approximations for the compliance rate.</p>
 <p><span class="math display">\[\begin{align}
 \mu_1 | Z = 1 &amp;= p_1 \mu_1 + (1 - p_1) \mu_0 \\
 \mu_0 | Z = 0 &amp;= p_0 \mu_0 + (1 - p_0) \mu_1 \\

@@ -1408,7 +1408,7 @@ Design Statistics
 
 
 
-<p>This is an extension of a previous post on statistical power. In that post we derived the formula for statistical power using</p>
+<p>This is an extension of a previous post on <a href="https://jeffwong.github.io/posts/statistical_power/">statistical power</a>. In that post we derived the formula for statistical power using</p>
 <ol type="1">
 <li>The effect size</li>
 <li>The standard error of the effect. Alternatively, this can be stated as the variance and the sample size.</li>
@@ -1425,11 +1425,12 @@ Design Statistics
 </section>
 <section id="variance" class="level1">
 <h1>Variance</h1>
-<p>The variance of <img src="https://latex.codecogs.com/png.latex?y"> is broken into</p>
+<p>The variance of <img src="https://latex.codecogs.com/png.latex?y"> is broken down using the <a href="https://en.wikipedia.org/wiki/Law_of_total_variance">law of total variance</a></p>
 <p><img src="https://latex.codecogs.com/png.latex?Var(y)%20=%20E%5Bvar(y%20%20%7C%20X)%5D%20+%20Var(E%5By%20%7C%20X%5D)"></p>
-<p>The first term can be simplified and reduced to just <img src="https://latex.codecogs.com/png.latex?%5Csigma%5E2">. We can argue that the variance of <img src="https://latex.codecogs.com/png.latex?y"> is not a function of the artificially generated assignment variable, <img src="https://latex.codecogs.com/png.latex?Z">. It is only a function of whether or not the unit actually received the treatment. For simplicity, we say that the variance is independent of the treatment received.</p>
-<p><img src="https://latex.codecogs.com/png.latex?E%5Bvar(y%20%7C%20X%20=%201)%5D%20+%20E%5Bvar(y%20%7C%20X%20=%200)%5D%20=%20%5Csigma%5E2."> The conditioning on a binary X is like a mixture of bernoulli random variables. In this case the mixture has 2 equal components so it reduces to <img src="https://latex.codecogs.com/png.latex?%5Csigma%5E2">.</p>
-<p>Next, is the variance of a mixture of bernoulli variables: <img src="https://latex.codecogs.com/png.latex?E%5By%20%7C%20X%20=%200%5D%20=%5Cmu_0"> and <img src="https://latex.codecogs.com/png.latex?E%5By%20%7C%20X%20=%201%5D%20=%20%5Cmu_1%20=%20%5Cmu_0%20+%20%5CDelta">. The variance of this mixture is a function of the mixing probabilities and the difference in the individual means, which in this case will be <img src="https://latex.codecogs.com/png.latex?%5CDelta">. Then we have the key pieces we need to measure statistical power based on the observed data</p>
+<p>The first term can be simplified and reduced to just <img src="https://latex.codecogs.com/png.latex?%5Csigma%5E2">. We can argue that the variance of <img src="https://latex.codecogs.com/png.latex?y"> is not a function of the artificially generated assignment variable, <img src="https://latex.codecogs.com/png.latex?Z">. It is only a function of whether or not the unit actually received the treatment. This is a homoskedasticity assumption.</p>
+<p>The second term is the variance of a mixture. The mixture has 2 parts: <img src="https://latex.codecogs.com/png.latex?E%5By%20%7C%20X%20=%200%5D%20=%5Cmu_0"> and <img src="https://latex.codecogs.com/png.latex?E%5By%20%7C%20X%20=%201%5D%20=%20%5Cmu_1%20=%20%5Cmu_0%20+%20%5CDelta"> and each part is a function of a bernoulli random variable, <img src="https://latex.codecogs.com/png.latex?X">. We leverage the identity</p>
+<p><img src="https://latex.codecogs.com/png.latex?Var(f(X)%20%7C%20Z%20=%201)%20=%20p_1%20(1%20-%20p_1)%20(f(X%20=%201)%20-%20f(X%20=%200))%5E2."></p>
+<p>We have the key pieces we need to express statistical power in terms of variables that we can plan for, namely the assignment <img src="https://latex.codecogs.com/png.latex?Z"> and approximations for the compliance rate.</p>
 <p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0A%5Cmu_1%20%7C%20Z%20=%201%20&amp;=%20p_1%20%5Cmu_1%20+%20(1%20-%20p_1)%20%5Cmu_0%20%5C%5C%0A%5Cmu_0%20%7C%20Z%20=%200%20&amp;=%20p_0%20%5Cmu_0%20+%20(1%20-%20p_0)%20%5Cmu_1%20%5C%5C%0A%5Cmu_1%20%7C%20Z%20=%201%20-%20%5Cmu_0%20%7C%20Z%20=%200%20&amp;=%20(p_1%20+%20p_0%20-%201)%20%5CDelta%20%5C%5C%0AVar(y%20%7C%20Z%20=%201)%20&amp;=%20%5Csigma%5E2%20+%20p_1%20(1%20-%20p_1)%20%5CDelta%5E2%20%5Capprox%20%5Csigma%5E2%20%5C%5C%0AVar(y%20%7C%20Z%20=%200)%20&amp;=%20%5Csigma%5E2%20+%20p_0%20(1%20-%20p_0)%20%5CDelta%5E2%20%5Capprox%20%5Csigma%5E2%0A%5Cend%7Balign%7D"></p>
 <p>The approximation in <img src="https://latex.codecogs.com/png.latex?Var(y%20%7C%20Z%20=%201)%20%5Capprox%20%5Csigma%5E2"> comes from the pattern that variance (not normalized by <img src="https://latex.codecogs.com/png.latex?n">) tends to be large while effect size tends to be small. Thus variance under noncompliance is not much different than variance under full compliance. The change in power will largely come from the dilution in the treatment effect.</p>
 <p><img src="https://latex.codecogs.com/png.latex?%0A%5Cboxed%7B%5Ctext%7BPower%7D%20=%20%5CPhi(%5Cdelta'%20-%20z_%7B1-%5Calpha/2%7D)%20+%20%5CPhi(-%5Cdelta'%20-%20z_%7B1-%5Calpha/2%7D)%7D%0A"></p>

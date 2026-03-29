@@ -1,43 +1,47 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://jeffwong.github.io/posts/statistical_power/index.html</loc>
-    <lastmod>2025-10-21T01:25:46.888Z</lastmod>
+    <loc>https://jeffwong.github.io/posts/zero_inflated_inference/index.html</loc>
+    <lastmod>2026-03-29T19:10:50.673Z</lastmod>
   </url>
   <url>
-    <loc>https://jeffwong.github.io/posts/posthoc_mde/index.html</loc>
-    <lastmod>2026-03-26T05:59:34.711Z</lastmod>
-  </url>
-  <url>
-    <loc>https://jeffwong.github.io/posts/errors_in_experiments/index.html</loc>
-    <lastmod>2025-10-21T01:20:54.470Z</lastmod>
-  </url>
-  <url>
-    <loc>https://jeffwong.github.io/posts/anytime_valid_inference_ols/index.html</loc>
-    <lastmod>2026-02-17T01:40:19.862Z</lastmod>
-  </url>
-  <url>
-    <loc>https://jeffwong.github.io/index.html</loc>
-    <lastmod>2025-10-08T04:56:28.596Z</lastmod>
-  </url>
-  <url>
-    <loc>https://jeffwong.github.io/about.html</loc>
-    <lastmod>2025-10-08T04:56:28.588Z</lastmod>
-  </url>
-  <url>
-    <loc>https://jeffwong.github.io/posts/aggregation_arrival_convergence/index.html</loc>
-    <lastmod>2026-02-12T07:11:58.536Z</lastmod>
-  </url>
-  <url>
-    <loc>https://jeffwong.github.io/posts/elastic_net/index.html</loc>
-    <lastmod>2025-10-08T04:56:28.596Z</lastmod>
+    <loc>https://jeffwong.github.io/posts/power_noncompliance/index.html</loc>
+    <lastmod>2026-03-26T06:21:57.887Z</lastmod>
   </url>
   <url>
     <loc>https://jeffwong.github.io/posts/l2_gaussian_prior/index.html</loc>
     <lastmod>2025-10-08T04:56:28.596Z</lastmod>
   </url>
   <url>
-    <loc>https://jeffwong.github.io/posts/power_noncompliance/index.html</loc>
-    <lastmod>2026-03-26T06:18:59.360Z</lastmod>
+    <loc>https://jeffwong.github.io/posts/elastic_net/index.html</loc>
+    <lastmod>2025-10-08T04:56:28.596Z</lastmod>
+  </url>
+  <url>
+    <loc>https://jeffwong.github.io/posts/aggregation_arrival_convergence/index.html</loc>
+    <lastmod>2026-02-12T07:11:58.536Z</lastmod>
+  </url>
+  <url>
+    <loc>https://jeffwong.github.io/about.html</loc>
+    <lastmod>2025-10-08T04:56:28.588Z</lastmod>
+  </url>
+  <url>
+    <loc>https://jeffwong.github.io/index.html</loc>
+    <lastmod>2025-10-08T04:56:28.596Z</lastmod>
+  </url>
+  <url>
+    <loc>https://jeffwong.github.io/posts/anytime_valid_inference_ols/index.html</loc>
+    <lastmod>2026-02-17T01:40:19.862Z</lastmod>
+  </url>
+  <url>
+    <loc>https://jeffwong.github.io/posts/errors_in_experiments/index.html</loc>
+    <lastmod>2025-10-21T01:20:54.470Z</lastmod>
+  </url>
+  <url>
+    <loc>https://jeffwong.github.io/posts/posthoc_mde/index.html</loc>
+    <lastmod>2026-03-26T05:59:34.711Z</lastmod>
+  </url>
+  <url>
+    <loc>https://jeffwong.github.io/posts/statistical_power/index.html</loc>
+    <lastmod>2025-10-21T01:25:46.888Z</lastmod>
   </url>
 </urlset>

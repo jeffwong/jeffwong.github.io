@@ -70,7 +70,7 @@ The variance of these terms can be thought of as the variance of a scaled bernou
 so the variance of the control group is $$Var(E[y | Z]) = p (1-p) (\mu_z - \mu_C)^2$$.
 
 Finally, the variance of the estimated treatment effect is 
-$$Var(\hat{\tau}) = \frac{2}{N} \biggl((1-p)(\sigma^2_T + \sigma^2_C) + 2p\sigma^2_z + p(1-p)((\mu_T - \mu_Z)^2 + (\mu_C - \mu_z)^2) \biggr)$$
+$$\boxed{Var(\hat{\tau}) = \frac{2}{N} \biggl((1-p)(\sigma^2_T + \sigma^2_C) + 2p\sigma^2_z + p(1-p)((\mu_T - \mu_Z)^2 + (\mu_C - \mu_z)^2) \biggr)}$$
 
 This formula has interesting properties. In general, we cannot guarantee that the variance
 of the effect is increasing or decreasing when zero-users are added.
@@ -164,14 +164,14 @@ results %>%
 Say there are two analyses, the "all" analysis and the "active" analysis.
 In order to see an increase in the t statistic, we must have
 
-$$\frac{t_{all}}{t_{active}} = \sqrt{1-p} \sqrt{\frac{\sigma^2_C + \sigma^2_T}{\sigma^2_{C, \text{observed}} + \sigma^2_{T, \text{observed}}}} > 1$$
+$$\frac{t_{\text{all}}}{t_{\text{active}}} = \sqrt{1-p} \sqrt{\frac{\sigma^2_C + \sigma^2_T}{\sigma^2_{C, \text{observed}} + \sigma^2_{T, \text{observed}}}} > 1$$
 To show that this is not possible, we will lower bound $\sigma^2_{C, \text{observed}}$
 and $\sigma^2_{T, \text{observed}}$ For the control, we recall 
 
 $$\sigma^2_{C, \text{observed}} = (1-p)\sigma^2_C + p\sigma^2_z + p(1-p)(\mu_C - \mu_z)^2.$$
 Each individual term in this expression is nonnegative, so we can apply a bound 
 $$\sigma^2_{C, \text{observed}} \geq (1-p)\sigma^2_C$$
-With a similar bound for the treatment. The sum is bounded $\sigma^2_{C, \text{observed}} + \sigma^2_{T, \text{observed}} \geq (1-p)(\sigma^2_C + \sigma^2_T)$, therefore it is not possible for $\frac{t_{all}}{t_{active}} > 1$.
+With a similar bound for the treatment. The sum is bounded $\sigma^2_{C, \text{observed}} + \sigma^2_{T, \text{observed}} \geq (1-p)(\sigma^2_C + \sigma^2_T)$, therefore it is not possible for $\frac{t_{\text{all}}}{t_{\text{active}}} > 1$.
 
 ## A strange phenomenon under CUPED
 
@@ -212,7 +212,7 @@ zero_inflated_cuped_inference <- function(n_active = 10000, n_zero = 3000, effec
     ),
     data.frame(
       group = rep("Control", n_zero),
-      is_active = 0,
+      is_active = FALSE,
       pre = y_pre_zero,
       post = y_post_zero
     ),
@@ -224,24 +224,34 @@ zero_inflated_cuped_inference <- function(n_active = 10000, n_zero = 3000, effec
     ),
     data.frame(
       group = rep("Treatment", n_zero),
-      is_active = 0,
+      is_active = FALSE,
       pre = y_pre_zero,
       post = y_post_zero
     )
   )
   
-  df_triggered <- df_all %>% filter(is_active == TRUE)
-  t_triggered <- t.test(post ~ group, data = df_triggered)$statistic
+  all_t = lm_robust(post ~ group, data = df_all)
+  active_t = lm_robust(post ~ group, data = df_all %>% filter(is_active))
+  all_cuped = lm_robust(post ~ group + pre, data = df_all)
   
-  t_total_std <- t.test(post ~ group, data = df_all)$statistic
-  
-  model_cuped <- lm_robust(post ~ group + pre, data = df_all)
-  t_total_cuped <- summary(model_cuped)$coefficients["groupTreatment", "t value"]
-  
-  return(data.frame(
-    Analysis = c("Active", "All", "All (CUPED)"),
-    T_Statistic = c(t_triggered, t_total_std, t_total_cuped)
-  ))
+  data.frame(
+    analysis = c("All", "Active", "All CUPED"),
+    ate = c(
+      summary(all_t)$coefficients[2,1],
+      summary(active_t)$coefficients[2,1],
+      summary(all_cuped)$coefficients[2,1]
+    ),
+    se = c(
+      summary(all_t)$coefficients[2,2],
+      summary(active_t)$coefficients[2,2],
+      summary(all_cuped)$coefficients[2,2]
+    ),
+    t_statistic = c(
+      summary(all_t)$coefficients[2,3],
+      summary(active_t)$coefficients[2,3],
+      summary(all_cuped)$coefficients[2,3]
+    )
+  )
 }
 
 set.seed(100)
@@ -249,11 +259,30 @@ results <- zero_inflated_cuped_inference()
 print(results)
 ```
 
-# Things to revise for next version
+## Necessary conditions for t statistic and power to increase
 
-Why was there a sign change above?
+The story of the t test was simple, always remove the zero-users.
+The story of CUPED is not simple, since the t statistic can go up or down
+when we remove zero-users.
+We'd like to know: as this statistic fluctuates, are we at least guarnateed
+to have more statistical power?
 
-In order for the all analysis to be better, we need the correlation between pre and post to
-have
+The noncentrality parameter for power is characterized as
+
+\begin{align}
+\delta_{\text{active}} &= \frac{\Delta}{\sqrt{(\sigma^2_T + \sigma^2_C) (1 - \rho^2_{\text{active}}) / N}} \\
+\delta_{\text{all}} &= \frac{(1 - p) \Delta}{\sqrt{(\sigma^2_{\text{all}} + \sigma^2_{\text{all}}) (1 - \rho^2_{\text{all}}) / N}}
+\end{align}
+
+where $\rho^2$ is the $R^2$ value of the CUPED mdoel. In order for the power of the all group to be greater, we would need
+
+$$\boxed{1 - p > \frac{\sigma^2_{\text{all}} (1 - \rho^2_{\text{all}})}{\sigma^2_{\text{active}} (1 - \rho^2_{\text{active}})}}$$
+
+
+A very fast, approximate gut check to see if adding the zeros is worthwhile
+assumes $\sigma^2_{\text{all}} \approx \sigma^2_{\text{active}}$. Then we check
 
 $$\rho^2_{\text{all}} > 1 - (1-p)(1 - \rho^2_{\text{active}})$$
+
+Using simple numbers, $p = 0.25$, $\rho^2_{\text{active}} = 0.1$, we'd need to have
+$\rho^2_{\text{all}} > 0.325$.

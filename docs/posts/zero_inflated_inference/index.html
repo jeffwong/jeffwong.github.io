@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Jeffrey Wong">
-<meta name="dcterms.date" content="2025-03-22">
+<meta name="dcterms.date" content="2026-03-22">
 
 <title>Zero Inflated Causal Inference – From First Principles</title>
 <style>
@@ -197,7 +197,7 @@ window.Quarto = {
       <div>
       <div class="quarto-title-meta-heading">Published</div>
       <div class="quarto-title-meta-contents">
-        <p class="date">March 22, 2025</p>
+        <p class="date">March 22, 2026</p>
       </div>
     </div>
     
@@ -234,7 +234,7 @@ window.Quarto = {
 <p>The variance of this estimated treatment effect is <span class="math display">\[\frac{2}{N} \cdot (Var(y_{T, \text{observed}}) + Var(y_{C, \text{observed}}))\]</span></p>
 <p>The variance of the control group overall is derived from the <a href="law of total variance">Law of Total Variance</a>. Say <span class="math inline">\(Z\)</span> is a binary variable for whether the user is a zero user. Then <span class="math display">\[Var(y) = E[Var(y|Z)] + Var(E[y | Z])\]</span>. For <span class="math inline">\(Z = 1\)</span>, which happens with probability <span class="math inline">\(p\)</span>, the first term is <span class="math inline">\(E[Var(y|Z)] = \sigma^2_z\)</span>. For <span class="math inline">\(Z = 0\)</span>, it is <span class="math inline">\(\sigma^2_C\)</span> with probability <span class="math inline">\((1-p)\)</span>.</p>
 <p>To unpack the second term, <span class="math inline">\(E[y | Z] = \mu_z\)</span> when <span class="math inline">\(Z = 1\)</span>, and is <span class="math inline">\(\mu_C\)</span> when <span class="math inline">\(Z = 0\)</span>. The variance of these terms can be thought of as the variance of a scaled bernoulli random variable, so the variance of the control group is <span class="math display">\[Var(E[y | Z]) = p (1-p) (\mu_z - \mu_C)^2\]</span>.</p>
-<p>Finally, the variance of the estimated treatment effect is <span class="math display">\[Var(\hat{\tau}) = \frac{2}{N} \biggl((1-p)(\sigma^2_T + \sigma^2_C) + 2p\sigma^2_z + p(1-p)((\mu_T - \mu_Z)^2 + (\mu_C - \mu_z)^2) \biggr)\]</span></p>
+<p>Finally, the variance of the estimated treatment effect is <span class="math display">\[\boxed{Var(\hat{\tau}) = \frac{2}{N} \biggl((1-p)(\sigma^2_T + \sigma^2_C) + 2p\sigma^2_z + p(1-p)((\mu_T - \mu_Z)^2 + (\mu_C - \mu_z)^2) \biggr)}\]</span></p>
 <p>This formula has interesting properties. In general, we cannot guarantee that the variance of the effect is increasing or decreasing when zero-users are added.</p>
 <ol type="1">
 <li>Due to the <span class="math inline">\(\frac{1}{N}\)</span> scaling factor, adding zero-users can decrease the variance of the effect.</li>
@@ -341,8 +341,8 @@ window.Quarto = {
 <section id="proof" class="level2">
 <h2 class="anchored" data-anchor-id="proof">Proof</h2>
 <p>Say there are two analyses, the “all” analysis and the “active” analysis. In order to see an increase in the t statistic, we must have</p>
-<p><span class="math display">\[\frac{t_{all}}{t_{active}} = \sqrt{1-p} \sqrt{\frac{\sigma^2_C + \sigma^2_T}{\sigma^2_{C, \text{observed}} + \sigma^2_{T, \text{observed}}}} &gt; 1\]</span> To show that this is not possible, we will lower bound <span class="math inline">\(\sigma^2_{C, \text{observed}}\)</span> and <span class="math inline">\(\sigma^2_{T, \text{observed}}\)</span> For the control, we recall</p>
-<p><span class="math display">\[\sigma^2_{C, \text{observed}} = (1-p)\sigma^2_C + p\sigma^2_z + p(1-p)(\mu_C - \mu_z)^2.\]</span> Each individual term in this expression is nonnegative, so we can apply a bound <span class="math display">\[\sigma^2_{C, \text{observed}} \geq (1-p)\sigma^2_C\]</span> With a similar bound for the treatment. The sum is bounded <span class="math inline">\(\sigma^2_{C, \text{observed}} + \sigma^2_{T, \text{observed}} \geq (1-p)(\sigma^2_C + \sigma^2_T)\)</span>, therefore it is not possible for <span class="math inline">\(\frac{t_{all}}{t_{active}} &gt; 1\)</span>.</p>
+<p><span class="math display">\[\frac{t_{\text{all}}}{t_{\text{active}}} = \sqrt{1-p} \sqrt{\frac{\sigma^2_C + \sigma^2_T}{\sigma^2_{C, \text{observed}} + \sigma^2_{T, \text{observed}}}} &gt; 1\]</span> To show that this is not possible, we will lower bound <span class="math inline">\(\sigma^2_{C, \text{observed}}\)</span> and <span class="math inline">\(\sigma^2_{T, \text{observed}}\)</span> For the control, we recall</p>
+<p><span class="math display">\[\sigma^2_{C, \text{observed}} = (1-p)\sigma^2_C + p\sigma^2_z + p(1-p)(\mu_C - \mu_z)^2.\]</span> Each individual term in this expression is nonnegative, so we can apply a bound <span class="math display">\[\sigma^2_{C, \text{observed}} \geq (1-p)\sigma^2_C\]</span> With a similar bound for the treatment. The sum is bounded <span class="math inline">\(\sigma^2_{C, \text{observed}} + \sigma^2_{T, \text{observed}} \geq (1-p)(\sigma^2_C + \sigma^2_T)\)</span>, therefore it is not possible for <span class="math inline">\(\frac{t_{\text{all}}}{t_{\text{active}}} &gt; 1\)</span>.</p>
 </section>
 <section id="a-strange-phenomenon-under-cuped" class="level2">
 <h2 class="anchored" data-anchor-id="a-strange-phenomenon-under-cuped">A strange phenomenon under CUPED</h2>
@@ -372,7 +372,7 @@ window.Quarto = {
 <span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>    ),</span>
 <span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>    <span class="fu">data.frame</span>(</span>
 <span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>      <span class="at">group =</span> <span class="fu">rep</span>(<span class="st">"Control"</span>, n_zero),</span>
-<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>      <span class="at">is_active =</span> <span class="dv">0</span>,</span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>      <span class="at">is_active =</span> <span class="cn">FALSE</span>,</span>
 <span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>      <span class="at">pre =</span> y_pre_zero,</span>
 <span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>      <span class="at">post =</span> y_post_zero</span>
 <span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>    ),</span>
@@ -384,45 +384,63 @@ window.Quarto = {
 <span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a>    ),</span>
 <span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a>    <span class="fu">data.frame</span>(</span>
 <span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a>      <span class="at">group =</span> <span class="fu">rep</span>(<span class="st">"Treatment"</span>, n_zero),</span>
-<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a>      <span class="at">is_active =</span> <span class="dv">0</span>,</span>
+<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a>      <span class="at">is_active =</span> <span class="cn">FALSE</span>,</span>
 <span id="cb6-37"><a href="#cb6-37" aria-hidden="true" tabindex="-1"></a>      <span class="at">pre =</span> y_pre_zero,</span>
 <span id="cb6-38"><a href="#cb6-38" aria-hidden="true" tabindex="-1"></a>      <span class="at">post =</span> y_post_zero</span>
 <span id="cb6-39"><a href="#cb6-39" aria-hidden="true" tabindex="-1"></a>    )</span>
 <span id="cb6-40"><a href="#cb6-40" aria-hidden="true" tabindex="-1"></a>  )</span>
 <span id="cb6-41"><a href="#cb6-41" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb6-42"><a href="#cb6-42" aria-hidden="true" tabindex="-1"></a>  df_triggered <span class="ot">&lt;-</span> df_all <span class="sc">%&gt;%</span> <span class="fu">filter</span>(is_active <span class="sc">==</span> <span class="cn">TRUE</span>)</span>
-<span id="cb6-43"><a href="#cb6-43" aria-hidden="true" tabindex="-1"></a>  t_triggered <span class="ot">&lt;-</span> <span class="fu">t.test</span>(post <span class="sc">~</span> group, <span class="at">data =</span> df_triggered)<span class="sc">$</span>statistic</span>
-<span id="cb6-44"><a href="#cb6-44" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb6-45"><a href="#cb6-45" aria-hidden="true" tabindex="-1"></a>  t_total_std <span class="ot">&lt;-</span> <span class="fu">t.test</span>(post <span class="sc">~</span> group, <span class="at">data =</span> df_all)<span class="sc">$</span>statistic</span>
-<span id="cb6-46"><a href="#cb6-46" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb6-47"><a href="#cb6-47" aria-hidden="true" tabindex="-1"></a>  model_cuped <span class="ot">&lt;-</span> <span class="fu">lm_robust</span>(post <span class="sc">~</span> group <span class="sc">+</span> pre, <span class="at">data =</span> df_all)</span>
-<span id="cb6-48"><a href="#cb6-48" aria-hidden="true" tabindex="-1"></a>  t_total_cuped <span class="ot">&lt;-</span> <span class="fu">summary</span>(model_cuped)<span class="sc">$</span>coefficients[<span class="st">"groupTreatment"</span>, <span class="st">"t value"</span>]</span>
-<span id="cb6-49"><a href="#cb6-49" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb6-50"><a href="#cb6-50" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(<span class="fu">data.frame</span>(</span>
-<span id="cb6-51"><a href="#cb6-51" aria-hidden="true" tabindex="-1"></a>    <span class="at">Analysis =</span> <span class="fu">c</span>(<span class="st">"Active"</span>, <span class="st">"All"</span>, <span class="st">"All (CUPED)"</span>),</span>
-<span id="cb6-52"><a href="#cb6-52" aria-hidden="true" tabindex="-1"></a>    <span class="at">T_Statistic =</span> <span class="fu">c</span>(t_triggered, t_total_std, t_total_cuped)</span>
-<span id="cb6-53"><a href="#cb6-53" aria-hidden="true" tabindex="-1"></a>  ))</span>
-<span id="cb6-54"><a href="#cb6-54" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb6-55"><a href="#cb6-55" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-56"><a href="#cb6-56" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">100</span>)</span>
-<span id="cb6-57"><a href="#cb6-57" aria-hidden="true" tabindex="-1"></a>results <span class="ot">&lt;-</span> <span class="fu">zero_inflated_cuped_inference</span>()</span>
-<span id="cb6-58"><a href="#cb6-58" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(results)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb6-42"><a href="#cb6-42" aria-hidden="true" tabindex="-1"></a>  all_t <span class="ot">=</span> <span class="fu">lm_robust</span>(post <span class="sc">~</span> group, <span class="at">data =</span> df_all)</span>
+<span id="cb6-43"><a href="#cb6-43" aria-hidden="true" tabindex="-1"></a>  active_t <span class="ot">=</span> <span class="fu">lm_robust</span>(post <span class="sc">~</span> group, <span class="at">data =</span> df_all <span class="sc">%&gt;%</span> <span class="fu">filter</span>(is_active))</span>
+<span id="cb6-44"><a href="#cb6-44" aria-hidden="true" tabindex="-1"></a>  all_cuped <span class="ot">=</span> <span class="fu">lm_robust</span>(post <span class="sc">~</span> group <span class="sc">+</span> pre, <span class="at">data =</span> df_all)</span>
+<span id="cb6-45"><a href="#cb6-45" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb6-46"><a href="#cb6-46" aria-hidden="true" tabindex="-1"></a>  <span class="fu">data.frame</span>(</span>
+<span id="cb6-47"><a href="#cb6-47" aria-hidden="true" tabindex="-1"></a>    <span class="at">analysis =</span> <span class="fu">c</span>(<span class="st">"All"</span>, <span class="st">"Active"</span>, <span class="st">"All CUPED"</span>),</span>
+<span id="cb6-48"><a href="#cb6-48" aria-hidden="true" tabindex="-1"></a>    <span class="at">ate =</span> <span class="fu">c</span>(</span>
+<span id="cb6-49"><a href="#cb6-49" aria-hidden="true" tabindex="-1"></a>      <span class="fu">summary</span>(all_t)<span class="sc">$</span>coefficients[<span class="dv">2</span>,<span class="dv">1</span>],</span>
+<span id="cb6-50"><a href="#cb6-50" aria-hidden="true" tabindex="-1"></a>      <span class="fu">summary</span>(active_t)<span class="sc">$</span>coefficients[<span class="dv">2</span>,<span class="dv">1</span>],</span>
+<span id="cb6-51"><a href="#cb6-51" aria-hidden="true" tabindex="-1"></a>      <span class="fu">summary</span>(all_cuped)<span class="sc">$</span>coefficients[<span class="dv">2</span>,<span class="dv">1</span>]</span>
+<span id="cb6-52"><a href="#cb6-52" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb6-53"><a href="#cb6-53" aria-hidden="true" tabindex="-1"></a>    <span class="at">se =</span> <span class="fu">c</span>(</span>
+<span id="cb6-54"><a href="#cb6-54" aria-hidden="true" tabindex="-1"></a>      <span class="fu">summary</span>(all_t)<span class="sc">$</span>coefficients[<span class="dv">2</span>,<span class="dv">2</span>],</span>
+<span id="cb6-55"><a href="#cb6-55" aria-hidden="true" tabindex="-1"></a>      <span class="fu">summary</span>(active_t)<span class="sc">$</span>coefficients[<span class="dv">2</span>,<span class="dv">2</span>],</span>
+<span id="cb6-56"><a href="#cb6-56" aria-hidden="true" tabindex="-1"></a>      <span class="fu">summary</span>(all_cuped)<span class="sc">$</span>coefficients[<span class="dv">2</span>,<span class="dv">2</span>]</span>
+<span id="cb6-57"><a href="#cb6-57" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb6-58"><a href="#cb6-58" aria-hidden="true" tabindex="-1"></a>    <span class="at">t_statistic =</span> <span class="fu">c</span>(</span>
+<span id="cb6-59"><a href="#cb6-59" aria-hidden="true" tabindex="-1"></a>      <span class="fu">summary</span>(all_t)<span class="sc">$</span>coefficients[<span class="dv">2</span>,<span class="dv">3</span>],</span>
+<span id="cb6-60"><a href="#cb6-60" aria-hidden="true" tabindex="-1"></a>      <span class="fu">summary</span>(active_t)<span class="sc">$</span>coefficients[<span class="dv">2</span>,<span class="dv">3</span>],</span>
+<span id="cb6-61"><a href="#cb6-61" aria-hidden="true" tabindex="-1"></a>      <span class="fu">summary</span>(all_cuped)<span class="sc">$</span>coefficients[<span class="dv">2</span>,<span class="dv">3</span>]</span>
+<span id="cb6-62"><a href="#cb6-62" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb6-63"><a href="#cb6-63" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb6-64"><a href="#cb6-64" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb6-65"><a href="#cb6-65" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-66"><a href="#cb6-66" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">100</span>)</span>
+<span id="cb6-67"><a href="#cb6-67" aria-hidden="true" tabindex="-1"></a>results <span class="ot">&lt;-</span> <span class="fu">zero_inflated_cuped_inference</span>()</span>
+<span id="cb6-68"><a href="#cb6-68" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(results)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>     Analysis T_Statistic
-1      Active  -10.339967
-2         All   -8.408577
-3 All (CUPED)   12.359841</code></pre>
+<pre><code>   analysis       ate         se t_statistic
+1       All 0.4054419 0.04821766    8.408577
+2    Active 0.5270744 0.05097448   10.339967
+3 All CUPED 0.4054419 0.03280316   12.359841</code></pre>
 </div>
 </div>
 </section>
-</section>
-<section id="things-to-revise-for-next-version" class="level1">
-<h1>Things to revise for next version</h1>
-<p>Why was there a sign change above?</p>
-<p>In order for the all analysis to be better, we need the correlation between pre and post to have</p>
+<section id="necessary-conditions-for-t-statistic-and-power-to-increase" class="level2">
+<h2 class="anchored" data-anchor-id="necessary-conditions-for-t-statistic-and-power-to-increase">Necessary conditions for t statistic and power to increase</h2>
+<p>The story of the t test was simple, always remove the zero-users. The story of CUPED is not simple, since the t statistic can go up or down when we remove zero-users. We’d like to know: as this statistic fluctuates, are we at least guarnateed to have more statistical power?</p>
+<p>The noncentrality parameter for power is characterized as</p>
+<p><span class="math display">\[\begin{align}
+\delta_{\text{active}} &amp;= \frac{\Delta}{\sqrt{(\sigma^2_T + \sigma^2_C) (1 - \rho^2_{\text{active}}) / N}} \\
+\delta_{\text{all}} &amp;= \frac{(1 - p) \Delta}{\sqrt{(\sigma^2_{\text{all}} + \sigma^2_{\text{all}}) (1 - \rho^2_{\text{all}}) / N}}
+\end{align}\]</span></p>
+<p>where <span class="math inline">\(\rho^2\)</span> is the <span class="math inline">\(R^2\)</span> value of the CUPED mdoel. In order for the power of the all group to be greater, we would need</p>
+<p><span class="math display">\[\boxed{1 - p &gt; \frac{\sigma^2_{\text{all}} (1 - \rho^2_{\text{all}})}{\sigma^2_{\text{active}} (1 - \rho^2_{\text{active}})}}\]</span></p>
+<p>A very fast, approximate gut check to see if adding the zeros is worthwhile assumes <span class="math inline">\(\sigma^2_{\text{all}} \approx \sigma^2_{\text{active}}\)</span>. Then we check</p>
 <p><span class="math display">\[\rho^2_{\text{all}} &gt; 1 - (1-p)(1 - \rho^2_{\text{active}})\]</span></p>
+<p>Using simple numbers, <span class="math inline">\(p = 0.25\)</span>, <span class="math inline">\(\rho^2_{\text{active}} = 0.1\)</span>, we’d need to have <span class="math inline">\(\rho^2_{\text{all}} &gt; 0.325\)</span>.</p>
 
 
+</section>
 </section>
 
 </main> <!-- /main -->

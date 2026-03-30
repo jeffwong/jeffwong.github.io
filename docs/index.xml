@@ -39,7 +39,7 @@
 <p>The variance of this estimated treatment effect is <img src="https://latex.codecogs.com/png.latex?%5Cfrac%7B2%7D%7BN%7D%20%5Ccdot%20(Var(y_%7BT,%20%5Ctext%7Bobserved%7D%7D)%20+%20Var(y_%7BC,%20%5Ctext%7Bobserved%7D%7D))"></p>
 <p>The variance of the control group overall is derived from the <a href="law of total variance">Law of Total Variance</a>. Say <img src="https://latex.codecogs.com/png.latex?Z"> is a binary variable for whether the user is a zero user. Then <img src="https://latex.codecogs.com/png.latex?Var(y)%20=%20E%5BVar(y%7CZ)%5D%20+%20Var(E%5By%20%7C%20Z%5D)">. For <img src="https://latex.codecogs.com/png.latex?Z%20=%201">, which happens with probability <img src="https://latex.codecogs.com/png.latex?p">, the first term is <img src="https://latex.codecogs.com/png.latex?E%5BVar(y%7CZ)%5D%20=%20%5Csigma%5E2_z">. For <img src="https://latex.codecogs.com/png.latex?Z%20=%200">, it is <img src="https://latex.codecogs.com/png.latex?%5Csigma%5E2_C"> with probability <img src="https://latex.codecogs.com/png.latex?(1-p)">.</p>
 <p>To unpack the second term, <img src="https://latex.codecogs.com/png.latex?E%5By%20%7C%20Z%5D%20=%20%5Cmu_z"> when <img src="https://latex.codecogs.com/png.latex?Z%20=%201">, and is <img src="https://latex.codecogs.com/png.latex?%5Cmu_C"> when <img src="https://latex.codecogs.com/png.latex?Z%20=%200">. The variance of these terms can be thought of as the variance of a scaled bernoulli random variable, so the variance of the control group is <img src="https://latex.codecogs.com/png.latex?Var(E%5By%20%7C%20Z%5D)%20=%20p%20(1-p)%20(%5Cmu_z%20-%20%5Cmu_C)%5E2">.</p>
-<p>Finally, the variance of the estimated treatment effect is <img src="https://latex.codecogs.com/png.latex?Var(%5Chat%7B%5Ctau%7D)%20=%20%5Cfrac%7B2%7D%7BN%7D%20%5Cbiggl((1-p)(%5Csigma%5E2_T%20+%20%5Csigma%5E2_C)%20+%202p%5Csigma%5E2_z%20+%20p(1-p)((%5Cmu_T%20-%20%5Cmu_Z)%5E2%20+%20(%5Cmu_C%20-%20%5Cmu_z)%5E2)%20%5Cbiggr)"></p>
+<p>Finally, the variance of the estimated treatment effect is <img src="https://latex.codecogs.com/png.latex?%5Cboxed%7BVar(%5Chat%7B%5Ctau%7D)%20=%20%5Cfrac%7B2%7D%7BN%7D%20%5Cbiggl((1-p)(%5Csigma%5E2_T%20+%20%5Csigma%5E2_C)%20+%202p%5Csigma%5E2_z%20+%20p(1-p)((%5Cmu_T%20-%20%5Cmu_Z)%5E2%20+%20(%5Cmu_C%20-%20%5Cmu_z)%5E2)%20%5Cbiggr)%7D"></p>
 <p>This formula has interesting properties. In general, we cannot guarantee that the variance of the effect is increasing or decreasing when zero-users are added.</p>
 <ol type="1">
 <li>Due to the <img src="https://latex.codecogs.com/png.latex?%5Cfrac%7B1%7D%7BN%7D"> scaling factor, adding zero-users can decrease the variance of the effect.</li>
@@ -426,8 +426,8 @@ font-style: inherit;">16</span>)</span></code></pre></div></div>
 <section id="proof" class="level2">
 <h2 class="anchored" data-anchor-id="proof">Proof</h2>
 <p>Say there are two analyses, the “all” analysis and the “active” analysis. In order to see an increase in the t statistic, we must have</p>
-<p><img src="https://latex.codecogs.com/png.latex?%5Cfrac%7Bt_%7Ball%7D%7D%7Bt_%7Bactive%7D%7D%20=%20%5Csqrt%7B1-p%7D%20%5Csqrt%7B%5Cfrac%7B%5Csigma%5E2_C%20+%20%5Csigma%5E2_T%7D%7B%5Csigma%5E2_%7BC,%20%5Ctext%7Bobserved%7D%7D%20+%20%5Csigma%5E2_%7BT,%20%5Ctext%7Bobserved%7D%7D%7D%7D%20%3E%201"> To show that this is not possible, we will lower bound <img src="https://latex.codecogs.com/png.latex?%5Csigma%5E2_%7BC,%20%5Ctext%7Bobserved%7D%7D"> and <img src="https://latex.codecogs.com/png.latex?%5Csigma%5E2_%7BT,%20%5Ctext%7Bobserved%7D%7D"> For the control, we recall</p>
-<p><img src="https://latex.codecogs.com/png.latex?%5Csigma%5E2_%7BC,%20%5Ctext%7Bobserved%7D%7D%20=%20(1-p)%5Csigma%5E2_C%20+%20p%5Csigma%5E2_z%20+%20p(1-p)(%5Cmu_C%20-%20%5Cmu_z)%5E2."> Each individual term in this expression is nonnegative, so we can apply a bound <img src="https://latex.codecogs.com/png.latex?%5Csigma%5E2_%7BC,%20%5Ctext%7Bobserved%7D%7D%20%5Cgeq%20(1-p)%5Csigma%5E2_C"> With a similar bound for the treatment. The sum is bounded <img src="https://latex.codecogs.com/png.latex?%5Csigma%5E2_%7BC,%20%5Ctext%7Bobserved%7D%7D%20+%20%5Csigma%5E2_%7BT,%20%5Ctext%7Bobserved%7D%7D%20%5Cgeq%20(1-p)(%5Csigma%5E2_C%20+%20%5Csigma%5E2_T)">, therefore it is not possible for <img src="https://latex.codecogs.com/png.latex?%5Cfrac%7Bt_%7Ball%7D%7D%7Bt_%7Bactive%7D%7D%20%3E%201">.</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cfrac%7Bt_%7B%5Ctext%7Ball%7D%7D%7D%7Bt_%7B%5Ctext%7Bactive%7D%7D%7D%20=%20%5Csqrt%7B1-p%7D%20%5Csqrt%7B%5Cfrac%7B%5Csigma%5E2_C%20+%20%5Csigma%5E2_T%7D%7B%5Csigma%5E2_%7BC,%20%5Ctext%7Bobserved%7D%7D%20+%20%5Csigma%5E2_%7BT,%20%5Ctext%7Bobserved%7D%7D%7D%7D%20%3E%201"> To show that this is not possible, we will lower bound <img src="https://latex.codecogs.com/png.latex?%5Csigma%5E2_%7BC,%20%5Ctext%7Bobserved%7D%7D"> and <img src="https://latex.codecogs.com/png.latex?%5Csigma%5E2_%7BT,%20%5Ctext%7Bobserved%7D%7D"> For the control, we recall</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Csigma%5E2_%7BC,%20%5Ctext%7Bobserved%7D%7D%20=%20(1-p)%5Csigma%5E2_C%20+%20p%5Csigma%5E2_z%20+%20p(1-p)(%5Cmu_C%20-%20%5Cmu_z)%5E2."> Each individual term in this expression is nonnegative, so we can apply a bound <img src="https://latex.codecogs.com/png.latex?%5Csigma%5E2_%7BC,%20%5Ctext%7Bobserved%7D%7D%20%5Cgeq%20(1-p)%5Csigma%5E2_C"> With a similar bound for the treatment. The sum is bounded <img src="https://latex.codecogs.com/png.latex?%5Csigma%5E2_%7BC,%20%5Ctext%7Bobserved%7D%7D%20+%20%5Csigma%5E2_%7BT,%20%5Ctext%7Bobserved%7D%7D%20%5Cgeq%20(1-p)(%5Csigma%5E2_C%20+%20%5Csigma%5E2_T)">, therefore it is not possible for <img src="https://latex.codecogs.com/png.latex?%5Cfrac%7Bt_%7B%5Ctext%7Ball%7D%7D%7D%7Bt_%7B%5Ctext%7Bactive%7D%7D%7D%20%3E%201">.</p>
 </section>
 <section id="a-strange-phenomenon-under-cuped" class="level2">
 <h2 class="anchored" data-anchor-id="a-strange-phenomenon-under-cuped">A strange phenomenon under CUPED</h2>
@@ -580,9 +580,9 @@ background-color: null;
 font-style: inherit;">"Control"</span>, n_zero),</span>
 <span id="cb6-24">      <span class="at" style="color: #657422;
 background-color: null;
-font-style: inherit;">is_active =</span> <span class="dv" style="color: #AD0000;
+font-style: inherit;">is_active =</span> <span class="cn" style="color: #8f5902;
 background-color: null;
-font-style: inherit;">0</span>,</span>
+font-style: inherit;">FALSE</span>,</span>
 <span id="cb6-25">      <span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">pre =</span> y_pre_zero,</span>
@@ -624,9 +624,9 @@ background-color: null;
 font-style: inherit;">"Treatment"</span>, n_zero),</span>
 <span id="cb6-36">      <span class="at" style="color: #657422;
 background-color: null;
-font-style: inherit;">is_active =</span> <span class="dv" style="color: #AD0000;
+font-style: inherit;">is_active =</span> <span class="cn" style="color: #8f5902;
 background-color: null;
-font-style: inherit;">0</span>,</span>
+font-style: inherit;">FALSE</span>,</span>
 <span id="cb6-37">      <span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">pre =</span> y_pre_zero,</span>
@@ -636,44 +636,31 @@ font-style: inherit;">post =</span> y_post_zero</span>
 <span id="cb6-39">    )</span>
 <span id="cb6-40">  )</span>
 <span id="cb6-41">  </span>
-<span id="cb6-42">  df_triggered <span class="ot" style="color: #003B4F;
+<span id="cb6-42">  all_t <span class="ot" style="color: #003B4F;
 background-color: null;
-font-style: inherit;">&lt;-</span> df_all <span class="sc" style="color: #5E5E5E;
+font-style: inherit;">=</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">lm_robust</span>(post <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">~</span> group, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">data =</span> df_all)</span>
+<span id="cb6-43">  active_t <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">=</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">lm_robust</span>(post <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">~</span> group, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">data =</span> df_all <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">%&gt;%</span> <span class="fu" style="color: #4758AB;
 background-color: null;
-font-style: inherit;">filter</span>(is_active <span class="sc" style="color: #5E5E5E;
+font-style: inherit;">filter</span>(is_active))</span>
+<span id="cb6-44">  all_cuped <span class="ot" style="color: #003B4F;
 background-color: null;
-font-style: inherit;">==</span> <span class="cn" style="color: #8f5902;
-background-color: null;
-font-style: inherit;">TRUE</span>)</span>
-<span id="cb6-43">  t_triggered <span class="ot" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">t.test</span>(post <span class="sc" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">~</span> group, <span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">data =</span> df_triggered)<span class="sc" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">$</span>statistic</span>
-<span id="cb6-44">  </span>
-<span id="cb6-45">  t_total_std <span class="ot" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">t.test</span>(post <span class="sc" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">~</span> group, <span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">data =</span> df_all)<span class="sc" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">$</span>statistic</span>
-<span id="cb6-46">  </span>
-<span id="cb6-47">  model_cuped <span class="ot" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+font-style: inherit;">=</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">lm_robust</span>(post <span class="sc" style="color: #5E5E5E;
 background-color: null;
@@ -682,71 +669,157 @@ background-color: null;
 font-style: inherit;">+</span> pre, <span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">data =</span> df_all)</span>
-<span id="cb6-48">  t_total_cuped <span class="ot" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">summary</span>(model_cuped)<span class="sc" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">$</span>coefficients[<span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"groupTreatment"</span>, <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"t value"</span>]</span>
-<span id="cb6-49">  </span>
-<span id="cb6-50">  <span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">return</span>(<span class="fu" style="color: #4758AB;
+<span id="cb6-45">  </span>
+<span id="cb6-46">  <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">data.frame</span>(</span>
-<span id="cb6-51">    <span class="at" style="color: #657422;
+<span id="cb6-47">    <span class="at" style="color: #657422;
 background-color: null;
-font-style: inherit;">Analysis =</span> <span class="fu" style="color: #4758AB;
+font-style: inherit;">analysis =</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">c</span>(<span class="st" style="color: #20794D;
 background-color: null;
-font-style: inherit;">"Active"</span>, <span class="st" style="color: #20794D;
-background-color: null;
 font-style: inherit;">"All"</span>, <span class="st" style="color: #20794D;
 background-color: null;
-font-style: inherit;">"All (CUPED)"</span>),</span>
-<span id="cb6-52">    <span class="at" style="color: #657422;
+font-style: inherit;">"Active"</span>, <span class="st" style="color: #20794D;
 background-color: null;
-font-style: inherit;">T_Statistic =</span> <span class="fu" style="color: #4758AB;
+font-style: inherit;">"All CUPED"</span>),</span>
+<span id="cb6-48">    <span class="at" style="color: #657422;
 background-color: null;
-font-style: inherit;">c</span>(t_triggered, t_total_std, t_total_cuped)</span>
-<span id="cb6-53">  ))</span>
-<span id="cb6-54">}</span>
-<span id="cb6-55"></span>
-<span id="cb6-56"><span class="fu" style="color: #4758AB;
+font-style: inherit;">ate =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(</span>
+<span id="cb6-49">      <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">summary</span>(all_t)<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>coefficients[<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>,<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>],</span>
+<span id="cb6-50">      <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">summary</span>(active_t)<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>coefficients[<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>,<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>],</span>
+<span id="cb6-51">      <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">summary</span>(all_cuped)<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>coefficients[<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>,<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>]</span>
+<span id="cb6-52">    ),</span>
+<span id="cb6-53">    <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">se =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(</span>
+<span id="cb6-54">      <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">summary</span>(all_t)<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>coefficients[<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>,<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>],</span>
+<span id="cb6-55">      <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">summary</span>(active_t)<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>coefficients[<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>,<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>],</span>
+<span id="cb6-56">      <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">summary</span>(all_cuped)<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>coefficients[<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>,<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>]</span>
+<span id="cb6-57">    ),</span>
+<span id="cb6-58">    <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">t_statistic =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(</span>
+<span id="cb6-59">      <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">summary</span>(all_t)<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>coefficients[<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>,<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">3</span>],</span>
+<span id="cb6-60">      <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">summary</span>(active_t)<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>coefficients[<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>,<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">3</span>],</span>
+<span id="cb6-61">      <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">summary</span>(all_cuped)<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>coefficients[<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>,<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">3</span>]</span>
+<span id="cb6-62">    )</span>
+<span id="cb6-63">  )</span>
+<span id="cb6-64">}</span>
+<span id="cb6-65"></span>
+<span id="cb6-66"><span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">set.seed</span>(<span class="dv" style="color: #AD0000;
 background-color: null;
 font-style: inherit;">100</span>)</span>
-<span id="cb6-57">results <span class="ot" style="color: #003B4F;
+<span id="cb6-67">results <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">zero_inflated_cuped_inference</span>()</span>
-<span id="cb6-58"><span class="fu" style="color: #4758AB;
+<span id="cb6-68"><span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">print</span>(results)</span></code></pre></div></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>     Analysis T_Statistic
-1      Active  -10.339967
-2         All   -8.408577
-3 All (CUPED)   12.359841</code></pre>
+<pre><code>   analysis       ate         se t_statistic
+1       All 0.4054419 0.04821766    8.408577
+2    Active 0.5270744 0.05097448   10.339967
+3 All CUPED 0.4054419 0.03280316   12.359841</code></pre>
 </div>
 </div>
 </section>
-</section>
-<section id="things-to-revise-for-next-version" class="level1">
-<h1>Things to revise for next version</h1>
-<p>Why was there a sign change above?</p>
-<p>In order for the all analysis to be better, we need the correlation between pre and post to have</p>
+<section id="necessary-conditions-for-t-statistic-and-power-to-increase" class="level2">
+<h2 class="anchored" data-anchor-id="necessary-conditions-for-t-statistic-and-power-to-increase">Necessary conditions for t statistic and power to increase</h2>
+<p>The story of the t test was simple, always remove the zero-users. The story of CUPED is not simple, since the t statistic can go up or down when we remove zero-users. We’d like to know: as this statistic fluctuates, are we at least guarnateed to have more statistical power?</p>
+<p>The noncentrality parameter for power is characterized as</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0A%5Cdelta_%7B%5Ctext%7Bactive%7D%7D%20&amp;=%20%5Cfrac%7B%5CDelta%7D%7B%5Csqrt%7B(%5Csigma%5E2_T%20+%20%5Csigma%5E2_C)%20(1%20-%20%5Crho%5E2_%7B%5Ctext%7Bactive%7D%7D)%20/%20N%7D%7D%20%5C%5C%0A%5Cdelta_%7B%5Ctext%7Ball%7D%7D%20&amp;=%20%5Cfrac%7B(1%20-%20p)%20%5CDelta%7D%7B%5Csqrt%7B(%5Csigma%5E2_%7B%5Ctext%7Ball%7D%7D%20+%20%5Csigma%5E2_%7B%5Ctext%7Ball%7D%7D)%20(1%20-%20%5Crho%5E2_%7B%5Ctext%7Ball%7D%7D)%20/%20N%7D%7D%0A%5Cend%7Balign%7D"></p>
+<p>where <img src="https://latex.codecogs.com/png.latex?%5Crho%5E2"> is the <img src="https://latex.codecogs.com/png.latex?R%5E2"> value of the CUPED mdoel. In order for the power of the all group to be greater, we would need</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cboxed%7B1%20-%20p%20%3E%20%5Cfrac%7B%5Csigma%5E2_%7B%5Ctext%7Ball%7D%7D%20(1%20-%20%5Crho%5E2_%7B%5Ctext%7Ball%7D%7D)%7D%7B%5Csigma%5E2_%7B%5Ctext%7Bactive%7D%7D%20(1%20-%20%5Crho%5E2_%7B%5Ctext%7Bactive%7D%7D)%7D%7D"></p>
+<p>A very fast, approximate gut check to see if adding the zeros is worthwhile assumes <img src="https://latex.codecogs.com/png.latex?%5Csigma%5E2_%7B%5Ctext%7Ball%7D%7D%20%5Capprox%20%5Csigma%5E2_%7B%5Ctext%7Bactive%7D%7D">. Then we check</p>
 <p><img src="https://latex.codecogs.com/png.latex?%5Crho%5E2_%7B%5Ctext%7Ball%7D%7D%20%3E%201%20-%20(1-p)(1%20-%20%5Crho%5E2_%7B%5Ctext%7Bactive%7D%7D)"></p>
+<p>Using simple numbers, <img src="https://latex.codecogs.com/png.latex?p%20=%200.25">, <img src="https://latex.codecogs.com/png.latex?%5Crho%5E2_%7B%5Ctext%7Bactive%7D%7D%20=%200.1">, we’d need to have <img src="https://latex.codecogs.com/png.latex?%5Crho%5E2_%7B%5Ctext%7Ball%7D%7D%20%3E%200.325">.</p>
 
 
+</section>
 </section>
 
  ]]></description>

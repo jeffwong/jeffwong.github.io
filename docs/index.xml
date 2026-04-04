@@ -901,7 +901,7 @@ font-style: inherit;">print</span>(results)</span></code></pre></div></div>
 <section id="step-2-a-bayes-factor-is-an-e-variable." class="level2">
 <h2 class="anchored" data-anchor-id="step-2-a-bayes-factor-is-an-e-variable.">Step 2: A Bayes Factor is an e-variable.</h2>
 <p>We need to show <img src="https://latex.codecogs.com/png.latex?E_%7BH_0%7D%5BBF%5D%20%5Cleq%201">. Proof:</p>
-<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0AE_%7BH_0%7D%5BBF%5D%20&amp;=%20%5Cint%20%5CBig(%20%5Cfrac%7B%5Cint%20p(y%20%7C%20%5Ctheta)%20p(%5Ctheta)%20d%5Ctheta%7D%7Bp(y%20%7C%20%5Ctheta_0)%7D%20%5CBig)%20p(y%20%7C%20%5Ctheta_0)%20dy%20%5C%5C%0A%20%20&amp;=%20%5Cint%20(%5Cint%20p(y%20%7C%20%5Ctheta)%20p(%5Ctheta)%20d%5Ctheta)%20dy%20%5C%5C%0A%20%20&amp;=%20%5Cint%20(%5Cint%20p(y%20%7C%20theta)%20dy)%20p(%5Ctheta)%20d%5Ctheta%20%5C%5C%0A%20%20&amp;=%201%0A%5Cend%7Balign%7D"></p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0AE_%7BH_0%7D%5BBF%5D%20&amp;=%20%5Cint%20%5CBig(%20%5Cfrac%7B%5Cint%20p(y%20%7C%20%5Ctheta)%20p(%5Ctheta)%20d%5Ctheta%7D%7Bp(y%20%7C%20%5Ctheta_0)%7D%20%5CBig)%20p(y%20%7C%20%5Ctheta_0)%20dy%20%5C%5C%0A%20%20&amp;=%20%5Cint%20(%5Cint%20p(y%20%7C%20%5Ctheta)%20p(%5Ctheta)%20d%5Ctheta)%20dy%20%5C%5C%0A%20%20&amp;=%20%5Cint%20(%5Cint%20p(y%20%7C%20%5Ctheta)%20dy)%20p(%5Ctheta)%20d%5Ctheta%20%5C%5C%0A%20%20&amp;=%201%0A%5Cend%7Balign%7D"></p>
 <p>The order of integration was changed using <a href="https://en.wikipedia.org/wiki/Fubini%27s_theorem">Fubini’s Theorem</a>. Thus a Bayes Factor is an e-variable.</p>
 </section>
 <section id="step-3-e-variables-are-robust-to-peeking.-they-form-a-test-martingale." class="level2">
@@ -925,6 +925,58 @@ font-style: inherit;">print</span>(results)</span></code></pre></div></div>
   <category>statistics</category>
   <guid>https://jeffwong.github.io/posts/anytime_valid_inference_ols/</guid>
   <pubDate>Sun, 08 Feb 2026 00:00:00 GMT</pubDate>
+</item>
+<item>
+  <title>Creating CUPED from FWL</title>
+  <dc:creator>Jeffrey Wong</dc:creator>
+  <link>https://jeffwong.github.io/posts/cuped_from_fwl/</link>
+  <description><![CDATA[ 
+
+
+
+
+
+<p>CUPED is a well known technique to greatly increase statistical power in a controlled experiment. The CUPED formulation has similarities to the OLS model</p>
+<p><img src="https://latex.codecogs.com/png.latex?y%20=%20%5Cbeta_0%20+%20T%5Cbeta_1%20+%20(y_%7B%5Ctext%7Bpre%7D%7D-1_n%20%5Cmu)%20%5Cbeta_2%20+%20%5Cvarepsilon"></p>
+<p>In this case, variation in <img src="https://latex.codecogs.com/png.latex?y"> is explained by the previous values contained in <img src="https://latex.codecogs.com/png.latex?y_%7B%5Ctext%7Bpre%7D%7D">. For example, if someone watched a lot of movies during the pretreatment window, they are likely to watch a lot of movies during the posttreatment window too. Their particular <img src="https://latex.codecogs.com/png.latex?y"> values are explainable, and we can reduce the residual variance. This increases power.</p>
+<p>While there are 3 parameters in the model, only 2 are meaningful. <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Cbeta%7D_1"> represents the average treatment effect, and <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Cbeta%7D_0"> represents the baseline value for the average user who is in the control, so <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Cbeta%7D_0%20=%20E%5By%20%7C%20T%20=%200,%20y_%7B%5Ctext%7Bpre%7D%7D%20=%20%5Cmu%5D">. While <img src="https://latex.codecogs.com/png.latex?%5Cbeta_2"> is useful for decreasing variance, it is not useful for inference. <img src="https://latex.codecogs.com/png.latex?%5Cbeta_2"> is referred to as a nuisance variable.</p>
+<p>The CUPED formulation has a special computing strategy, making it not only great for statistical power, but also easy to implement. The strategy is rooted in the <a href="https://en.wikipedia.org/wiki/Frisch–Waugh–Lovell_theorem">Frisch Waugh Lovell theorem</a>.</p>
+<section id="the-fwl" class="level1">
+<h1>The FWL</h1>
+<p>If a regression can be partitioned into variables of interest, <img src="https://latex.codecogs.com/png.latex?T">, and nuisance variables, <img src="https://latex.codecogs.com/png.latex?X_2">, then inference on <img src="https://latex.codecogs.com/png.latex?T"> can be done extremely efficiently.</p>
+<p><img src="https://latex.codecogs.com/png.latex?y%20=%20%5Cbeta_0%20+%20T%5Cbeta_1%20+%20X%5Cbeta_2%20+%20%5Cvarepsilon"></p>
+<ol type="1">
+<li>Regress <img src="https://latex.codecogs.com/png.latex?y"> on <img src="https://latex.codecogs.com/png.latex?X_2">. Then get the residuals, <img src="https://latex.codecogs.com/png.latex?%5Cvarepsilon_y">. \</li>
+<li>Regress <img src="https://latex.codecogs.com/png.latex?%5B1,%20T%5D"> on <img src="https://latex.codecogs.com/png.latex?X_2">. Then get the residuals, <img src="https://latex.codecogs.com/png.latex?%5Cvarepsilon_T">. \</li>
+<li>Regress <img src="https://latex.codecogs.com/png.latex?%5Cvarepsilon_y"> on <img src="https://latex.codecogs.com/png.latex?%5Cvarepsilon_T">. The estimated parameters from this regression are exactly <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Cbeta%7D_0"> and <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Cbeta%7D_1"> from the original regression.</li>
+</ol>
+<section id="step-1" class="level2">
+<h2 class="anchored" data-anchor-id="step-1">Step 1</h2>
+<p>The regression <img src="https://latex.codecogs.com/png.latex?y"> on <img src="https://latex.codecogs.com/png.latex?X_2"> is a simple least squares regression. Note that this regression doesn’t even have an intercept, so we simply need to estimate <img src="https://latex.codecogs.com/png.latex?%5Ctheta"> from <img src="https://latex.codecogs.com/png.latex?y%20=%20X_2%20%5Ctheta">.</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0A%5Ctheta%20&amp;=%20%5Cfrac%7B(y_%5Ctext%7Bpre%7D%20-%201_n%5Cmu)%5ET%20y%7D%7B(y_%5Ctext%7Bpre%7D%20-%201_n%5Cmu)%5ET%20(y_%5Ctext%7Bpre%7D%20-%201_n%5Cmu)%7D%20%5C%5C%0A%20%20&amp;=%20%5Cfrac%7By_%5Ctext%7Bpre%7D%5ET%20y%20-%20%5Cmu%20%5Csum%20y%7D%7B%5Csum%20y_%5Ctext%7Bpre%7D%5E2%20-%202%5Cmu%20%5Csum%20y_%5Ctext%7Bpre%7D%20+%20n%20%5Cmu%5E2%7D%0A%5Cend%7Balign%7D"></p>
+<p>After obtaining <img src="https://latex.codecogs.com/png.latex?%5Ctheta">, we need to residualize. <img src="https://latex.codecogs.com/png.latex?%5Cvarepsilon_y%20=%20y%20-%20(y_%5Ctext%7Bpre%7D%20-%201_n%5Cmu)%20%5Ctheta"></p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0A%5Csum%20%5Cvarepsilon_i%20&amp;=%20%5Csum%20y_i%20-%20(y_%7Bpre,i%7D%20-%20%5Cmu)%20%5Ctheta%20%5C%5C%0A%20%20&amp;=%20%5Csum_g%20n_g%20%5Cmu%20%5Ctheta%20+%20%5Csum_%7Bi%20%5Cin%20g%7D%20%5CBigl(y_i%20-%20%5Ctheta%20%5Csum%20y_%7Bpre,i%7D%20%5CBigr)%20%5C%5C%0A%5Csum%20%5Cvarepsilon_i%5E2%20&amp;=%20%5Csum%20y_i%5E2%20-%202%20y_i%20(y_%7Bpre,%20i%7D%20-%20%5Cmu)%20%5Ctheta%20+%20(y_%7Bpre,%20i%7D%20-%20%5Cmu)%5E2%20(%5Ctheta)%5E2%20%5C%5C%0A%20%20&amp;=%20%5Csum_g%20%5CBigl(%20n_g%5Cmu%5E2%20%5Ctheta%5E2%20+%20%5Csum_%7Bi%20%5Cin%20g%7D%20y_i%5E2%20-%0A%20%202%5Ctheta%20%5Csum_%7Bi%20%5Cin%20g%7D%20y_i%20y_%7Bpre,%20i%7D%20+%0A%20%202%5Ctheta%20%5Cmu%20%5Csum_%7Bi%20%5Cin%20g%7D%20y_i%20+%0A%20%20%5Ctheta%5E2%20(%5Csum_%7Bi%20%5Cin%20g%7D%20y_%7Bpre,%20i%7D%5E2%20-%202%5Cmu%20%5Csum_%7Bi%20%5Cin%20g%7D%20y_%7Bpre,%20i%7D)%20%5CBigr)%0A%0A%5Cend%7Balign%7D"></p>
+</section>
+<section id="step-2" class="level2">
+<h2 class="anchored" data-anchor-id="step-2">Step 2</h2>
+<p>Here is the beauty of FWL when applied to randomized data. When <img src="https://latex.codecogs.com/png.latex?T"> is unconditionally randomized, the regression of <img src="https://latex.codecogs.com/png.latex?%5B1,%20T%5D"> on <img src="https://latex.codecogs.com/png.latex?X_2"> is a no-op, and the residuals are simply <img src="https://latex.codecogs.com/png.latex?%5B1,%20T%5D">. Thus, we already have <img src="https://latex.codecogs.com/png.latex?%5Cvarepsilon_T">.</p>
+</section>
+<section id="step-3" class="level2">
+<h2 class="anchored" data-anchor-id="step-3">Step 3</h2>
+<p>Now we regress <img src="https://latex.codecogs.com/png.latex?%5Cvarepsilon_y"> on <img src="https://latex.codecogs.com/png.latex?%5Cvarepsilon_T">.</p>
+<p><img src="https://latex.codecogs.com/png.latex?y%20-%20(y_%5Ctext%7Bpre%7D%20-%201_n%5Cmu)%20%5Ctheta%20=%20%5Cbeta_0%20+%20T%5Cbeta_1"></p>
+<p>This regression takes the form of simple least squares again - this time with an intercept.</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0A%20%20%5Chat%7B%5Cbeta%7D_1%20&amp;=%20Cov(%5Cvarepsilon_y,%20T)%20/%20Var(%5Cvarepsilon_y)%20%5C%5C%0A%20%20%5Chat%7B%5Cbeta%7D_0%20&amp;=%20%5Cbar%7B%5Cvarepsilon%7D_y%20-%20%5Chat%7B%5Cbeta%7D_1%20%5Cbar%7BT%7D%0A%5Cend%7Balign%7D"></p>
+
+
+</section>
+</section>
+
+ ]]></description>
+  <category>experimentation</category>
+  <category>statistics</category>
+  <guid>https://jeffwong.github.io/posts/cuped_from_fwl/</guid>
+  <pubDate>Mon, 02 Feb 2026 00:00:00 GMT</pubDate>
 </item>
 <item>
   <title>Aggregations and Arrival Times Affect Convergence</title>

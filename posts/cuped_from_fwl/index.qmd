@@ -1,0 +1,78 @@
+---
+title: "Creating CUPED from FWL"
+author: "Jeffrey Wong"
+date: "2026-02-02"
+categories: [experimentation, statistics]
+---
+
+```{r setup, include=FALSE}
+require(dplyr)
+require(purrr)
+require(ggplot2)
+require(gridExtra)
+```
+
+CUPED is a well known technique to greatly increase statistical power in a controlled experiment. The CUPED formulation has similarities to the OLS model
+
+$$y = \beta_0 + T\beta_1 + (y_{\text{pre}}-1_n \mu) \beta_2 + \varepsilon$$
+
+In this case, variation in $y$ is explained by the previous values contained in $y_{\text{pre}}$. For example, if someone watched a lot of movies during the pretreatment window, they are likely to watch a lot of movies during the posttreatment window too. Their particular $y$ values are explainable, and we can reduce the residual variance. This increases power.
+
+While there are 3 parameters in the model, only 2 are meaningful. $\hat{\beta}_1$ represents the average treatment effect, and $\hat{\beta}_0$ represents the baseline value for the average user who is in the control, so $\hat{\beta}_0 = E[y | T = 0, y_{\text{pre}} = \mu]$. While $\beta_2$ is useful for decreasing variance, it is not useful for inference. $\beta_2$ is referred to as a nuisance variable.
+
+The CUPED formulation has a special computing strategy, making it not only great for statistical power, but also easy to implement. The strategy is rooted in the [Frisch Waugh Lovell theorem](https://en.wikipedia.org/wiki/Frisch–Waugh–Lovell_theorem).
+
+# The FWL
+
+If a regression can be partitioned into variables of interest, $T$, and nuisance variables, $X_2$, then inference on $T$ can be done extremely efficiently.
+
+$$y = \beta_0 + T\beta_1 + X\beta_2 + \varepsilon$$
+
+
+1. Regress $y$ on $X_2$. Then get the residuals, $\varepsilon_y$. \\
+2. Regress $[1, T]$ on $X_2$. Then get the residuals, $\varepsilon_T$. \\
+3. Regress $\varepsilon_y$ on $\varepsilon_T$. The estimated parameters from this regression are exactly $\hat{\beta}_0$ and $\hat{\beta}_1$ from the original regression.
+
+## Step 1
+
+The regression $y$ on $X_2$ is a simple least squares regression. Note that this regression doesn't even have an intercept, so we simply need to estimate $\theta$ from $y = X_2 \theta$.
+
+\begin{align}
+\theta &= \frac{(y_\text{pre} - 1_n\mu)^T y}{(y_\text{pre} - 1_n\mu)^T (y_\text{pre} - 1_n\mu)} \\
+  &= \frac{y_\text{pre}^T y - \mu \sum y}{\sum y_\text{pre}^2 - 2\mu \sum y_\text{pre} + n \mu^2}
+\end{align}
+
+After obtaining $\theta$, we need to residualize. $$\varepsilon_y = y - (y_\text{pre} - 1_n\mu) \theta$$
+
+Aggregates of $\varepsilon_y$ can be computed efficiently. Its mean and variance will play a role later.
+
+\begin{align}
+\sum \varepsilon_i &= \sum y_i - (y_{pre,i} - \mu) \theta \\
+  &= \sum_g n_g \mu \theta + \sum_{i \in g} \Bigl(y_i - \theta \sum y_{pre,i} \Bigr) \\
+\sum \varepsilon_i^2 &= \sum y_i^2 - 2 y_i (y_{pre, i} - \mu) \theta + (y_{pre, i} - \mu)^2 (\theta)^2 \\
+  &= \sum_g \Bigl( n_g\mu^2 \theta^2 + \sum_{i \in g} y_i^2 - 
+  2\theta \sum_{i \in g} y_i y_{pre, i} + 
+  2\theta \mu \sum_{i \in g} y_i +
+  \theta^2 (\sum_{i \in g} y_{pre, i}^2 - 2\mu \sum_{i \in g} y_{pre, i}) \Bigr)
+
+\end{align}
+
+## Step 2
+
+Here is the beauty of FWL when applied to randomized data. When $T$ is unconditionally randomized, the regression of $[1, T]$ on $X_2$ is a no-op, and the residuals are simply $[1, T]$. Thus, we already have $\varepsilon_T = [1, T]$.
+
+## Step 3
+
+Now we regress $\varepsilon_y$ on $\varepsilon_T$.
+
+$$y - (y_\text{pre} - 1_n\mu) \theta = \beta_0 + T\beta_1$$
+
+This regression takes the form of simple least squares again - this time with
+an intercept.
+
+\begin{align}
+  \hat{\beta}_1 &= Cov(\varepsilon_y, T) / Var(\varepsilon_y) \\
+  \hat{\beta}_0 &= \bar{\varepsilon}_y - \hat{\beta}_1 \bar{T}
+\end{align}
+
+

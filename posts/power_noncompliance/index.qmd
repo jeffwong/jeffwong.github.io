@@ -59,11 +59,13 @@ The first term can be simplified and reduced to just $\sigma^2$.
 We can argue that the variance of $y$ is not a function of the artificially generated assignment variable, $Z$. It is only a function
 of whether or not the unit actually received the treatment. This is a homoskedasticity assumption.
 
-The second term is the variance of a mixture. The mixture has 2 parts: 
-$E[y | X = 0] =\mu_0$ and $E[y | X = 1] = \mu_1 = \mu_0 + \Delta$ and each part
-is a function of a bernoulli random variable, $X$. We leverage the identity
+The second term is the variance of a random variable that has two parts, which is
+a scalled bernoulli. The inner part is  
+$E[y | X = 0] =\mu_0$ and $E[y | X = 1] = \mu_1 = \mu_0 + \Delta$.
+We leverage the property of scalled bernoullis that can take value $\mu_0$ and $\mu_1$
+with probabilities $(1-p_1)$ and $p_1$.
 
-$$Var(f(X) | Z = 1) = p_1 (1 - p_1) (f(X = 1) - f(X = 0))^2.$$
+$$Var(E[y | X]) = p_1 (1 - p_1) \Delta^2.$$
 
 We have the key pieces we need to express statistical power in terms of variables
 that we can plan for, namely the assignment $Z$ and approximations for the compliance rate.

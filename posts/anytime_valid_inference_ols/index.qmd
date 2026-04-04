@@ -175,7 +175,7 @@ Proof:
 \begin{align}
 E_{H_0}[BF] &= \int \Big( \frac{\int p(y | \theta) p(\theta) d\theta}{p(y | \theta_0)} \Big) p(y | \theta_0) dy \\
   &= \int (\int p(y | \theta) p(\theta) d\theta) dy \\
-  &= \int (\int p(y | theta) dy) p(\theta) d\theta \\
+  &= \int (\int p(y | \theta) dy) p(\theta) d\theta \\
   &= 1
 \end{align}
 

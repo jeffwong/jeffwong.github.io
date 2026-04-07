@@ -62,12 +62,12 @@ $$\frac{2}{N} \cdot (Var(y_{T, \text{observed}}) + Var(y_{C, \text{observed}}))$
 
 The variance of the control group overall is derived from the [Law of Total Variance](law of total variance).
 Say $Z$ is a binary variable for whether the user is a zero user.
-Then $$Var(y) = E[Var(y|Z)] + Var(E[y | Z])$$. For $Z = 1$, which happens with probability $p$,
+Then $$Var(y) = E[Var(y|Z)] + Var(E[y | Z]).$$ For $Z = 1$, which happens with probability $p$,
 the first term is $E[Var(y|Z)] = \sigma^2_z$. For $Z = 0$, it is $\sigma^2_C$ with probability $(1-p)$.
 
 To unpack the second term, $E[y | Z] = \mu_z$ when $Z = 1$, and is $\mu_C$ when $Z = 0$.
 The variance of these terms can be thought of as the variance of a scaled bernoulli random variable,
-so the variance of the control group is $$Var(E[y | Z]) = p (1-p) (\mu_z - \mu_C)^2$$.
+so the variance of the control group is $$Var(E[y | Z]) = p (1-p) (\mu_z - \mu_C)^2.$$
 
 Finally, the variance of the estimated treatment effect is 
 $$\boxed{Var(\hat{\tau}) = \frac{2}{N} \biggl((1-p)(\sigma^2_T + \sigma^2_C) + 2p\sigma^2_z + p(1-p)((\mu_T - \mu_Z)^2 + (\mu_C - \mu_z)^2) \biggr)}$$

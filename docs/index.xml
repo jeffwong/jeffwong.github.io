@@ -10,7 +10,40 @@
 <atom:link href="https://jeffwong.github.io/index.xml" rel="self" type="application/rss+xml"/>
 <description>Data science innovation from first principles.</description>
 <generator>quarto-1.8.27</generator>
-<lastBuildDate>Sun, 22 Mar 2026 00:00:00 GMT</lastBuildDate>
+<lastBuildDate>Mon, 30 Mar 2026 00:00:00 GMT</lastBuildDate>
+<item>
+  <title>Relative Treatment Effects</title>
+  <dc:creator>Jeffrey Wong</dc:creator>
+  <link>https://jeffwong.github.io/posts/relative_effects/</link>
+  <description><![CDATA[ 
+
+
+
+
+
+<section id="log-linear" class="level1">
+<h1>Log Linear</h1>
+<p>In AB testing, the classic average treatment effect refers to the absolute difference in means. Sometimes, we want to compute the treatment effect in terms of percentages from the baseline. The classic way to measure a relative effect is through the model</p>
+<p><img src="https://latex.codecogs.com/png.latex?log(y)%20=%20%5Cbeta_0%20+%20T%20%5Cbeta_1%20+%20%5Cvarepsilon"> When <img src="https://latex.codecogs.com/png.latex?log(y)"> is computed as a sum, it means the expected value of <img src="https://latex.codecogs.com/png.latex?y"> is composed of a baseline and a multiplicative treatment effect <img src="https://latex.codecogs.com/png.latex?E%5By%5D%20=%20e%5E%7B%20%5Cbeta_0%20+%20T%20%5Cbeta_1%7D%20=%20e%5E%7B%5Cbeta_0%7D%20e%5E%7B%5Cbeta_1%7D">. The relative effect, <img src="https://latex.codecogs.com/png.latex?%5Ctau%20=%20%5Cfrac%7BE%5By%20%7C%20T%20=%201%5D%7D%7BE%5By%20%7C%20T%20=%200%5D%7D%20-%201"> becomes <img src="https://latex.codecogs.com/png.latex?e%5E%7B%5Cbeta_1%7D%20-%201">.</p>
+<p>The log linear model also has a nice property: it stabilizes variance when the data is long tailed. This is due to the delta method: if <img src="https://latex.codecogs.com/png.latex?y%20%5Csim%20N(%5Cmu,%20%5Csigma%5E2)"> then <img src="https://latex.codecogs.com/png.latex?log(y)%20%5Csim%20N(log(%5Cmu),%20%5Csigma%5E2%20/%20%5Cmu%5E2)">, where <img src="https://latex.codecogs.com/png.latex?%5Csigma%5E2%20/%20%5Cmu%5E2"> compresses variance for <img src="https://latex.codecogs.com/png.latex?%5Cmu%20%3E%201">. [Note: log linear models might not compress variance when the metric is very sparse.]</p>
+<p>However, the interpretation is not a simple business interpretation. The form of <img src="https://latex.codecogs.com/png.latex?y"> induces a treatment effect that corresponds to a geometric mean. Per user, it measures the relative effect, then it averages these individual relative effects. This is different than taking the average effect first, then computing the relative effect. Readers can be confused by this subtlety. Say that there are 2 power users in the AB test, and 100 casual users. Metrics on the power users are down by 1%, whereas they are up 10% on the casual users. According to the log linear model, the fact that 100 users are benefiting by 10% will outweigh the 2 users that are losing 1%. A model that prioritizes aggregating the users first into two means: the control mean and the treatment mean, then computing the relative effect, could induce a negative arithmetic mean. This is the more intuitive definition of an effect. For example the business can be harmed due to the total 1% loss on the power users. Due to Jensen’s Inequality, we know that the arithmetic mean is lower bounded by the geometric mean.</p>
+</section>
+<section id="delta-method" class="level1">
+<h1>Delta Method</h1>
+<p>To achieve the more intuitive arithmetic mean, but still report an effect in percentages, we reverse the order of operations. First, we should start with a linear model</p>
+<p><img src="https://latex.codecogs.com/png.latex?y%20=%20%5Cbeta_0%20+%20T%20%5Cbeta_1%20+%20%5Cvarepsilon"></p>
+<p>Then we use this form of <img src="https://latex.codecogs.com/png.latex?y"> to compute the average relative effect like before, <img src="https://latex.codecogs.com/png.latex?%5Ctau=%5Cfrac%7BE%5By%20%7C%20T%20=%201%5D%7D%7BE%5By%20%7C%20T%20=%200%5D%7D%20-%201">. Unlike the average treatment effect, we cannot simply read the coefficient for <img src="https://latex.codecogs.com/png.latex?%5Cbeta_1"> from a regression report. To do inference on the average relative effect and gets its confidence interval and p value, we need to derive its distribution.</p>
+<p>The average relative effect is the ratio of random variables. The distribution of a ratio can be derived using a taylor series expansion, described from first principles <a href="https://onlinelibrary.wiley.com/doi/epdf/10.1002/%28SICI%291097-0320%2820000401%2939%3A4%3C300%3A%3AAID-CYTO8%3E3.0.CO%3B2-O">here</a>. When <img src="https://latex.codecogs.com/png.latex?y"> is a function of covariates <img src="https://latex.codecogs.com/png.latex?X">, the distribution of the relative effect can be efficiently computed using Delta Vectors and Baseline Vectors, described in section 5 from my previous conference paper <a href="https://arxiv.org/pdf/2412.08788">here</a>. TLDR the</p>
+
+
+</section>
+
+ ]]></description>
+  <category>experimentation</category>
+  <category>statistics</category>
+  <guid>https://jeffwong.github.io/posts/relative_effects/</guid>
+  <pubDate>Mon, 30 Mar 2026 00:00:00 GMT</pubDate>
+</item>
 <item>
   <title>Zero Inflated Causal Inference</title>
   <dc:creator>Jeffrey Wong</dc:creator>
@@ -946,8 +979,8 @@ font-style: inherit;">print</span>(results)</span></code></pre></div></div>
 <p>If a regression can be partitioned into variables of interest, <img src="https://latex.codecogs.com/png.latex?T">, and nuisance variables, <img src="https://latex.codecogs.com/png.latex?X_2">, then inference on <img src="https://latex.codecogs.com/png.latex?T"> can be done extremely efficiently.</p>
 <p><img src="https://latex.codecogs.com/png.latex?y%20=%20%5Cbeta_0%20+%20T%5Cbeta_1%20+%20X%5Cbeta_2%20+%20%5Cvarepsilon"></p>
 <ol type="1">
-<li>Regress <img src="https://latex.codecogs.com/png.latex?y"> on <img src="https://latex.codecogs.com/png.latex?X_2">. Then get the residuals, <img src="https://latex.codecogs.com/png.latex?%5Cvarepsilon_y">. \</li>
-<li>Regress <img src="https://latex.codecogs.com/png.latex?%5B1,%20T%5D"> on <img src="https://latex.codecogs.com/png.latex?X_2">. Then get the residuals, <img src="https://latex.codecogs.com/png.latex?%5Cvarepsilon_T">. \</li>
+<li>Regress <img src="https://latex.codecogs.com/png.latex?y"> on <img src="https://latex.codecogs.com/png.latex?X_2">. Then get the residuals, <img src="https://latex.codecogs.com/png.latex?%5Cvarepsilon_y">.</li>
+<li>Regress <img src="https://latex.codecogs.com/png.latex?%5B1,%20T%5D"> on <img src="https://latex.codecogs.com/png.latex?X_2">. Then get the residuals, <img src="https://latex.codecogs.com/png.latex?%5Cvarepsilon_T">.</li>
 <li>Regress <img src="https://latex.codecogs.com/png.latex?%5Cvarepsilon_y"> on <img src="https://latex.codecogs.com/png.latex?%5Cvarepsilon_T">. The estimated parameters from this regression are exactly <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Cbeta%7D_0"> and <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Cbeta%7D_1"> from the original regression.</li>
 </ol>
 <section id="step-1" class="level2">
@@ -955,11 +988,12 @@ font-style: inherit;">print</span>(results)</span></code></pre></div></div>
 <p>The regression <img src="https://latex.codecogs.com/png.latex?y"> on <img src="https://latex.codecogs.com/png.latex?X_2"> is a simple least squares regression. Note that this regression doesn’t even have an intercept, so we simply need to estimate <img src="https://latex.codecogs.com/png.latex?%5Ctheta"> from <img src="https://latex.codecogs.com/png.latex?y%20=%20X_2%20%5Ctheta">.</p>
 <p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0A%5Ctheta%20&amp;=%20%5Cfrac%7B(y_%5Ctext%7Bpre%7D%20-%201_n%5Cmu)%5ET%20y%7D%7B(y_%5Ctext%7Bpre%7D%20-%201_n%5Cmu)%5ET%20(y_%5Ctext%7Bpre%7D%20-%201_n%5Cmu)%7D%20%5C%5C%0A%20%20&amp;=%20%5Cfrac%7By_%5Ctext%7Bpre%7D%5ET%20y%20-%20%5Cmu%20%5Csum%20y%7D%7B%5Csum%20y_%5Ctext%7Bpre%7D%5E2%20-%202%5Cmu%20%5Csum%20y_%5Ctext%7Bpre%7D%20+%20n%20%5Cmu%5E2%7D%0A%5Cend%7Balign%7D"></p>
 <p>After obtaining <img src="https://latex.codecogs.com/png.latex?%5Ctheta">, we need to residualize. <img src="https://latex.codecogs.com/png.latex?%5Cvarepsilon_y%20=%20y%20-%20(y_%5Ctext%7Bpre%7D%20-%201_n%5Cmu)%20%5Ctheta"></p>
+<p>Aggregates of <img src="https://latex.codecogs.com/png.latex?%5Cvarepsilon_y"> can be computed efficiently. Its mean and variance will play a role later.</p>
 <p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0A%5Csum%20%5Cvarepsilon_i%20&amp;=%20%5Csum%20y_i%20-%20(y_%7Bpre,i%7D%20-%20%5Cmu)%20%5Ctheta%20%5C%5C%0A%20%20&amp;=%20%5Csum_g%20n_g%20%5Cmu%20%5Ctheta%20+%20%5Csum_%7Bi%20%5Cin%20g%7D%20%5CBigl(y_i%20-%20%5Ctheta%20%5Csum%20y_%7Bpre,i%7D%20%5CBigr)%20%5C%5C%0A%5Csum%20%5Cvarepsilon_i%5E2%20&amp;=%20%5Csum%20y_i%5E2%20-%202%20y_i%20(y_%7Bpre,%20i%7D%20-%20%5Cmu)%20%5Ctheta%20+%20(y_%7Bpre,%20i%7D%20-%20%5Cmu)%5E2%20(%5Ctheta)%5E2%20%5C%5C%0A%20%20&amp;=%20%5Csum_g%20%5CBigl(%20n_g%5Cmu%5E2%20%5Ctheta%5E2%20+%20%5Csum_%7Bi%20%5Cin%20g%7D%20y_i%5E2%20-%0A%20%202%5Ctheta%20%5Csum_%7Bi%20%5Cin%20g%7D%20y_i%20y_%7Bpre,%20i%7D%20+%0A%20%202%5Ctheta%20%5Cmu%20%5Csum_%7Bi%20%5Cin%20g%7D%20y_i%20+%0A%20%20%5Ctheta%5E2%20(%5Csum_%7Bi%20%5Cin%20g%7D%20y_%7Bpre,%20i%7D%5E2%20-%202%5Cmu%20%5Csum_%7Bi%20%5Cin%20g%7D%20y_%7Bpre,%20i%7D)%20%5CBigr)%0A%0A%5Cend%7Balign%7D"></p>
 </section>
 <section id="step-2" class="level2">
 <h2 class="anchored" data-anchor-id="step-2">Step 2</h2>
-<p>Here is the beauty of FWL when applied to randomized data. When <img src="https://latex.codecogs.com/png.latex?T"> is unconditionally randomized, the regression of <img src="https://latex.codecogs.com/png.latex?%5B1,%20T%5D"> on <img src="https://latex.codecogs.com/png.latex?X_2"> is a no-op, and the residuals are simply <img src="https://latex.codecogs.com/png.latex?%5B1,%20T%5D">. Thus, we already have <img src="https://latex.codecogs.com/png.latex?%5Cvarepsilon_T">.</p>
+<p>Here is the beauty of FWL when applied to randomized data. When <img src="https://latex.codecogs.com/png.latex?T"> is unconditionally randomized, the regression of <img src="https://latex.codecogs.com/png.latex?%5B1,%20T%5D"> on <img src="https://latex.codecogs.com/png.latex?X_2"> is a no-op, and the residuals are simply <img src="https://latex.codecogs.com/png.latex?%5B1,%20T%5D">. Thus, we already have <img src="https://latex.codecogs.com/png.latex?%5Cvarepsilon_T%20=%20%5B1,%20T%5D">.</p>
 </section>
 <section id="step-3" class="level2">
 <h2 class="anchored" data-anchor-id="step-3">Step 3</h2>

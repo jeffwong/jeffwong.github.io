@@ -1,0 +1,67 @@
+---
+title: "Relative Treatment Effects"
+author: "Jeffrey Wong"
+date: "2026-03-30"
+categories: [experimentation, statistics]
+---
+
+```{r setup, include=FALSE}
+require(dplyr)
+require(purrr)
+require(ggplot2)
+require(gridExtra)
+```
+
+# Log Linear
+
+In AB testing, the classic average treatment effect refers to the absolute difference
+in means. Sometimes, we want to compute the treatment effect in terms of percentages
+from the baseline. The classic way to measure a relative effect is through the model
+
+$$log(y) = \beta_0 + T \beta_1 + \varepsilon$$
+When $log(y)$ is computed as a sum, it means the expected value of $y$ is
+composed of a baseline and a multiplicative treatment effect 
+$E[y] = e^{ \beta_0 + T \beta_1} = e^{\beta_0} e^{\beta_1}$. The relative effect,
+$\tau = \frac{E[y | T = 1]}{E[y | T = 0]} - 1$ becomes $e^{\beta_1} - 1$.
+
+The log linear model also has a nice property: it stabilizes variance when the data
+is long tailed. This is due to the delta method: if $y \sim N(\mu, \sigma^2)$ then
+$log(y) \sim N(log(\mu), \sigma^2 / \mu^2)$, where $\sigma^2 / \mu^2$ compresses
+variance for $\mu > 1$. [Note: log linear models might not compress variance when the metric is very sparse.]
+
+However, the interpretation is not a simple business interpretation. The form
+of $y$ induces a treatment effect that corresponds to a geometric mean.
+Per user, it measures the relative effect, then it averages
+these individual relative effects. 
+This is different than taking the average effect first, then computing the relative
+effect. Readers can be confused by this subtlety. 
+Say that there are 2 power users in the AB test, and 100 casual users. Metrics
+on the power users are down by 1%, whereas they are up 10% on the casual users.
+According to the log linear model, the fact that 100 users are benefiting by 10%
+will outweigh the 2 users that are losing 1%. 
+A model that prioritizes aggregating the users first into two means: 
+the control mean and the treatment mean, then computing the relative effect, 
+could induce a negative arithmetic mean. This is the more intuitive definition 
+of an effect. For example the business can be harmed due to the total 1% loss on the power users. Due to Jensen's Inequality, we know that the arithmetic mean is lower bounded by the geometric mean.
+
+# Delta Method
+
+To achieve the more intuitive arithmetic mean, but still report an effect in
+percentages, we reverse the order of operations. First, we should start with
+a linear model
+
+$$y = \beta_0 + T \beta_1 + \varepsilon$$
+
+Then we use this form of $y$ to compute the average relative effect like before,
+$\tau=\frac{E[y | T = 1]}{E[y | T = 0]} - 1$. Unlike the average treatment effect,
+we cannot simply read the coefficient for $\beta_1$ from a regression report.
+To do inference on the average relative effect and gets its confidence interval
+and p value, we need to derive its distribution. 
+
+The average relative effect is the ratio of random variables. The distribution
+of a ratio can be derived using a taylor series expansion, described from
+first principles [here](https://onlinelibrary.wiley.com/doi/epdf/10.1002/%28SICI%291097-0320%2820000401%2939%3A4%3C300%3A%3AAID-CYTO8%3E3.0.CO%3B2-O). 
+When $y$ is a function of covariates $X$, the distribution
+of the relative effect can be efficiently computed using Delta Vectors and 
+Baseline Vectors, described in section 5 from my previous conference paper [here](https://arxiv.org/pdf/2412.08788).
+

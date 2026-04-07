@@ -7,9 +7,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Jeffrey Wong">
-<meta name="dcterms.date" content="2026-02-02">
+<meta name="dcterms.date" content="2026-03-30">
 
-<title>Creating CUPED from FWL – From First Principles</title>
+<title>Relative Treatment Effects – From First Principles</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -141,7 +141,7 @@ window.Quarto = {
 <header id="title-block-header" class="quarto-title-block default page-columns page-full">
   <div class="quarto-title-banner page-columns page-full">
     <div class="quarto-title column-body">
-      <h1 class="title">Creating CUPED from FWL</h1>
+      <h1 class="title">Relative Treatment Effects</h1>
                                 <div class="quarto-categories">
                 <div class="quarto-category">experimentation</div>
                 <div class="quarto-category">statistics</div>
@@ -162,7 +162,7 @@ window.Quarto = {
       <div>
       <div class="quarto-title-meta-heading">Published</div>
       <div class="quarto-title-meta-contents">
-        <p class="date">February 2, 2026</p>
+        <p class="date">March 30, 2026</p>
       </div>
     </div>
     
@@ -181,56 +181,21 @@ window.Quarto = {
 
 
 
-<p>CUPED is a well known technique to greatly increase statistical power in a controlled experiment. The CUPED formulation has similarities to the OLS model</p>
-<p><span class="math display">\[y = \beta_0 + T\beta_1 + (y_{\text{pre}}-1_n \mu) \beta_2 + \varepsilon\]</span></p>
-<p>In this case, variation in <span class="math inline">\(y\)</span> is explained by the previous values contained in <span class="math inline">\(y_{\text{pre}}\)</span>. For example, if someone watched a lot of movies during the pretreatment window, they are likely to watch a lot of movies during the posttreatment window too. Their particular <span class="math inline">\(y\)</span> values are explainable, and we can reduce the residual variance. This increases power.</p>
-<p>While there are 3 parameters in the model, only 2 are meaningful. <span class="math inline">\(\hat{\beta}_1\)</span> represents the average treatment effect, and <span class="math inline">\(\hat{\beta}_0\)</span> represents the baseline value for the average user who is in the control, so <span class="math inline">\(\hat{\beta}_0 = E[y | T = 0, y_{\text{pre}} = \mu]\)</span>. While <span class="math inline">\(\beta_2\)</span> is useful for decreasing variance, it is not useful for inference. <span class="math inline">\(\beta_2\)</span> is referred to as a nuisance variable.</p>
-<p>The CUPED formulation has a special computing strategy, making it not only great for statistical power, but also easy to implement. The strategy is rooted in the <a href="https://en.wikipedia.org/wiki/Frisch–Waugh–Lovell_theorem">Frisch Waugh Lovell theorem</a>.</p>
-<section id="the-fwl" class="level1">
-<h1>The FWL</h1>
-<p>If a regression can be partitioned into variables of interest, <span class="math inline">\(T\)</span>, and nuisance variables, <span class="math inline">\(X_2\)</span>, then inference on <span class="math inline">\(T\)</span> can be done extremely efficiently.</p>
-<p><span class="math display">\[y = \beta_0 + T\beta_1 + X\beta_2 + \varepsilon\]</span></p>
-<ol type="1">
-<li>Regress <span class="math inline">\(y\)</span> on <span class="math inline">\(X_2\)</span>. Then get the residuals, <span class="math inline">\(\varepsilon_y\)</span>.</li>
-<li>Regress <span class="math inline">\([1, T]\)</span> on <span class="math inline">\(X_2\)</span>. Then get the residuals, <span class="math inline">\(\varepsilon_T\)</span>.</li>
-<li>Regress <span class="math inline">\(\varepsilon_y\)</span> on <span class="math inline">\(\varepsilon_T\)</span>. The estimated parameters from this regression are exactly <span class="math inline">\(\hat{\beta}_0\)</span> and <span class="math inline">\(\hat{\beta}_1\)</span> from the original regression.</li>
-</ol>
-<section id="step-1" class="level2">
-<h2 class="anchored" data-anchor-id="step-1">Step 1</h2>
-<p>The regression <span class="math inline">\(y\)</span> on <span class="math inline">\(X_2\)</span> is a simple least squares regression. Note that this regression doesn’t even have an intercept, so we simply need to estimate <span class="math inline">\(\theta\)</span> from <span class="math inline">\(y = X_2 \theta\)</span>.</p>
-<p><span class="math display">\[\begin{align}
-\theta &amp;= \frac{(y_\text{pre} - 1_n\mu)^T y}{(y_\text{pre} - 1_n\mu)^T (y_\text{pre} - 1_n\mu)} \\
-  &amp;= \frac{y_\text{pre}^T y - \mu \sum y}{\sum y_\text{pre}^2 - 2\mu \sum y_\text{pre} + n \mu^2}
-\end{align}\]</span></p>
-<p>After obtaining <span class="math inline">\(\theta\)</span>, we need to residualize. <span class="math display">\[\varepsilon_y = y - (y_\text{pre} - 1_n\mu) \theta\]</span></p>
-<p>Aggregates of <span class="math inline">\(\varepsilon_y\)</span> can be computed efficiently. Its mean and variance will play a role later.</p>
-<p><span class="math display">\[\begin{align}
-\sum \varepsilon_i &amp;= \sum y_i - (y_{pre,i} - \mu) \theta \\
-  &amp;= \sum_g n_g \mu \theta + \sum_{i \in g} \Bigl(y_i - \theta \sum y_{pre,i} \Bigr) \\
-\sum \varepsilon_i^2 &amp;= \sum y_i^2 - 2 y_i (y_{pre, i} - \mu) \theta + (y_{pre, i} - \mu)^2 (\theta)^2 \\
-  &amp;= \sum_g \Bigl( n_g\mu^2 \theta^2 + \sum_{i \in g} y_i^2 -
-  2\theta \sum_{i \in g} y_i y_{pre, i} +
-  2\theta \mu \sum_{i \in g} y_i +
-  \theta^2 (\sum_{i \in g} y_{pre, i}^2 - 2\mu \sum_{i \in g} y_{pre, i}) \Bigr)
-
-\end{align}\]</span></p>
+<section id="log-linear" class="level1">
+<h1>Log Linear</h1>
+<p>In AB testing, the classic average treatment effect refers to the absolute difference in means. Sometimes, we want to compute the treatment effect in terms of percentages from the baseline. The classic way to measure a relative effect is through the model</p>
+<p><span class="math display">\[log(y) = \beta_0 + T \beta_1 + \varepsilon\]</span> When <span class="math inline">\(log(y)\)</span> is computed as a sum, it means the expected value of <span class="math inline">\(y\)</span> is composed of a baseline and a multiplicative treatment effect <span class="math inline">\(E[y] = e^{ \beta_0 + T \beta_1} = e^{\beta_0} e^{\beta_1}\)</span>. The relative effect, <span class="math inline">\(\tau = \frac{E[y | T = 1]}{E[y | T = 0]} - 1\)</span> becomes <span class="math inline">\(e^{\beta_1} - 1\)</span>.</p>
+<p>The log linear model also has a nice property: it stabilizes variance when the data is long tailed. This is due to the delta method: if <span class="math inline">\(y \sim N(\mu, \sigma^2)\)</span> then <span class="math inline">\(log(y) \sim N(log(\mu), \sigma^2 / \mu^2)\)</span>, where <span class="math inline">\(\sigma^2 / \mu^2\)</span> compresses variance for <span class="math inline">\(\mu &gt; 1\)</span>. [Note: log linear models might not compress variance when the metric is very sparse.]</p>
+<p>However, the interpretation is not a simple business interpretation. The form of <span class="math inline">\(y\)</span> induces a treatment effect that corresponds to a geometric mean. Per user, it measures the relative effect, then it averages these individual relative effects. This is different than taking the average effect first, then computing the relative effect. Readers can be confused by this subtlety. Say that there are 2 power users in the AB test, and 100 casual users. Metrics on the power users are down by 1%, whereas they are up 10% on the casual users. According to the log linear model, the fact that 100 users are benefiting by 10% will outweigh the 2 users that are losing 1%. A model that prioritizes aggregating the users first into two means: the control mean and the treatment mean, then computing the relative effect, could induce a negative arithmetic mean. This is the more intuitive definition of an effect. For example the business can be harmed due to the total 1% loss on the power users. Due to Jensen’s Inequality, we know that the arithmetic mean is lower bounded by the geometric mean.</p>
 </section>
-<section id="step-2" class="level2">
-<h2 class="anchored" data-anchor-id="step-2">Step 2</h2>
-<p>Here is the beauty of FWL when applied to randomized data. When <span class="math inline">\(T\)</span> is unconditionally randomized, the regression of <span class="math inline">\([1, T]\)</span> on <span class="math inline">\(X_2\)</span> is a no-op, and the residuals are simply <span class="math inline">\([1, T]\)</span>. Thus, we already have <span class="math inline">\(\varepsilon_T = [1, T]\)</span>.</p>
-</section>
-<section id="step-3" class="level2">
-<h2 class="anchored" data-anchor-id="step-3">Step 3</h2>
-<p>Now we regress <span class="math inline">\(\varepsilon_y\)</span> on <span class="math inline">\(\varepsilon_T\)</span>.</p>
-<p><span class="math display">\[y - (y_\text{pre} - 1_n\mu) \theta = \beta_0 + T\beta_1\]</span></p>
-<p>This regression takes the form of simple least squares again - this time with an intercept.</p>
-<p><span class="math display">\[\begin{align}
-  \hat{\beta}_1 &amp;= Cov(\varepsilon_y, T) / Var(\varepsilon_y) \\
-  \hat{\beta}_0 &amp;= \bar{\varepsilon}_y - \hat{\beta}_1 \bar{T}
-\end{align}\]</span></p>
+<section id="delta-method" class="level1">
+<h1>Delta Method</h1>
+<p>To achieve the more intuitive arithmetic mean, but still report an effect in percentages, we reverse the order of operations. First, we should start with a linear model</p>
+<p><span class="math display">\[y = \beta_0 + T \beta_1 + \varepsilon\]</span></p>
+<p>Then we use this form of <span class="math inline">\(y\)</span> to compute the average relative effect like before, <span class="math inline">\(\tau=\frac{E[y | T = 1]}{E[y | T = 0]} - 1\)</span>. Unlike the average treatment effect, we cannot simply read the coefficient for <span class="math inline">\(\beta_1\)</span> from a regression report. To do inference on the average relative effect and gets its confidence interval and p value, we need to derive its distribution.</p>
+<p>The average relative effect is the ratio of random variables. The distribution of a ratio can be derived using a taylor series expansion, described from first principles <a href="https://onlinelibrary.wiley.com/doi/epdf/10.1002/%28SICI%291097-0320%2820000401%2939%3A4%3C300%3A%3AAID-CYTO8%3E3.0.CO%3B2-O">here</a>. When <span class="math inline">\(y\)</span> is a function of covariates <span class="math inline">\(X\)</span>, the distribution of the relative effect can be efficiently computed using Delta Vectors and Baseline Vectors, described in section 5 from my previous conference paper <a href="https://arxiv.org/pdf/2412.08788">here</a>. TLDR the</p>
 
 
-</section>
 </section>
 
 </main> <!-- /main -->

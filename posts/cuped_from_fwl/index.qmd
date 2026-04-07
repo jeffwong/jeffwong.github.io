@@ -29,8 +29,8 @@ If a regression can be partitioned into variables of interest, $T$, and nuisance
 $$y = \beta_0 + T\beta_1 + X\beta_2 + \varepsilon$$
 
 
-1. Regress $y$ on $X_2$. Then get the residuals, $\varepsilon_y$. \\
-2. Regress $[1, T]$ on $X_2$. Then get the residuals, $\varepsilon_T$. \\
+1. Regress $y$ on $X_2$. Then get the residuals, $\varepsilon_y$.
+2. Regress $[1, T]$ on $X_2$. Then get the residuals, $\varepsilon_T$.
 3. Regress $\varepsilon_y$ on $\varepsilon_T$. The estimated parameters from this regression are exactly $\hat{\beta}_0$ and $\hat{\beta}_1$ from the original regression.
 
 ## Step 1
@@ -71,7 +71,7 @@ This regression takes the form of simple least squares again - this time with
 an intercept.
 
 \begin{align}
-  \hat{\beta}_1 &= Cov(\varepsilon_y, T) / Var(\varepsilon_y) \\
+  \hat{\beta}_1 &= Cov(\varepsilon_y, T) / Var(T) \\
   \hat{\beta}_0 &= \bar{\varepsilon}_y - \hat{\beta}_1 \bar{T}
 \end{align}
 

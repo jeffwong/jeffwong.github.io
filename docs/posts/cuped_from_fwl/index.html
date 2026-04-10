@@ -9,7 +9,7 @@
 <meta name="author" content="Jeffrey Wong">
 <meta name="dcterms.date" content="2026-02-02">
 
-<title>Creating CUPED from FWL – From First Principles</title>
+<title>Creating CUPED from FWL (under construction) – From First Principles</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -21,6 +21,41 @@ ul.task-list li input[type="checkbox"] {
   width: 0.8em;
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 </style>
 
@@ -141,7 +176,7 @@ window.Quarto = {
 <header id="title-block-header" class="quarto-title-block default page-columns page-full">
   <div class="quarto-title-banner page-columns page-full">
     <div class="quarto-title column-body">
-      <h1 class="title">Creating CUPED from FWL</h1>
+      <h1 class="title">Creating CUPED from FWL (under construction)</h1>
                                 <div class="quarto-categories">
                 <div class="quarto-category">experimentation</div>
                 <div class="quarto-category">statistics</div>
@@ -181,56 +216,145 @@ window.Quarto = {
 
 
 
-<p>CUPED is a well known technique to greatly increase statistical power in a controlled experiment. The CUPED formulation has similarities to the OLS model</p>
-<p><span class="math display">\[y = \beta_0 + T\beta_1 + (y_{\text{pre}}-1_n \mu) \beta_2 + \varepsilon\]</span></p>
-<p>In this case, variation in <span class="math inline">\(y\)</span> is explained by the previous values contained in <span class="math inline">\(y_{\text{pre}}\)</span>. For example, if someone watched a lot of movies during the pretreatment window, they are likely to watch a lot of movies during the posttreatment window too. Their particular <span class="math inline">\(y\)</span> values are explainable, and we can reduce the residual variance. This increases power.</p>
-<p>While there are 3 parameters in the model, only 2 are meaningful. <span class="math inline">\(\hat{\beta}_1\)</span> represents the average treatment effect, and <span class="math inline">\(\hat{\beta}_0\)</span> represents the baseline value for the average user who is in the control, so <span class="math inline">\(\hat{\beta}_0 = E[y | T = 0, y_{\text{pre}} = \mu]\)</span>. While <span class="math inline">\(\beta_2\)</span> is useful for decreasing variance, it is not useful for inference. <span class="math inline">\(\beta_2\)</span> is referred to as a nuisance variable.</p>
-<p>The CUPED formulation has a special computing strategy, making it not only great for statistical power, but also easy to implement. The strategy is rooted in the <a href="https://en.wikipedia.org/wiki/Frisch–Waugh–Lovell_theorem">Frisch Waugh Lovell theorem</a>.</p>
+<p><a href="https://dl.acm.org/doi/pdf/10.1145/2433396.2433413">CUPED</a> is a well known technique to greatly increase statistical power in a controlled experiment. The CUPED formulation has similarities to the OLS model</p>
+<p><span class="math display">\[y = \beta_0 + T\beta_1 + (y_{\text{pre}}-1_n \mu_c) \beta_2 + \varepsilon\]</span></p>
+<p>This blog post describes how the CUPED formulation can come out of the <a href="https://en.wikipedia.org/wiki/Frisch–Waugh–Lovell_theorem">Frisch Waugh Lovell theorem</a> for ordinary least squares. This is my favorite way to derive the CUPED estimator, and this exercise can help to build a deeper appreciation for the algebra of variance reduction. I particularly like this formulation because the FWL is very similar to the formulation of other modern causal ML techniques for variance reduction like the R learner, MLRate, Double ML etc.</p>
+<p>In this model, variation in <span class="math inline">\(y\)</span> is explained by the previous values contained in <span class="math inline">\(y_{\text{pre}}\)</span>. For example, if someone watched a lot of movies during the pretreatment window, they are likely to watch a lot of movies during the posttreatment window too. Their particular <span class="math inline">\(y\)</span> values are explainable, and we can reduce the residual variance. This increases power.</p>
+<p>While there are 3 parameters in the model, only 2 are meaningful. <span class="math inline">\(\hat{\beta}_1\)</span> represents the average treatment effect, and <span class="math inline">\(\hat{\beta}_0\)</span> represents the baseline value for the average user who is in the control, so <span class="math inline">\(\hat{\beta}_0 = E[y | T = 0, y_{\text{pre}} = \mu_c]\)</span>. While <span class="math inline">\(\beta_2\)</span> is useful for decreasing variance, it is not useful for inference. It does not play a role in computing the treatment effect. <span class="math inline">\(\beta_2\)</span> is referred to as a nuisance variable.</p>
+<p>The CUPED formulation has a special computing strategy, making it not only great for statistical power, but also easy to implement.</p>
 <section id="the-fwl" class="level1">
 <h1>The FWL</h1>
-<p>If a regression can be partitioned into variables of interest, <span class="math inline">\(T\)</span>, and nuisance variables, <span class="math inline">\(X_2\)</span>, then inference on <span class="math inline">\(T\)</span> can be done extremely efficiently.</p>
+<p>If a regression can be partitioned into variables of interest, <span class="math inline">\(T\)</span>, and nuisance variables, <span class="math inline">\(X\)</span>, then inference on <span class="math inline">\(T\)</span> can be done extremely efficiently.</p>
 <p><span class="math display">\[y = \beta_0 + T\beta_1 + X\beta_2 + \varepsilon\]</span></p>
 <ol type="1">
-<li>Regress <span class="math inline">\(y\)</span> on <span class="math inline">\(X_2\)</span>. Then get the residuals, <span class="math inline">\(\varepsilon_y\)</span>.</li>
-<li>Regress <span class="math inline">\([1, T]\)</span> on <span class="math inline">\(X_2\)</span>. Then get the residuals, <span class="math inline">\(\varepsilon_T\)</span>.</li>
-<li>Regress <span class="math inline">\(\varepsilon_y\)</span> on <span class="math inline">\(\varepsilon_T\)</span>. The estimated parameters from this regression are exactly <span class="math inline">\(\hat{\beta}_0\)</span> and <span class="math inline">\(\hat{\beta}_1\)</span> from the original regression.</li>
+<li>Regress <span class="math inline">\(y\)</span> on <span class="math inline">\([1, X]\)</span>. Then get the residuals, <span class="math inline">\(\tilde{y}\)</span>.</li>
+<li>Regress <span class="math inline">\(T\)</span> on <span class="math inline">\([1, X]\)</span>. Then get the residuals, <span class="math inline">\(\tilde{T}\)</span>.</li>
+<li>Regress <span class="math inline">\(\tilde{y}\)</span> on <span class="math inline">\(\tilde{T}\)</span>. The estimated parameters from this regression are exactly <span class="math inline">\(\hat{\beta}_1\)</span> from the original regression.</li>
 </ol>
 <section id="step-1" class="level2">
 <h2 class="anchored" data-anchor-id="step-1">Step 1</h2>
-<p>The regression <span class="math inline">\(y\)</span> on <span class="math inline">\(X_2\)</span> is a simple least squares regression. Note that this regression doesn’t even have an intercept, so we simply need to estimate <span class="math inline">\(\theta\)</span> from <span class="math inline">\(y = X_2 \theta\)</span>.</p>
+<p>The regression <span class="math inline">\(y\)</span> on <span class="math inline">\([1, X]\)</span> is a simple least squares regression with an intercept, e.g.&nbsp;<span class="math inline">\(y = \gamma_{y, 0} + X\gamma_{y, 1} + \nu\)</span>. The solution for <span class="math inline">\(\gamma\)</span>, and the residuals <span class="math inline">\(\tilde{y}\)</span> are simply</p>
 <p><span class="math display">\[\begin{align}
-\theta &amp;= \frac{(y_\text{pre} - 1_n\mu)^T y}{(y_\text{pre} - 1_n\mu)^T (y_\text{pre} - 1_n\mu)} \\
-  &amp;= \frac{y_\text{pre}^T y - \mu \sum y}{\sum y_\text{pre}^2 - 2\mu \sum y_\text{pre} + n \mu^2}
-\end{align}\]</span></p>
-<p>After obtaining <span class="math inline">\(\theta\)</span>, we need to residualize. <span class="math display">\[\varepsilon_y = y - (y_\text{pre} - 1_n\mu) \theta\]</span></p>
-<p>Aggregates of <span class="math inline">\(\varepsilon_y\)</span> can be computed efficiently. Its mean and variance will play a role later.</p>
-<p><span class="math display">\[\begin{align}
-\sum \varepsilon_i &amp;= \sum y_i - (y_{pre,i} - \mu) \theta \\
-  &amp;= \sum_g n_g \mu \theta + \sum_{i \in g} \Bigl(y_i - \theta \sum y_{pre,i} \Bigr) \\
-\sum \varepsilon_i^2 &amp;= \sum y_i^2 - 2 y_i (y_{pre, i} - \mu) \theta + (y_{pre, i} - \mu)^2 (\theta)^2 \\
-  &amp;= \sum_g \Bigl( n_g\mu^2 \theta^2 + \sum_{i \in g} y_i^2 -
-  2\theta \sum_{i \in g} y_i y_{pre, i} +
-  2\theta \mu \sum_{i \in g} y_i +
-  \theta^2 (\sum_{i \in g} y_{pre, i}^2 - 2\mu \sum_{i \in g} y_{pre, i}) \Bigr)
-
+\hat{\gamma}_{y, 1} &amp;= \frac{Cov(X, y)}{Var(X)} \\
+\hat{\gamma}_{y, 0} &amp;= \bar{y} - \hat{\gamma}_{y, 1} \bar{X} \\
+\tilde{T} &amp;= y - (\hat{\gamma}_{y, 0} + X \hat{\gamma}_{y, 1})
 \end{align}\]</span></p>
 </section>
 <section id="step-2" class="level2">
 <h2 class="anchored" data-anchor-id="step-2">Step 2</h2>
-<p>Here is the beauty of FWL when applied to randomized data. When <span class="math inline">\(T\)</span> is unconditionally randomized, the regression of <span class="math inline">\([1, T]\)</span> on <span class="math inline">\(X_2\)</span> is a no-op, and the residuals are simply <span class="math inline">\([1, T]\)</span>. Thus, we already have <span class="math inline">\(\varepsilon_T = [1, T]\)</span>.</p>
+<p>The regression <span class="math inline">\(T\)</span> on <span class="math inline">\([1, X]\)</span> can arguably be a no-op. <span class="math inline">\(T\)</span> is by definition not correlated with anything, so the slope of this regression must be 0. The intercept would just be the proportion of users that are in the treatment. This elegant subtlety is leveraged in CUPED.</p>
+<p><span class="math display">\[\begin{align}
+\hat{\gamma}_{T, 1} &amp;= 0 \\
+\hat{\gamma}_{T, 0} &amp;= \bar{T} \\
+\tilde{T} &amp;= y - (\bar{T})
+\end{align}\]</span></p>
+<p>However, a fully complete OLS solution would say</p>
+<p><span class="math display">\[\begin{align}
+\hat{\gamma}_{T, 1} &amp;= \frac{Cov(X, T)}{Var(X)} \\
+\hat{\gamma}_{T, 0} &amp;= \bar{T} - \hat{\gamma}_{T, 1} \bar{X} \\
+\tilde{T} &amp;= T - (\hat{\gamma}_{T, 0} + X \hat{\gamma}_{T, 1})
+\end{align}\]</span></p>
 </section>
 <section id="step-3" class="level2">
 <h2 class="anchored" data-anchor-id="step-3">Step 3</h2>
-<p>Now we regress <span class="math inline">\(\varepsilon_y\)</span> on <span class="math inline">\(\varepsilon_T\)</span>.</p>
-<p><span class="math display">\[y - (y_\text{pre} - 1_n\mu) \theta = \beta_0 + T\beta_1\]</span></p>
-<p>This regression takes the form of simple least squares again - this time with an intercept.</p>
-<p><span class="math display">\[\begin{align}
-  \hat{\beta}_1 &amp;= Cov(\varepsilon_y, T) / Var(\varepsilon_y) \\
-  \hat{\beta}_0 &amp;= \bar{\varepsilon}_y - \hat{\beta}_1 \bar{T}
+<p>Now we regress <span class="math inline">\(\tilde{y}\)</span> on <span class="math inline">\(\tilde{T}\)</span> to get the treatment effect.</p>
+<p><span class="math display">\[\hat{\beta} = \frac{Cov(\tilde{y}, \tilde{T})}{Var(\tilde{T})}\]</span></p>
+<p>The numerator can be consolidated. <span class="math display">\[\begin{align}
+Cov(\tilde{y}, \tilde{T}) &amp;= Cov(y - (\hat{\gamma}_{y, 0} + X \hat{\gamma}_{y, 1}), T - (\hat{\gamma}_{T, 0} + X \hat{\gamma}_{T, 1})) \\
+  &amp;= Cov(y, T) - \hat{\gamma}_{T, 1} Cov(y, X) - \hat{\gamma}_{y, 1} Cov(X, T) + \hat{\gamma}_{y, 1} \hat{\gamma}_{T, 1} Var(X)
 \end{align}\]</span></p>
-
-
+<p>The second and fourth terms cancel out because <span class="math inline">\(\hat{\gamma}_{y, 1} = \frac{Cov(X, y)}{Var(X)}\)</span>, leaving <span class="math display">\[Cov(\tilde{y}, \tilde{T}) = Cov(y, T) - \hat{\gamma}_{y, 1} Cov(X, T)\]</span></p>
+<p>The denominator is also consolidated <span class="math display">\[\begin{align}
+Var(\tilde{T}) &amp;= Var(T - (\hat{\gamma}_{T, 0} + X \hat{\gamma}_{T, 1})) \\
+  &amp;= Var(T) - 2\hat{\gamma}_{T, 1} Cov(T, X) + \hat{\gamma}_{T, 1}^2 Var(X)
+\end{align}\]</span></p>
+<p>Note <span class="math inline">\(\hat{\gamma}_{T, 1} = \frac{Cov(T, X)}{Var(X)}\)</span>, which buys the reduction <span class="math display">\[Var(\tilde{T}) = Var(T) - \hat{\gamma}_{T, 1} Cov(T, X)\]</span> This yields</p>
+<p><span class="math display">\[\begin{align}
+\hat{\gamma}_{y, 1} &amp;= \frac{Cov(X, y)}{Var(X)} \\
+\hat{\gamma}_{T, 1} &amp;= \frac{Cov(X, T)}{Var(X)} \\
+\hat{\beta} &amp;= \frac{Cov(y, T) - \hat{\gamma}_{y, 1} Cov(X, T)}{Var(T) - \hat{\gamma}_{T, 1} Cov(X, T)}
+\end{align}\]</span></p>
+<p>In the same spirit of <a href="https://arxiv.org/pdf/2102.11297">conditionally sufficient statistics</a>, this compute strategy for the average treatment effect, controlling for a continuous covariate, can be estimated entirely with aggregated data.</p>
 </section>
+</section>
+<section id="cuped-is-a-special-case." class="level1">
+<h1>CUPED is a special case.</h1>
+<p>CUPED leverages <em>perfectly</em> randomized data, so <span class="math inline">\(Cov(X, T) = 0\)</span>. Now we will rewrite the solution for <span class="math inline">\(\hat{\beta}\)</span> in a clever way.</p>
+<p><span class="math display">\[\begin{align}
+\hat{\beta} &amp;= \frac{Cov(y, T) - \hat{\gamma}_{y, 1} Cov(X, T)}{Var(T)} \\
+  &amp;= \frac{Cov(y, T)}{Var(T)} - \hat{\gamma}_{y, 1} \frac{Cov(X, T)}{Var(T)}
+\end{align}\]</span> which looks like the difference between 2 different OLS solutions: y regressed on T and X regressed on T. Knowing T is binary, each of these OLS solutions is simply the difference in group means:</p>
+<p><span class="math display">\[\hat{\beta} = E[y | T = 1] - E[y | T = 0] - \hat{\gamma}_{y, 1} (E[X | T = 1] - E[X | T = 0]).\]</span> This is exactly the CUPED formulation! However, it truly reveals that CUPED is like FWL with an assumption that <span class="math inline">\(E[X | T = 1] = E[X | T = 0]\)</span>. In small sample bias this may not be the case; by luck a user with large values for <span class="math inline">\(X\)</span> can be randomized into the treatment. In these scenarios, a pretreatment bias may be triggered. If it was due to randomization, instead of selection bias, we would simply control for it by modeling it into the outcome equation. Enforcing these values to be equal does not let us control for different baselines per arm.</p>
+<p>We lean into adopting the full FWL solution, since it also has an efficient compute strategy. Below, we show how to use it for ratio metrics, as well as doing inference with robust standard errors.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Function to compute treatment effects from aggregated data</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>compute_ab_stats <span class="ot">&lt;-</span> <span class="cf">function</span>(n1, sum_y1, sum_p1, sum_y2_1, sum_p2_1, sum_yp1,</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>                             n0, sum_y0, sum_p0, sum_y2_0, sum_p2_0, sum_yp0) {</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  <span class="co"># 1. Combined Aggregates</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  n <span class="ot">&lt;-</span> n1 <span class="sc">+</span> n0</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  s_y <span class="ot">&lt;-</span> sum_y1 <span class="sc">+</span> sum_y0</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>  s_p <span class="ot">&lt;-</span> sum_p1 <span class="sc">+</span> sum_p0</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  s_yp <span class="ot">&lt;-</span> sum_yp1 <span class="sc">+</span> sum_yp0</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>  s_p2 <span class="ot">&lt;-</span> sum_p2_1 <span class="sc">+</span> sum_p2_0</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Means</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>  y_bar1 <span class="ot">&lt;-</span> sum_y1 <span class="sc">/</span> n1</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>  y_bar0 <span class="ot">&lt;-</span> sum_y0 <span class="sc">/</span> n0</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>  p_bar1 <span class="ot">&lt;-</span> sum_p1 <span class="sc">/</span> n1</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>  p_bar0 <span class="ot">&lt;-</span> sum_p0 <span class="sc">/</span> n0</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>  p_bar_total <span class="ot">&lt;-</span> s_p <span class="sc">/</span> n</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>  t_bar <span class="ot">&lt;-</span> n1 <span class="sc">/</span> n</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>  <span class="co"># 2. Covariances (Global)</span></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>  var_p <span class="ot">&lt;-</span> (s_p2 <span class="sc">/</span> n) <span class="sc">-</span> (p_bar_total<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>  cov_yp <span class="ot">&lt;-</span> (s_yp <span class="sc">/</span> n) <span class="sc">-</span> (s_y <span class="sc">/</span> n) <span class="sc">*</span> (s_p <span class="sc">/</span> n)</span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>  cov_tp <span class="ot">&lt;-</span> (sum_p1 <span class="sc">/</span> n) <span class="sc">-</span> (t_bar <span class="sc">*</span> p_bar_total)</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>  cov_ty <span class="ot">&lt;-</span> (sum_y1 <span class="sc">/</span> n) <span class="sc">-</span> (t_bar <span class="sc">*</span> (s_y <span class="sc">/</span> n))</span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>  var_t <span class="ot">&lt;-</span> t_bar <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> t_bar)</span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>  <span class="co"># 3. FWL Coefficients</span></span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>  gamma_y <span class="ot">&lt;-</span> cov_yp <span class="sc">/</span> var_p</span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>  gamma_t <span class="ot">&lt;-</span> cov_tp <span class="sc">/</span> var_p</span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>  <span class="co"># ATE (Beta) - Adjusted for noisy baseline</span></span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>  ate <span class="ot">&lt;-</span> (cov_ty <span class="sc">-</span> gamma_y <span class="sc">*</span> cov_tp) <span class="sc">/</span> (var_t <span class="sc">-</span> gamma_t <span class="sc">*</span> cov_tp)</span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>  <span class="co"># 4. Group-Robust Variances</span></span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Var(y - gamma*p) = Var(y) + gamma^2*Var(p) - 2*gamma*Cov(y,p)</span></span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>  var_y1 <span class="ot">&lt;-</span> (sum_y2_1 <span class="sc">/</span> n1) <span class="sc">-</span> (y_bar1<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a>  var_p1 <span class="ot">&lt;-</span> (sum_p2_1 <span class="sc">/</span> n1) <span class="sc">-</span> (p_bar1<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a>  cov_yp1 <span class="ot">&lt;-</span> (sum_yp1 <span class="sc">/</span> n1) <span class="sc">-</span> (y_bar1 <span class="sc">*</span> p_bar1)</span>
+<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>  resid_var1 <span class="ot">&lt;-</span> var_y1 <span class="sc">+</span> (gamma_y<span class="sc">^</span><span class="dv">2</span> <span class="sc">*</span> var_p1) <span class="sc">-</span> (<span class="dv">2</span> <span class="sc">*</span> gamma_y <span class="sc">*</span> cov_yp1)</span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a>  var_y0 <span class="ot">&lt;-</span> (sum_y2_0 <span class="sc">/</span> n0) <span class="sc">-</span> (y_bar0<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a>  var_p0 <span class="ot">&lt;-</span> (sum_p2_0 <span class="sc">/</span> n0) <span class="sc">-</span> (p_bar0<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a>  cov_yp0 <span class="ot">&lt;-</span> (sum_yp0 <span class="sc">/</span> n0) <span class="sc">-</span> (y_bar0 <span class="sc">*</span> p_bar0)</span>
+<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a>  resid_var0 <span class="ot">&lt;-</span> var_y0 <span class="sc">+</span> (gamma_y<span class="sc">^</span><span class="dv">2</span> <span class="sc">*</span> var_p0) <span class="sc">-</span> (<span class="dv">2</span> <span class="sc">*</span> gamma_y <span class="sc">*</span> cov_yp0)</span>
+<span id="cb1-45"><a href="#cb1-45" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb1-46"><a href="#cb1-46" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Standard Error of ATE</span></span>
+<span id="cb1-47"><a href="#cb1-47" aria-hidden="true" tabindex="-1"></a>  se_ate <span class="ot">&lt;-</span> <span class="fu">sqrt</span>((resid_var1 <span class="sc">/</span> n1) <span class="sc">+</span> (resid_var0 <span class="sc">/</span> n0))</span>
+<span id="cb1-48"><a href="#cb1-48" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb1-49"><a href="#cb1-49" aria-hidden="true" tabindex="-1"></a>  <span class="co"># 5. Relative Effect (Delta Method)</span></span>
+<span id="cb1-50"><a href="#cb1-50" aria-hidden="true" tabindex="-1"></a>  mu0_adj <span class="ot">&lt;-</span> y_bar0 <span class="sc">-</span> gamma_y <span class="sc">*</span> (p_bar0 <span class="sc">-</span> p_bar_total)</span>
+<span id="cb1-51"><a href="#cb1-51" aria-hidden="true" tabindex="-1"></a>  rel_effect <span class="ot">&lt;-</span> ate <span class="sc">/</span> mu0_adj</span>
+<span id="cb1-52"><a href="#cb1-52" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb1-53"><a href="#cb1-53" aria-hidden="true" tabindex="-1"></a>  <span class="co"># SE of Relative Effect (Delta Method approx)</span></span>
+<span id="cb1-54"><a href="#cb1-54" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Var(A/B) approx (Var(A)/B^2) + (A^2 * Var(B)/B^4)</span></span>
+<span id="cb1-55"><a href="#cb1-55" aria-hidden="true" tabindex="-1"></a>  var_mu0 <span class="ot">&lt;-</span> resid_var0 <span class="sc">/</span> n0</span>
+<span id="cb1-56"><a href="#cb1-56" aria-hidden="true" tabindex="-1"></a>  se_rel <span class="ot">&lt;-</span> <span class="fu">sqrt</span>((se_ate<span class="sc">^</span><span class="dv">2</span> <span class="sc">/</span> mu0_adj<span class="sc">^</span><span class="dv">2</span>) <span class="sc">+</span> (ate<span class="sc">^</span><span class="dv">2</span> <span class="sc">*</span> var_mu0 <span class="sc">/</span> mu0_adj<span class="sc">^</span><span class="dv">4</span>))</span>
+<span id="cb1-57"><a href="#cb1-57" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb1-58"><a href="#cb1-58" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(<span class="fu">list</span>(</span>
+<span id="cb1-59"><a href="#cb1-59" aria-hidden="true" tabindex="-1"></a>    <span class="at">ate =</span> ate,</span>
+<span id="cb1-60"><a href="#cb1-60" aria-hidden="true" tabindex="-1"></a>    <span class="at">se_ate =</span> se_ate,</span>
+<span id="cb1-61"><a href="#cb1-61" aria-hidden="true" tabindex="-1"></a>    <span class="at">relative_effect =</span> rel_effect,</span>
+<span id="cb1-62"><a href="#cb1-62" aria-hidden="true" tabindex="-1"></a>    <span class="at">se_relative =</span> se_rel,</span>
+<span id="cb1-63"><a href="#cb1-63" aria-hidden="true" tabindex="-1"></a>    <span class="at">p_value =</span> <span class="dv">2</span> <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> <span class="fu">pnorm</span>(<span class="fu">abs</span>(ate <span class="sc">/</span> se_ate)))</span>
+<span id="cb1-64"><a href="#cb1-64" aria-hidden="true" tabindex="-1"></a>  ))</span>
+<span id="cb1-65"><a href="#cb1-65" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+
+
 </section>
 
 </main> <!-- /main -->

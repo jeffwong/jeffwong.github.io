@@ -960,7 +960,7 @@ font-style: inherit;">print</span>(results)</span></code></pre></div></div>
   <pubDate>Sun, 08 Feb 2026 00:00:00 GMT</pubDate>
 </item>
 <item>
-  <title>Creating CUPED from FWL</title>
+  <title>Creating CUPED from FWL (under construction)</title>
   <dc:creator>Jeffrey Wong</dc:creator>
   <link>https://jeffwong.github.io/posts/cuped_from_fwl/</link>
   <description><![CDATA[ 
@@ -969,41 +969,435 @@ font-style: inherit;">print</span>(results)</span></code></pre></div></div>
 
 
 
-<p>CUPED is a well known technique to greatly increase statistical power in a controlled experiment. The CUPED formulation has similarities to the OLS model</p>
-<p><img src="https://latex.codecogs.com/png.latex?y%20=%20%5Cbeta_0%20+%20T%5Cbeta_1%20+%20(y_%7B%5Ctext%7Bpre%7D%7D-1_n%20%5Cmu)%20%5Cbeta_2%20+%20%5Cvarepsilon"></p>
-<p>In this case, variation in <img src="https://latex.codecogs.com/png.latex?y"> is explained by the previous values contained in <img src="https://latex.codecogs.com/png.latex?y_%7B%5Ctext%7Bpre%7D%7D">. For example, if someone watched a lot of movies during the pretreatment window, they are likely to watch a lot of movies during the posttreatment window too. Their particular <img src="https://latex.codecogs.com/png.latex?y"> values are explainable, and we can reduce the residual variance. This increases power.</p>
-<p>While there are 3 parameters in the model, only 2 are meaningful. <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Cbeta%7D_1"> represents the average treatment effect, and <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Cbeta%7D_0"> represents the baseline value for the average user who is in the control, so <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Cbeta%7D_0%20=%20E%5By%20%7C%20T%20=%200,%20y_%7B%5Ctext%7Bpre%7D%7D%20=%20%5Cmu%5D">. While <img src="https://latex.codecogs.com/png.latex?%5Cbeta_2"> is useful for decreasing variance, it is not useful for inference. <img src="https://latex.codecogs.com/png.latex?%5Cbeta_2"> is referred to as a nuisance variable.</p>
-<p>The CUPED formulation has a special computing strategy, making it not only great for statistical power, but also easy to implement. The strategy is rooted in the <a href="https://en.wikipedia.org/wiki/Frisch–Waugh–Lovell_theorem">Frisch Waugh Lovell theorem</a>.</p>
+<p><a href="https://dl.acm.org/doi/pdf/10.1145/2433396.2433413">CUPED</a> is a well known technique to greatly increase statistical power in a controlled experiment. The CUPED formulation has similarities to the OLS model</p>
+<p><img src="https://latex.codecogs.com/png.latex?y%20=%20%5Cbeta_0%20+%20T%5Cbeta_1%20+%20(y_%7B%5Ctext%7Bpre%7D%7D-1_n%20%5Cmu_c)%20%5Cbeta_2%20+%20%5Cvarepsilon"></p>
+<p>This blog post describes how the CUPED formulation can come out of the <a href="https://en.wikipedia.org/wiki/Frisch–Waugh–Lovell_theorem">Frisch Waugh Lovell theorem</a> for ordinary least squares. This is my favorite way to derive the CUPED estimator, and this exercise can help to build a deeper appreciation for the algebra of variance reduction. I particularly like this formulation because the FWL is very similar to the formulation of other modern causal ML techniques for variance reduction like the R learner, MLRate, Double ML etc.</p>
+<p>In this model, variation in <img src="https://latex.codecogs.com/png.latex?y"> is explained by the previous values contained in <img src="https://latex.codecogs.com/png.latex?y_%7B%5Ctext%7Bpre%7D%7D">. For example, if someone watched a lot of movies during the pretreatment window, they are likely to watch a lot of movies during the posttreatment window too. Their particular <img src="https://latex.codecogs.com/png.latex?y"> values are explainable, and we can reduce the residual variance. This increases power.</p>
+<p>While there are 3 parameters in the model, only 2 are meaningful. <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Cbeta%7D_1"> represents the average treatment effect, and <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Cbeta%7D_0"> represents the baseline value for the average user who is in the control, so <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Cbeta%7D_0%20=%20E%5By%20%7C%20T%20=%200,%20y_%7B%5Ctext%7Bpre%7D%7D%20=%20%5Cmu_c%5D">. While <img src="https://latex.codecogs.com/png.latex?%5Cbeta_2"> is useful for decreasing variance, it is not useful for inference. It does not play a role in computing the treatment effect. <img src="https://latex.codecogs.com/png.latex?%5Cbeta_2"> is referred to as a nuisance variable.</p>
+<p>The CUPED formulation has a special computing strategy, making it not only great for statistical power, but also easy to implement.</p>
 <section id="the-fwl" class="level1">
 <h1>The FWL</h1>
-<p>If a regression can be partitioned into variables of interest, <img src="https://latex.codecogs.com/png.latex?T">, and nuisance variables, <img src="https://latex.codecogs.com/png.latex?X_2">, then inference on <img src="https://latex.codecogs.com/png.latex?T"> can be done extremely efficiently.</p>
+<p>If a regression can be partitioned into variables of interest, <img src="https://latex.codecogs.com/png.latex?T">, and nuisance variables, <img src="https://latex.codecogs.com/png.latex?X">, then inference on <img src="https://latex.codecogs.com/png.latex?T"> can be done extremely efficiently.</p>
 <p><img src="https://latex.codecogs.com/png.latex?y%20=%20%5Cbeta_0%20+%20T%5Cbeta_1%20+%20X%5Cbeta_2%20+%20%5Cvarepsilon"></p>
 <ol type="1">
-<li>Regress <img src="https://latex.codecogs.com/png.latex?y"> on <img src="https://latex.codecogs.com/png.latex?X_2">. Then get the residuals, <img src="https://latex.codecogs.com/png.latex?%5Cvarepsilon_y">.</li>
-<li>Regress <img src="https://latex.codecogs.com/png.latex?%5B1,%20T%5D"> on <img src="https://latex.codecogs.com/png.latex?X_2">. Then get the residuals, <img src="https://latex.codecogs.com/png.latex?%5Cvarepsilon_T">.</li>
-<li>Regress <img src="https://latex.codecogs.com/png.latex?%5Cvarepsilon_y"> on <img src="https://latex.codecogs.com/png.latex?%5Cvarepsilon_T">. The estimated parameters from this regression are exactly <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Cbeta%7D_0"> and <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Cbeta%7D_1"> from the original regression.</li>
+<li>Regress <img src="https://latex.codecogs.com/png.latex?y"> on <img src="https://latex.codecogs.com/png.latex?%5B1,%20X%5D">. Then get the residuals, <img src="https://latex.codecogs.com/png.latex?%5Ctilde%7By%7D">.</li>
+<li>Regress <img src="https://latex.codecogs.com/png.latex?T"> on <img src="https://latex.codecogs.com/png.latex?%5B1,%20X%5D">. Then get the residuals, <img src="https://latex.codecogs.com/png.latex?%5Ctilde%7BT%7D">.</li>
+<li>Regress <img src="https://latex.codecogs.com/png.latex?%5Ctilde%7By%7D"> on <img src="https://latex.codecogs.com/png.latex?%5Ctilde%7BT%7D">. The estimated parameters from this regression are exactly <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Cbeta%7D_1"> from the original regression.</li>
 </ol>
 <section id="step-1" class="level2">
 <h2 class="anchored" data-anchor-id="step-1">Step 1</h2>
-<p>The regression <img src="https://latex.codecogs.com/png.latex?y"> on <img src="https://latex.codecogs.com/png.latex?X_2"> is a simple least squares regression. Note that this regression doesn’t even have an intercept, so we simply need to estimate <img src="https://latex.codecogs.com/png.latex?%5Ctheta"> from <img src="https://latex.codecogs.com/png.latex?y%20=%20X_2%20%5Ctheta">.</p>
-<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0A%5Ctheta%20&amp;=%20%5Cfrac%7B(y_%5Ctext%7Bpre%7D%20-%201_n%5Cmu)%5ET%20y%7D%7B(y_%5Ctext%7Bpre%7D%20-%201_n%5Cmu)%5ET%20(y_%5Ctext%7Bpre%7D%20-%201_n%5Cmu)%7D%20%5C%5C%0A%20%20&amp;=%20%5Cfrac%7By_%5Ctext%7Bpre%7D%5ET%20y%20-%20%5Cmu%20%5Csum%20y%7D%7B%5Csum%20y_%5Ctext%7Bpre%7D%5E2%20-%202%5Cmu%20%5Csum%20y_%5Ctext%7Bpre%7D%20+%20n%20%5Cmu%5E2%7D%0A%5Cend%7Balign%7D"></p>
-<p>After obtaining <img src="https://latex.codecogs.com/png.latex?%5Ctheta">, we need to residualize. <img src="https://latex.codecogs.com/png.latex?%5Cvarepsilon_y%20=%20y%20-%20(y_%5Ctext%7Bpre%7D%20-%201_n%5Cmu)%20%5Ctheta"></p>
-<p>Aggregates of <img src="https://latex.codecogs.com/png.latex?%5Cvarepsilon_y"> can be computed efficiently. Its mean and variance will play a role later.</p>
-<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0A%5Csum%20%5Cvarepsilon_i%20&amp;=%20%5Csum%20y_i%20-%20(y_%7Bpre,i%7D%20-%20%5Cmu)%20%5Ctheta%20%5C%5C%0A%20%20&amp;=%20%5Csum_g%20n_g%20%5Cmu%20%5Ctheta%20+%20%5Csum_%7Bi%20%5Cin%20g%7D%20%5CBigl(y_i%20-%20%5Ctheta%20%5Csum%20y_%7Bpre,i%7D%20%5CBigr)%20%5C%5C%0A%5Csum%20%5Cvarepsilon_i%5E2%20&amp;=%20%5Csum%20y_i%5E2%20-%202%20y_i%20(y_%7Bpre,%20i%7D%20-%20%5Cmu)%20%5Ctheta%20+%20(y_%7Bpre,%20i%7D%20-%20%5Cmu)%5E2%20(%5Ctheta)%5E2%20%5C%5C%0A%20%20&amp;=%20%5Csum_g%20%5CBigl(%20n_g%5Cmu%5E2%20%5Ctheta%5E2%20+%20%5Csum_%7Bi%20%5Cin%20g%7D%20y_i%5E2%20-%0A%20%202%5Ctheta%20%5Csum_%7Bi%20%5Cin%20g%7D%20y_i%20y_%7Bpre,%20i%7D%20+%0A%20%202%5Ctheta%20%5Cmu%20%5Csum_%7Bi%20%5Cin%20g%7D%20y_i%20+%0A%20%20%5Ctheta%5E2%20(%5Csum_%7Bi%20%5Cin%20g%7D%20y_%7Bpre,%20i%7D%5E2%20-%202%5Cmu%20%5Csum_%7Bi%20%5Cin%20g%7D%20y_%7Bpre,%20i%7D)%20%5CBigr)%0A%0A%5Cend%7Balign%7D"></p>
+<p>The regression <img src="https://latex.codecogs.com/png.latex?y"> on <img src="https://latex.codecogs.com/png.latex?%5B1,%20X%5D"> is a simple least squares regression with an intercept, e.g.&nbsp;<img src="https://latex.codecogs.com/png.latex?y%20=%20%5Cgamma_%7By,%200%7D%20+%20X%5Cgamma_%7By,%201%7D%20+%20%5Cnu">. The solution for <img src="https://latex.codecogs.com/png.latex?%5Cgamma">, and the residuals <img src="https://latex.codecogs.com/png.latex?%5Ctilde%7By%7D"> are simply</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0A%5Chat%7B%5Cgamma%7D_%7By,%201%7D%20&amp;=%20%5Cfrac%7BCov(X,%20y)%7D%7BVar(X)%7D%20%5C%5C%0A%5Chat%7B%5Cgamma%7D_%7By,%200%7D%20&amp;=%20%5Cbar%7By%7D%20-%20%5Chat%7B%5Cgamma%7D_%7By,%201%7D%20%5Cbar%7BX%7D%20%5C%5C%0A%5Ctilde%7BT%7D%20&amp;=%20y%20-%20(%5Chat%7B%5Cgamma%7D_%7By,%200%7D%20+%20X%20%5Chat%7B%5Cgamma%7D_%7By,%201%7D)%0A%5Cend%7Balign%7D"></p>
 </section>
 <section id="step-2" class="level2">
 <h2 class="anchored" data-anchor-id="step-2">Step 2</h2>
-<p>Here is the beauty of FWL when applied to randomized data. When <img src="https://latex.codecogs.com/png.latex?T"> is unconditionally randomized, the regression of <img src="https://latex.codecogs.com/png.latex?%5B1,%20T%5D"> on <img src="https://latex.codecogs.com/png.latex?X_2"> is a no-op, and the residuals are simply <img src="https://latex.codecogs.com/png.latex?%5B1,%20T%5D">. Thus, we already have <img src="https://latex.codecogs.com/png.latex?%5Cvarepsilon_T%20=%20%5B1,%20T%5D">.</p>
+<p>The regression <img src="https://latex.codecogs.com/png.latex?T"> on <img src="https://latex.codecogs.com/png.latex?%5B1,%20X%5D"> can arguably be a no-op. <img src="https://latex.codecogs.com/png.latex?T"> is by definition not correlated with anything, so the slope of this regression must be 0. The intercept would just be the proportion of users that are in the treatment. This elegant subtlety is leveraged in CUPED.</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0A%5Chat%7B%5Cgamma%7D_%7BT,%201%7D%20&amp;=%200%20%5C%5C%0A%5Chat%7B%5Cgamma%7D_%7BT,%200%7D%20&amp;=%20%5Cbar%7BT%7D%20%5C%5C%0A%5Ctilde%7BT%7D%20&amp;=%20y%20-%20(%5Cbar%7BT%7D)%0A%5Cend%7Balign%7D"></p>
+<p>However, a fully complete OLS solution would say</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0A%5Chat%7B%5Cgamma%7D_%7BT,%201%7D%20&amp;=%20%5Cfrac%7BCov(X,%20T)%7D%7BVar(X)%7D%20%5C%5C%0A%5Chat%7B%5Cgamma%7D_%7BT,%200%7D%20&amp;=%20%5Cbar%7BT%7D%20-%20%5Chat%7B%5Cgamma%7D_%7BT,%201%7D%20%5Cbar%7BX%7D%20%5C%5C%0A%5Ctilde%7BT%7D%20&amp;=%20T%20-%20(%5Chat%7B%5Cgamma%7D_%7BT,%200%7D%20+%20X%20%5Chat%7B%5Cgamma%7D_%7BT,%201%7D)%0A%5Cend%7Balign%7D"></p>
 </section>
 <section id="step-3" class="level2">
 <h2 class="anchored" data-anchor-id="step-3">Step 3</h2>
-<p>Now we regress <img src="https://latex.codecogs.com/png.latex?%5Cvarepsilon_y"> on <img src="https://latex.codecogs.com/png.latex?%5Cvarepsilon_T">.</p>
-<p><img src="https://latex.codecogs.com/png.latex?y%20-%20(y_%5Ctext%7Bpre%7D%20-%201_n%5Cmu)%20%5Ctheta%20=%20%5Cbeta_0%20+%20T%5Cbeta_1"></p>
-<p>This regression takes the form of simple least squares again - this time with an intercept.</p>
-<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0A%20%20%5Chat%7B%5Cbeta%7D_1%20&amp;=%20Cov(%5Cvarepsilon_y,%20T)%20/%20Var(%5Cvarepsilon_y)%20%5C%5C%0A%20%20%5Chat%7B%5Cbeta%7D_0%20&amp;=%20%5Cbar%7B%5Cvarepsilon%7D_y%20-%20%5Chat%7B%5Cbeta%7D_1%20%5Cbar%7BT%7D%0A%5Cend%7Balign%7D"></p>
-
-
+<p>Now we regress <img src="https://latex.codecogs.com/png.latex?%5Ctilde%7By%7D"> on <img src="https://latex.codecogs.com/png.latex?%5Ctilde%7BT%7D"> to get the treatment effect.</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Cbeta%7D%20=%20%5Cfrac%7BCov(%5Ctilde%7By%7D,%20%5Ctilde%7BT%7D)%7D%7BVar(%5Ctilde%7BT%7D)%7D"></p>
+<p>The numerator can be consolidated. <img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0ACov(%5Ctilde%7By%7D,%20%5Ctilde%7BT%7D)%20&amp;=%20Cov(y%20-%20(%5Chat%7B%5Cgamma%7D_%7By,%200%7D%20+%20X%20%5Chat%7B%5Cgamma%7D_%7By,%201%7D),%20T%20-%20(%5Chat%7B%5Cgamma%7D_%7BT,%200%7D%20+%20X%20%5Chat%7B%5Cgamma%7D_%7BT,%201%7D))%20%5C%5C%0A%20%20&amp;=%20Cov(y,%20T)%20-%20%5Chat%7B%5Cgamma%7D_%7BT,%201%7D%20Cov(y,%20X)%20-%20%5Chat%7B%5Cgamma%7D_%7By,%201%7D%20Cov(X,%20T)%20+%20%5Chat%7B%5Cgamma%7D_%7By,%201%7D%20%5Chat%7B%5Cgamma%7D_%7BT,%201%7D%20Var(X)%0A%5Cend%7Balign%7D"></p>
+<p>The second and fourth terms cancel out because <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Cgamma%7D_%7By,%201%7D%20=%20%5Cfrac%7BCov(X,%20y)%7D%7BVar(X)%7D">, leaving <img src="https://latex.codecogs.com/png.latex?Cov(%5Ctilde%7By%7D,%20%5Ctilde%7BT%7D)%20=%20Cov(y,%20T)%20-%20%5Chat%7B%5Cgamma%7D_%7By,%201%7D%20Cov(X,%20T)"></p>
+<p>The denominator is also consolidated <img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0AVar(%5Ctilde%7BT%7D)%20&amp;=%20Var(T%20-%20(%5Chat%7B%5Cgamma%7D_%7BT,%200%7D%20+%20X%20%5Chat%7B%5Cgamma%7D_%7BT,%201%7D))%20%5C%5C%0A%20%20&amp;=%20Var(T)%20-%202%5Chat%7B%5Cgamma%7D_%7BT,%201%7D%20Cov(T,%20X)%20+%20%5Chat%7B%5Cgamma%7D_%7BT,%201%7D%5E2%20Var(X)%0A%5Cend%7Balign%7D"></p>
+<p>Note <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Cgamma%7D_%7BT,%201%7D%20=%20%5Cfrac%7BCov(T,%20X)%7D%7BVar(X)%7D">, which buys the reduction <img src="https://latex.codecogs.com/png.latex?Var(%5Ctilde%7BT%7D)%20=%20Var(T)%20-%20%5Chat%7B%5Cgamma%7D_%7BT,%201%7D%20Cov(T,%20X)"> This yields</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0A%5Chat%7B%5Cgamma%7D_%7By,%201%7D%20&amp;=%20%5Cfrac%7BCov(X,%20y)%7D%7BVar(X)%7D%20%5C%5C%0A%5Chat%7B%5Cgamma%7D_%7BT,%201%7D%20&amp;=%20%5Cfrac%7BCov(X,%20T)%7D%7BVar(X)%7D%20%5C%5C%0A%5Chat%7B%5Cbeta%7D%20&amp;=%20%5Cfrac%7BCov(y,%20T)%20-%20%5Chat%7B%5Cgamma%7D_%7By,%201%7D%20Cov(X,%20T)%7D%7BVar(T)%20-%20%5Chat%7B%5Cgamma%7D_%7BT,%201%7D%20Cov(X,%20T)%7D%0A%5Cend%7Balign%7D"></p>
+<p>In the same spirit of <a href="https://arxiv.org/pdf/2102.11297">conditionally sufficient statistics</a>, this compute strategy for the average treatment effect, controlling for a continuous covariate, can be estimated entirely with aggregated data.</p>
 </section>
+</section>
+<section id="cuped-is-a-special-case." class="level1">
+<h1>CUPED is a special case.</h1>
+<p>CUPED leverages <em>perfectly</em> randomized data, so <img src="https://latex.codecogs.com/png.latex?Cov(X,%20T)%20=%200">. Now we will rewrite the solution for <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Cbeta%7D"> in a clever way.</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0A%5Chat%7B%5Cbeta%7D%20&amp;=%20%5Cfrac%7BCov(y,%20T)%20-%20%5Chat%7B%5Cgamma%7D_%7By,%201%7D%20Cov(X,%20T)%7D%7BVar(T)%7D%20%5C%5C%0A%20%20&amp;=%20%5Cfrac%7BCov(y,%20T)%7D%7BVar(T)%7D%20-%20%5Chat%7B%5Cgamma%7D_%7By,%201%7D%20%5Cfrac%7BCov(X,%20T)%7D%7BVar(T)%7D%0A%5Cend%7Balign%7D"> which looks like the difference between 2 different OLS solutions: y regressed on T and X regressed on T. Knowing T is binary, each of these OLS solutions is simply the difference in group means:</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Cbeta%7D%20=%20E%5By%20%7C%20T%20=%201%5D%20-%20E%5By%20%7C%20T%20=%200%5D%20-%20%5Chat%7B%5Cgamma%7D_%7By,%201%7D%20(E%5BX%20%7C%20T%20=%201%5D%20-%20E%5BX%20%7C%20T%20=%200%5D)."> This is exactly the CUPED formulation! However, it truly reveals that CUPED is like FWL with an assumption that <img src="https://latex.codecogs.com/png.latex?E%5BX%20%7C%20T%20=%201%5D%20=%20E%5BX%20%7C%20T%20=%200%5D">. In small sample bias this may not be the case; by luck a user with large values for <img src="https://latex.codecogs.com/png.latex?X"> can be randomized into the treatment. In these scenarios, a pretreatment bias may be triggered. If it was due to randomization, instead of selection bias, we would simply control for it by modeling it into the outcome equation. Enforcing these values to be equal does not let us control for different baselines per arm.</p>
+<p>We lean into adopting the full FWL solution, since it also has an efficient compute strategy. Below, we show how to use it for ratio metrics, as well as doing inference with robust standard errors.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># Function to compute treatment effects from aggregated data</span></span>
+<span id="cb1-2">compute_ab_stats <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">function</span>(n1, sum_y1, sum_p1, sum_y2_1, sum_p2_1, sum_yp1,</span>
+<span id="cb1-3">                             n0, sum_y0, sum_p0, sum_y2_0, sum_p2_0, sum_yp0) {</span>
+<span id="cb1-4">  </span>
+<span id="cb1-5">  <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># 1. Combined Aggregates</span></span>
+<span id="cb1-6">  n <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> n1 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> n0</span>
+<span id="cb1-7">  s_y <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> sum_y1 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> sum_y0</span>
+<span id="cb1-8">  s_p <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> sum_p1 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> sum_p0</span>
+<span id="cb1-9">  s_yp <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> sum_yp1 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> sum_yp0</span>
+<span id="cb1-10">  s_p2 <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> sum_p2_1 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> sum_p2_0</span>
+<span id="cb1-11">  </span>
+<span id="cb1-12">  <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># Means</span></span>
+<span id="cb1-13">  y_bar1 <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> sum_y1 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> n1</span>
+<span id="cb1-14">  y_bar0 <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> sum_y0 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> n0</span>
+<span id="cb1-15">  p_bar1 <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> sum_p1 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> n1</span>
+<span id="cb1-16">  p_bar0 <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> sum_p0 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> n0</span>
+<span id="cb1-17">  p_bar_total <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> s_p <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> n</span>
+<span id="cb1-18">  t_bar <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> n1 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> n</span>
+<span id="cb1-19">  </span>
+<span id="cb1-20">  <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># 2. Covariances (Global)</span></span>
+<span id="cb1-21">  var_p <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> (s_p2 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> n) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> (p_bar_total<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">^</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>)</span>
+<span id="cb1-22">  cov_yp <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> (s_yp <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> n) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> (s_y <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> n) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> (s_p <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> n)</span>
+<span id="cb1-23">  cov_tp <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> (sum_p1 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> n) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> (t_bar <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> p_bar_total)</span>
+<span id="cb1-24">  cov_ty <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> (sum_y1 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> n) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> (t_bar <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> (s_y <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> n))</span>
+<span id="cb1-25">  var_t <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> t_bar <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> (<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span> <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> t_bar)</span>
+<span id="cb1-26">  </span>
+<span id="cb1-27">  <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># 3. FWL Coefficients</span></span>
+<span id="cb1-28">  gamma_y <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> cov_yp <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> var_p</span>
+<span id="cb1-29">  gamma_t <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> cov_tp <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> var_p</span>
+<span id="cb1-30">  </span>
+<span id="cb1-31">  <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># ATE (Beta) - Adjusted for noisy baseline</span></span>
+<span id="cb1-32">  ate <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> (cov_ty <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> gamma_y <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> cov_tp) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> (var_t <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> gamma_t <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> cov_tp)</span>
+<span id="cb1-33">  </span>
+<span id="cb1-34">  <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># 4. Group-Robust Variances</span></span>
+<span id="cb1-35">  <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># Var(y - gamma*p) = Var(y) + gamma^2*Var(p) - 2*gamma*Cov(y,p)</span></span>
+<span id="cb1-36">  var_y1 <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> (sum_y2_1 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> n1) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> (y_bar1<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">^</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>)</span>
+<span id="cb1-37">  var_p1 <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> (sum_p2_1 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> n1) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> (p_bar1<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">^</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>)</span>
+<span id="cb1-38">  cov_yp1 <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> (sum_yp1 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> n1) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> (y_bar1 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> p_bar1)</span>
+<span id="cb1-39">  resid_var1 <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> var_y1 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> (gamma_y<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">^</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span> <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> var_p1) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> (<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span> <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> gamma_y <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> cov_yp1)</span>
+<span id="cb1-40">  </span>
+<span id="cb1-41">  var_y0 <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> (sum_y2_0 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> n0) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> (y_bar0<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">^</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>)</span>
+<span id="cb1-42">  var_p0 <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> (sum_p2_0 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> n0) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> (p_bar0<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">^</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>)</span>
+<span id="cb1-43">  cov_yp0 <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> (sum_yp0 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> n0) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> (y_bar0 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> p_bar0)</span>
+<span id="cb1-44">  resid_var0 <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> var_y0 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> (gamma_y<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">^</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span> <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> var_p0) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> (<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span> <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> gamma_y <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> cov_yp0)</span>
+<span id="cb1-45">  </span>
+<span id="cb1-46">  <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># Standard Error of ATE</span></span>
+<span id="cb1-47">  se_ate <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sqrt</span>((resid_var1 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> n1) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> (resid_var0 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> n0))</span>
+<span id="cb1-48">  </span>
+<span id="cb1-49">  <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># 5. Relative Effect (Delta Method)</span></span>
+<span id="cb1-50">  mu0_adj <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> y_bar0 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> gamma_y <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> (p_bar0 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> p_bar_total)</span>
+<span id="cb1-51">  rel_effect <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> ate <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> mu0_adj</span>
+<span id="cb1-52">  </span>
+<span id="cb1-53">  <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># SE of Relative Effect (Delta Method approx)</span></span>
+<span id="cb1-54">  <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># Var(A/B) approx (Var(A)/B^2) + (A^2 * Var(B)/B^4)</span></span>
+<span id="cb1-55">  var_mu0 <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> resid_var0 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> n0</span>
+<span id="cb1-56">  se_rel <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sqrt</span>((se_ate<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">^</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span> <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> mu0_adj<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">^</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> (ate<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">^</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span> <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> var_mu0 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> mu0_adj<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">^</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">4</span>))</span>
+<span id="cb1-57">  </span>
+<span id="cb1-58">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">return</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">list</span>(</span>
+<span id="cb1-59">    <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">ate =</span> ate,</span>
+<span id="cb1-60">    <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">se_ate =</span> se_ate,</span>
+<span id="cb1-61">    <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">relative_effect =</span> rel_effect,</span>
+<span id="cb1-62">    <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">se_relative =</span> se_rel,</span>
+<span id="cb1-63">    <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">p_value =</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span> <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> (<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span> <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">pnorm</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">abs</span>(ate <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> se_ate)))</span>
+<span id="cb1-64">  ))</span>
+<span id="cb1-65">}</span></code></pre></div></div>
+</div>
+
+
 </section>
 
  ]]></description>

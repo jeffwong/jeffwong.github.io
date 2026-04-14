@@ -102,8 +102,98 @@ This yields
 \end{align}
 
 In the same spirit of [conditionally sufficient statistics](https://arxiv.org/pdf/2102.11297),
-this compute strategy for the average treatment effect, controlling for a continuous covariate,
-can be estimated entirely with aggregated data.
+this compute strategy for the average treatment effect, controlling for a 
+continuous covariate, can be estimated entirely with aggregated data.
+
+## Estimating $\hat{\beta}_2$
+
+Our original linear model is
+
+$$y = \beta_0 + T\beta_1 + X\beta_2 + \varepsilon.$$
+
+Thinking of $\beta_2$ as a nuisance variable, we partialed it out using the FWL.
+However, there is a way to compute $(\hat{\beta}_1, \hat{\beta}_2)$ simultaneously.
+Having $(\hat{\beta}_1, \hat{\beta}_2)$ will be useful for computing robust
+standard errors below.
+
+Consider the demeaned version of the problem, where there is no intercept.
+
+$$y = T\beta_1 + X\beta_2 + \varepsilon.$$
+
+Take the covariance with respect to $T$ on both sides to get
+
+\begin{align}
+Cov(y, T) &= Cov(T\beta_1 + X\beta_2 + \varepsilon, T) \\
+  &= \beta_1 Var(T) + \beta_2 Cov(X, T) + Cov(\varepsilon, T) \\
+  &= \beta_1 Var(T) + \beta_2 Cov(X, T)
+\end{align}
+
+where, at the least squares solution, $Cov(\varepsilon, T) = 0$.
+Similarly
+
+\begin{align}
+Cov(y, X) &= Cov(T\beta_1 + X\beta_2 + \varepsilon, X) \\
+  &= \beta_1 Cov(T, X) + \beta_2 Var(X) + Cov(\varepsilon, X) \\
+  &= \beta_1 Cov(T, X) + \beta_2 Var(X)
+\end{align}
+
+Because of this property of covariances, we can formulate a system
+relating $(\beta_1, \beta_2)$
+
+$$
+\begin{bmatrix} 
+Var(T) & Cov(T, X) \\ 
+Cov(T, X) & Var(X) 
+\end{bmatrix} 
+\begin{bmatrix} 
+\hat{\beta}_1 \\ 
+\hat{\beta}_2
+\end{bmatrix} 
+= 
+\begin{bmatrix} 
+Cov(y, T) \\ 
+Cov(y, X) 
+\end{bmatrix}
+$$
+
+This is a tiny $2 \times 2$ system. Using [Cramer's Rule](https://en.wikipedia.org/wiki/Cramer%27s_rule),
+we solve for the coefficients. First, we define the determinant of the covariance matrix.
+Then the estimates are
+
+\begin{align}
+D &= Var(T)Var(X) - Cov(T, X)^2 \\
+\hat{\beta}_1 &= \frac{Var(X)Cov(y, T) - Cov(T, X)Cov(y, X)}{D} \\
+\hat{\beta}_2 &= \frac{Var(T)Cov(y, X) - Cov(T, X)Cov(y, T)}{D}
+\end{align}
+
+## Standard Error for the Average Treatment Effect
+
+If we were fitting OLS, we would care about fitting robust standard errors
+for the parameters of the model. Using raw data from users, that can be done by
+simply fitting $\tilde{y}$ on $\tilde{T}$ and invoking standard errors.
+To fit the standard errors using aggregated data alone, we would need to keep track of
+the first, second, third, and fourth moments of the features. This is quite a hassle.
+
+Instead, we are going to relax what we mean by "robust". Under standard OLS,
+we would say that the variance for an individual residual, $\varepsilon_i$ is a 
+function of that individual's feature vector. We won't need this granularity
+given that we only care about the standard error of the average of the treatment effect.
+
+Again, in the same spirit of [conditionally sufficient statistics](https://arxiv.org/pdf/2102.11297),
+say there are $G$ groups of users in the data. For simplicity, say $G = 2$ and
+the groups are simply the control group and treatment group. We seek a group robust
+standard error, meaning the variance of the residuals for the control group
+can be different than the variance of the residuals for the treatment group.
+This leads us to
+
+$$\varepsilon_{i, g} = y_{i,g} - (\hat{\beta}_0 + \hat{\beta}_1 T_i + \hat{\beta}_2 y_{i, \text{pre}})$$
+If $g$ is defined by treatment or control, then $\hat{\beta}_0$ and $\hat{\beta}_1 T_i$ are
+constants within group $g$. Thus, the group variance is simply
+$$\sigma^2_g = Var(y_g - \hat{\beta}_2 y_{\text{pre}, g}) = Var(y_g) + \hat{\beta}_2^2 Var(y_{\text{pre}, g}) - 2 Cov(y_g, y_{\text{pre}, g})$$
+Using this formula for group variance we can compute $\sigma^2_T$ and $\sigma^2_C$.
+We can express the general formula for the variance of the ATE in terms of these variables.
+
+$$Var(\widehat{ATE}) = Var(\hat{\beta}_1) = \sigma^2_T/n_T + \sigma^2_C/n_C.$$
 
 # CUPED is a special case.
 
@@ -114,8 +204,8 @@ the solution for $\hat{\beta}$ in a clever way.
 \hat{\beta} &= \frac{Cov(y, T) - \hat{\gamma}_{y, 1} Cov(X, T)}{Var(T)} \\
   &= \frac{Cov(y, T)}{Var(T)} - \hat{\gamma}_{y, 1} \frac{Cov(X, T)}{Var(T)}
 \end{align}
-which looks like the difference between 2 different OLS solutions: y regressed on T
-and X regressed on T. Knowing T is binary, each of these OLS solutions is simply
+which looks like the difference between 2 different OLS solutions: $y$ regressed on $T$
+and $X$ regressed on $T$. Knowing $T$ is binary, each of these OLS solutions is simply
 the difference in group means:
 
 $$\hat{\beta} = E[y | T = 1] - E[y | T = 0] - \hat{\gamma}_{y, 1} (E[X | T = 1] - E[X | T = 0]).$$
@@ -126,9 +216,73 @@ can be randomized into the treatment. In these scenarios, a pretreatment bias
 may be triggered. If it was due to randomization, instead of selection bias, we
 would simply control for it by modeling it into the outcome equation. Enforcing
 these values to be equal does not let us control for different baselines per arm.
-
 We lean into adopting the full FWL solution, since it also has an efficient compute strategy.
-Below, we show how to use it for ratio metrics, as well as doing inference with robust standard errors.
+
+Nonetheless, to round out this section we derive robust standard errors for the ATE
+for CUPED. By enforcing the property $Cov(X, T) = 0$, we can efficiently estimate
+$\hat{\beta}_2 = \frac{Cov(y, X)}{Var(X)}$. This pops out by using FWL from the other
+direction, $\beta_2$ is the parameter of interest and we want to partial out the
+effect from $T$. Once we have $\hat{\beta}_2$, the exercise for the standard
+error of CUPED is the same as above.
+
+# For Relative Effects
+
+The relative effect wants to compute $$R = \frac{\hat{\beta}_1}{E[y | T = 0, y_\text{pre} = \bar{y}_\text{pre}]} = \frac{\hat{\beta}_1}{\hat{\beta}_0 + \hat{\beta}_2 \bar{y}_\text{pre}}$$
+
+We are going to take advantage of a clever rewrite of the denominator.
+In general, the intercept of a regression is computed as $\hat{\beta}_0 = \bar{y}_C - \hat{\beta}_2 \bar{X}_C$. Then, we can make the rewrite
+
+\begin{align}
+\hat{\mu}_C &= E[y | T = 0, y_\text{pre} = \bar{y}_\text{pre}] \\
+  &= \hat{\beta}_0 + \hat{\beta}_2 \bar{y}_\text{pre} \\
+  &= \bar{y}_C - \hat{\beta}_2 (\bar{X}_C - \bar{X}) \\
+R &= \frac{\hat{\beta}_1}{\hat{\mu}_C}
+\end{align}
+The relative effect can be computed using aggregated data.
+
+The standard error is computed using the delta method. In general, when the relative
+effect is expressed as the ratio of two random variables, $R = \frac{N}{D}$, the standard error
+of the estimator is 
+$$Var\left( \frac{\hat{N}}{\hat{D}} \right) \approx \frac{Var(\hat{N})}{\mu_D^2} + \frac{\mu_N^2 Var(\hat{D})}{\mu_D^4} - \frac{2 \mu_N Cov(\hat{N}, \hat{D})}{\mu_D^3}$$
+
+In the case of the relative effect, we will need to define the variance of
+the denominator.
+
+\begin{align}
+Var(\hat{\mu}_C) &= Var(\bar{y}_C) + Var(\hat{\beta}_2 (\bar{X}_C - \bar{X})) - 2Cov(\bar{y}_C, \hat{\beta}_2 (\bar{X}_C - \bar{X})) \\
+  &= \sigma^2_0 / n_0 + (\bar{X}_C - \bar{X})^2 Var(\hat{\beta}_2)
+\end{align}
+Because of centering, the covariance term is zero. 
+The final variance of the relative effect uses
+
+\begin{align}
+\sigma^2 &= \frac{(n_T - 1) \sigma^2_T + (n_C - 1) \sigma^2_C}{N - 3} \\
+SS_X &= (N-1) Var(X) \\
+R^2_{X,T} &= \frac{Cov(T, X)^2}{Var(T)Var(X)} \\
+Var(\hat{\beta}_2) &= \frac{\sigma^2}{SS_X (1 - R^2_{X,T})} \\
+Var(\hat{\mu}_C) &= \sigma^2_0 / n_0 + (\bar{X}_C - \bar{X})^2 Var(\hat{\beta}_2) \\
+Var(\hat{R}) &\approx \frac{Var(\hat{\beta}_1)}{\hat{\mu}_C^2} + 
+  \frac{\hat{\beta}_1^2 Var(\hat{\mu}_C)}{\hat{\mu}_C^4} - 
+  \frac{2 \hat{\beta}_1 Cov(\hat{\beta}_1, \hat{\mu}_C)}{\hat{\mu}_C^3}
+\end{align}
+
+Under perfect randomization $\bar{X}_C = \bar{X}_T = \bar{X}$ so $\hat{\mu}_C = \sigma^2_0 / n_0$,
+removing the need to track $Var(\hat{\beta}_2)$. This is a very convenient property.
+
+# Subtle differences between CUPED and OLS
+
+CUPED is very similar to OLS, but it is not the same. Throughout this post,
+we showed that CUPED is actually a special case of OLS, where it is assumed that
+the experiment is perfectly balanced, so $\bar{X}_T = \bar{X}_C = \bar{X}$,
+and that there is no pretreatment bias, so $Cov(T, X) = 0$. These assumptions
+were used in multiple places.
+
+1. It was used in the estimation of the average effect by skipping step 2 of FWL.
+2. It was used in the standard error of the ATE.
+3. It was used to compute $\hat{\mu}_C$, the mean of the adjusted baseline,
+which was subsequently used to compute the variance of the relative effect.
+
+# Code
 
 ```{r}
 # Function to compute treatment effects from aggregated data

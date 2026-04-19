@@ -76,7 +76,7 @@ However, a fully complete OLS solution would say
 
 Now we regress $\tilde{y}$ on $\tilde{T}$ to get the treatment effect.
 
-$$\hat{\beta} = \frac{Cov(\tilde{y}, \tilde{T})}{Var(\tilde{T})}$$
+$$\hat{\beta}_1 = \frac{Cov(\tilde{y}, \tilde{T})}{Var(\tilde{T})}$$
 
 The numerator can be consolidated.
 \begin{align}
@@ -100,7 +100,7 @@ This yields
 \begin{align}
 \hat{\gamma}_{y, 1} &= \frac{Cov(X, y)}{Var(X)} \\
 \hat{\gamma}_{T, 1} &= \frac{Cov(X, T)}{Var(X)} \\
-\hat{\beta} &= \frac{Cov(y, T) - \hat{\gamma}_{y, 1} Cov(X, T)}{Var(T) - \hat{\gamma}_{T, 1} Cov(X, T)}
+\hat{\beta}_1 &= \frac{Cov(y, T) - \hat{\gamma}_{y, 1} Cov(X, T)}{Var(T) - \hat{\gamma}_{T, 1} Cov(X, T)}
 \end{align}
 
 In the same spirit of [conditionally sufficient statistics](https://arxiv.org/pdf/2102.11297),
@@ -148,8 +148,8 @@ Var(T) & Cov(T, X) \\
 Cov(T, X) & Var(X) 
 \end{bmatrix} 
 \begin{bmatrix} 
-\hat{\beta}_1 \\ 
-\hat{\beta}_2
+\beta_1 \\ 
+\beta_2
 \end{bmatrix} 
 = 
 \begin{bmatrix} 
@@ -157,7 +157,7 @@ Cov(y, T) \\
 Cov(y, X) 
 \end{bmatrix}
 $$
-https://gemini.google.com/share/c6029ab2e2e4
+
 This is a tiny $2 \times 2$ system. Using [Cramer's Rule](https://en.wikipedia.org/wiki/Cramer%27s_rule),
 we write a solution for the coefficients in closed form. 
 First, we define the determinant of the covariance matrix. Then the estimates are
@@ -193,7 +193,10 @@ As we introduce $X$ into the regression, the OLS formulation would say
 the variance of each $y_i$ is different and is a function of the $x_i$.
 This is formalized through the sandwich estimator.
 
-$$\text{Var}(\hat{\beta}) = (X^T X)^{-1} \left( \sum_{i=1}^{n} x_i x_i^T \hat{\epsilon}_i^2 \right) (X^T X)^{-1}$$
+\begin{align}
+M &= \begin{bmatrix} 1 & T & X \end{bmatrix} \\
+Var(\hat{\beta}) &= (M^T M)^{-1} \left( \sum_{i=1}^{n} m_i m_i^T \hat{\varepsilon}_i^2 \right) (M^T M)^{-1}
+\end{align}
 
 After running FWL steps 1-3, we can invoke the sandwich estimator using the residuals
 $\tilde{y}$ and $\tilde{T}$. 
@@ -206,12 +209,8 @@ To compute the traditional sandwich, we either need the individual level data,
 or we need fourth order aggregates. The bread matrix can be computed using
 second order aggregates, which is what is used to get the point estimates.
 However, the meat matrix is much more challenging. The intuition behind it is that
-the $\varepsilon$ term has $x$ in it, so $x_i x_i^T \hat{\varepsilon}_i^2$ has
-$x^4$ in it. The full expansion is
-
-$$\sum x_i^2 \hat{\varepsilon}_i^2 = \sum x_i^2 y_i^2 - 2\hat{\beta}_2 \sum x_i^3 y_i + \hat{\beta}_2^2 \sum x_i^4$$
-
-If we are able to store the 4th order moments, we can completely recover the HC0
+the $\varepsilon$ term has $x$ in it, so $m_i m_i^T \hat{\varepsilon}_i^2$ has
+$x^4$ in it. If we are able to store the 4th order moments, we can completely recover the HC0
 covariance matrix. But this is a hassle. If we want to limit ourselves to the best approximation to the
 standard error using just second order aggregates, we can formulate the
 group robust standard error.
@@ -222,9 +221,9 @@ Finding an estimator that only uses 2nd order moments would be very convenient.
 The best estimator operating within these constraints is the HC by group sandwich
 estimator. Similar to how the t test allowed variability across the treatment
 and control groups, we allow the meat matrix to vary by groups. However, we do not
-allow the meat matrix to vary by individual $x_i$ and $\hat{\varepsilon}_i$.
+allow the meat matrix to vary by individual $m_i$ and $\hat{\varepsilon}_i$.
 The formulation would be 
-$$\widehat{\text{Var}}(\hat{\beta}) = (X^T X)^{-1} \left[ \sum_g \sigma_g^2 (X_g^T X_g) \right] (X^T X)^{-1}$$
+$$\widehat{\text{Var}}(\hat{\beta}) = (M^T M)^{-1} \left[ \sum_g \sigma_g^2 (X_g^T X_g) \right] (M^T M)^{-1}$$
 
 The residual variance for a group $g$ is $\sigma^2_g$, and is defined
 $$Var(\varepsilon_{i, g}) = Var(y_{i,g} - (\hat{\beta}_0 + \hat{\beta}_1 T_i + \hat{\beta}_2 y_{i, \text{pre}}))$$
@@ -233,7 +232,7 @@ If $g$ is defined by treatment or control, then $\hat{\beta}_0$ and $\hat{\beta}
 constants within group $g$. Thus, the group variance is simply
 $$\sigma^2_g = Var(y_g - \hat{\beta}_2 y_{\text{pre}, g}) = Var(y_g) + \hat{\beta}_2^2 Var(y_{\text{pre}, g}) - 2 Cov(y_g, y_{\text{pre}, g})$$
 
-Then the entire covariance matrix for the parameters can be derived from aggregated data.
+The entire covariance matrix for the parameters can be derived from aggregated data.
 Remember, this is the best approximation possible to the sandwich when only 2nd order
 information is available.
 
@@ -241,32 +240,36 @@ information is available.
 
 CUPED leverages *perfectly* randomized data, so $Cov(X, T) = 0$. This effectively
 makes step 2 of FWL a no-op. Now we will rewrite
-the solution for $\hat{\beta}$ in a clever way, based on our FWL solution.
+the solution for $\hat{\beta}_1$ in a clever way, based on our FWL solution.
 
 \begin{align}
-\hat{\beta} &= \frac{Cov(y, T) - \hat{\gamma}_{y, 1} Cov(X, T)}{Var(T)} \\
+\hat{\beta}_1 &= \frac{Cov(y, T) - \hat{\gamma}_{y, 1} Cov(X, T)}{Var(T)} \\
   &= \frac{Cov(y, T)}{Var(T)} - \hat{\gamma}_{y, 1} \frac{Cov(X, T)}{Var(T)}
 \end{align}
 which looks like the difference between 2 different OLS solutions: $y$ regressed on $T$
 and $X$ regressed on $T$. Knowing $T$ is binary, each of these OLS solutions is simply
 the difference in group means:
 
-$$\hat{\beta} = E[y | T = 1] - E[y | T = 0] - \hat{\gamma}_{y, 1} (E[X | T = 1] - E[X | T = 0]).$$
-This is exactly the CUPED formulation! It is a difference in means
+\begin{align}
+\hat{\beta}_1 &= E[y | T = 1] - E[y | T = 0] - \hat{\gamma}_{y, 1} (E[X | T = 1] - E[X | T = 0]) \\
+  &= \biggl(E[y | T = 1] - \hat{\gamma}_{y, 1} E[X | T = 1] \biggr) - \biggl(E[y | T = 0] - \hat{\gamma}_{y, 1} E[X | T = 0] \biggr)
+\end{align}
+
+**This is exactly the CUPED formulation!** It is a difference in means
 that adjusts for a difference in the pretreatment baseline. Or, it can be thought
 of as the difference in the means of the adjusted $y$ variable.
 CUPED is an output of FWL when step 2 is skipped. But this requires $Cov(X, T) = 0$. 
 
-Since CUPED is a difference in the means of the adjusted $y$, its variance can
-be written simply as 
-$$Var(\widehat{ATE}) = \frac{Var(y_T - \theta x_T)}{n_T} + \frac{Var(y_C - \theta x_C)}{n_T}.$$
+Since CUPED is a difference in the means of the adjusted $y$, its variance looks
+just like the variance of a t test.
+$$Var(\widehat{ATE}) = \frac{Var(y_T - \hat{\gamma}_{y, 1}x_T)}{n_T} + \frac{Var(y_C - \hat{\gamma}_{y, 1} x_C)}{n_C}.$$
 
 Ironically, this formulation of the variance is neither equal to HC variances,
 nor is it equal to group robust variances. This variance simply weights the variance
 of the residuals according to their sample size. The group robust variance weights
-the residuals according to $X_g^T X_g$. At the same time, $\theta$ is assumed to
+the residuals according to $X_g^T X_g$. Under CUPED, $\hat{\gamma}_{y, 1}$ is assumed to
 have no estimation variance of its own, it is a fixed constant. Moreover, that
-$\theta$ variable is derived using the assumption $Cov(X, T) = 0$.
+$\hat{\gamma}_{y, 1}$ variable is derived using the assumption $Cov(X, T) = 0$.
 
 CUPED and OLS (via 2nd order aggs) differ for small samples, and cases of pretreatment bias.
 By luck, a user with large values for $X$ can be randomized into the treatment. 
@@ -316,19 +319,6 @@ Var(\hat{R}) &\approx \frac{Var(\hat{\beta}_1)}{\hat{\mu}_C^2} +
 
 Under perfect randomization $\bar{X}_C = \bar{X}_T = \bar{X}$ so $\hat{\mu}_C = \sigma^2_0 / n_0$,
 removing the need to track $Var(\hat{\beta}_2)$. This is a very convenient property.
-
-# Subtle differences between CUPED and OLS
-
-CUPED is very similar to OLS, but it is not the same. Throughout this post,
-we showed that CUPED is actually a special case of OLS, where it is assumed that
-the experiment is perfectly balanced, so $\bar{X}_T = \bar{X}_C = \bar{X}$,
-and that there is no pretreatment bias, so $Cov(T, X) = 0$. These assumptions
-were used in multiple places.
-
-1. It was used in the estimation of the average effect by skipping step 2 of FWL.
-2. It was used in the standard error of the ATE.
-3. It was used to compute $\hat{\mu}_C$, the mean of the adjusted baseline,
-which was subsequently used to compute the variance of the relative effect.
 
 # Code
 

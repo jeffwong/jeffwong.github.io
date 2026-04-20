@@ -12,6 +12,10 @@ require(ggplot2)
 require(gridExtra)
 require(sandwich)
 require(lmtest)
+library(tidyverse)
+library(sandwich)
+library(lmtest)
+require(broom)
 ```
 
 [CUPED](https://dl.acm.org/doi/pdf/10.1145/2433396.2433413) is a well known technique to greatly increase statistical power in a controlled experiment. The CUPED formulation has similarities to the OLS model
@@ -223,7 +227,7 @@ estimator. Similar to how the t test allowed variability across the treatment
 and control groups, we allow the meat matrix to vary by groups. However, we do not
 allow the meat matrix to vary by individual $m_i$ and $\hat{\varepsilon}_i$.
 The formulation would be 
-$$\widehat{\text{Var}}(\hat{\beta}) = (M^T M)^{-1} \left[ \sum_g \sigma_g^2 (X_g^T X_g) \right] (M^T M)^{-1}$$
+$$\widehat{\text{Var}}(\hat{\beta}) = (M^T M)^{-1} \left( \sum_g \sigma_g^2 (X_g^T X_g) \right) (M^T M)^{-1}$$
 
 The residual variance for a group $g$ is $\sigma^2_g$, and is defined
 $$Var(\varepsilon_{i, g}) = Var(y_{i,g} - (\hat{\beta}_0 + \hat{\beta}_1 T_i + \hat{\beta}_2 y_{i, \text{pre}}))$$
@@ -236,7 +240,7 @@ The entire covariance matrix for the parameters can be derived from aggregated d
 Remember, this is the best approximation possible to the sandwich when only 2nd order
 information is available.
 
-# CUPED is a special case.
+# CUPED is a special case. But it is not OLS.
 
 CUPED leverages *perfectly* randomized data, so $Cov(X, T) = 0$. This effectively
 makes step 2 of FWL a no-op. Now we will rewrite
@@ -264,24 +268,159 @@ Since CUPED is a difference in the means of the adjusted $y$, its variance looks
 just like the variance of a t test.
 $$Var(\widehat{ATE}) = \frac{Var(y_T - \hat{\gamma}_{y, 1}x_T)}{n_T} + \frac{Var(y_C - \hat{\gamma}_{y, 1} x_C)}{n_C}.$$
 
-Ironically, this formulation of the variance is neither equal to HC variances,
+## Major Differences with OLS
+
+There are 3 major differences between CUPED and OLS
+
+1. They produce different point estimates for the ATE. CUPED hyper optimizes
+for the fact that $Cov(T, X) = 0$ and pushes the estimator closer to the
+asymptotic properties.
+2. CUPED does not produce sandwich variances.
+3. CUPED is more vulernable to imperfect experiment environments, such as
+pretreatment biases.
+
+Regarding 2. Ironically, the above formulation of the variance is neither equal to HC variances,
 nor is it equal to group robust variances. This variance simply weights the variance
 of the residuals according to their sample size. The group robust variance weights
-the residuals according to $X_g^T X_g$. Under CUPED, $\hat{\gamma}_{y, 1}$ is assumed to
-have no estimation variance of its own, it is a fixed constant. Moreover, that
-$\hat{\gamma}_{y, 1}$ variable is derived using the assumption $Cov(X, T) = 0$.
+the residuals according to $X_g^T X_g$. This is a more desirable property when
+data has whales; the $X_g^T X_g$ term makes the variance larger for whales that
+have high [leverage](https://en.wikipedia.org/wiki/Leverage_(statistics)). 
+Under CUPED, $\hat{\gamma}_{y, 1}$ is assumed to have no estimation variance of
+its own, it is a fixed constant. Moreover, that $\hat{\gamma}_{y, 1}$ variable 
+is derived using the assumption $Cov(X, T) = 0$.
 
-CUPED and OLS (via 2nd order aggs) differ for small samples, and cases of pretreatment bias.
-By luck, a user with large values for $X$ can be randomized into the treatment. 
-In these scenarios, a pretreatment bias may be triggered and CUPED's assumption
-of $Cov(T, X) = 0$ is vulnerable. On the other hand, OLS will remain robust.
+Regarding 3. CUPED and OLS (via 2nd order aggs) differ in cases of pretreatment bias.
+Say that the true linear model has a heterogeneous effect, so 
+$$y = \beta_0 + T\beta_1 + X\beta_2 + (T \cdot X)\beta_3 + \varepsilon$$
+Also say that there is a pretreatment imbalance, where there are more whales in
+the treatment and these whales have large values of $X$, and hence large treatment
+effects.
+Say we only estimate the smaller model via CUPED
+$$y = \beta_0 + T\beta_1 + X\beta_2 + \varepsilon$$
+This model is missing the $(T \cdot X)\beta_3$ term. CUPED's $\beta_2$ value,
+which is not estimated jointly with $T$, will absorb some of $\beta_3$. As a result,
+when we subtract $y - \beta_2 X$ to get the adjusted $y$, the treatment group
+will be over corrected. This creates bias on the treatment effect. 
 
-# For Relative Effects
+On the other hand, in this heterogeneous treatment effect setting, OLS is less biased.
+When we estimate $\beta_2$, we do this jointly together with $\beta_1$.
+This prevents $\beta_2$ from absorbing some of the heterogeneous effect.
+This third difference between CUPED and OLS is hard to see, so we demonstrate
+with an example.
 
-The relative effect wants to compute $$R = \frac{\hat{\beta}_1}{E[y | T = 0, y_\text{pre} = \bar{y}_\text{pre}]} = \frac{\hat{\beta}_1}{\hat{\beta}_0 + \hat{\beta}_2 \bar{y}_\text{pre}}$$
+Below we simulate data that has a heterogeneous effect along the $X$ variable.
+There are some whales in the data that have large $X$. Also, the treatment group has
+more whales in it.
 
-We are going to take advantage of a clever rewrite of the denominator.
-In general, the intercept of a regression is computed as $\hat{\beta}_0 = \bar{y}_C - \hat{\beta}_2 \bar{X}_C$. Then, we can make the rewrite
+```{r}
+set.seed(100)
+n <- 100000
+baseline_effect <- 1
+hte_factor <- 1
+
+# Generate X with whales
+X <- rlnorm(n, meanlog = 2, sdlog = 1)
+
+# Simulate imbalance
+df <- data.frame(X = X) %>%
+  arrange(desc(X)) %>%
+  mutate(
+    # Create a propensity vector where the first half has high propensity
+    # but the second half has low propensity. Since the data is sorted this
+    # corresponds to a correlation with X.
+    prob_t = c(rep(0.6, n/2), rep(0.4, n/2)),
+    treated = rbinom(n, 1, prob_t),
+    noise = rnorm(n, 0, 15)
+   ) %>%
+  mutate(
+    effect_if_treated = rnorm(n, baseline_effect, 1) + hte_factor * X,
+    y = noise + rnorm(n, 1, 1)*X + effect_if_treated * treated
+  )
+```
+
+In this example, there is no SRM detected, but there is a pretreatment bias detected.
+
+```{r}
+df$treated %>% table() %>% chisq.test(p = c(.5, .5))
+
+# Demonstrate pretreatment imbalance
+lm(X ~ treated, df) %>% summary() %>% tidy()
+```
+
+Now we move to the model. The best model would have modeled the interaction term.
+But we will benchmark CUPED and OLS with main effects only.
+
+```{r}
+lm(y ~ treated * X, data = df) %>% summary() %>% tidy()
+```
+
+The CUPED model produces an ATE that is small, as well as an SE that is artificially
+small. The ATE should be larger, but CUPED's estimation for the $X$ variable does not
+see the $T$ variable, and hence absorbs part of the effect.
+
+```{r}
+# CUPED model
+theta <- cov(df$y, df$X) / var(df$X)
+df <- df %>%
+  mutate(y_cuped = y - theta * X)
+cuped_res <- t.test(y_cuped ~ treated, data = df)
+cuped_ate <- diff(cuped_res$estimate)
+cuped_se <- cuped_res$stderr
+
+# OLS results
+ols_model <- lm(y ~ treated + X, data = df)
+ols_res <- coeftest(ols_model, vcov = vcovHC(ols_model, type = "HC0"))
+ols_ate <- ols_res["treated", "Estimate"]
+ols_se <- ols_res["treated", "Std. Error"]
+
+# Comparison
+cat("--- Simulation Results ---\n")
+cat(sprintf("True Population Avg Effect:  %.4f\n", mean(df$effect_if_treated)))
+cat(sprintf("CUPED ATE:                   %.4f (SE: %.4f)\n", cuped_ate, cuped_se))
+cat(sprintf("OLS ATE (Group-Robust):      %.4f (SE: %.4f)\n", ols_ate, ols_se))
+```
+
+# For Relative Effects (Copy)
+
+The relative effect wants to compute $$\hat{R} = \frac{\hat{\beta}_1}{E[y | T = 0, y_\text{pre} = \bar{y}_\text{pre}]} = \frac{\hat{\beta}_1}{\hat{\beta}_0 + \hat{\beta}_2 \bar{y}_\text{pre}} = \frac{\hat{\beta}_1}{\hat{\mu}_C}$$
+
+Since we were able to derive the point estimates of the parameter vector $\hat{\beta}$,
+the point estimate of the relative effect is simple. Now onto its variance.
+
+Using a trick from [Delta Vectors](https://arxiv.org/pdf/2412.08788), we can write
+the denominator can be written as a multiplication with the parameter vector.
+Then its variance is simply
+
+\begin{align}
+\hat{\mu}_C &= \begin{bmatrix} 1 & 0 & \bar{y}_\text{pre} \end{bmatrix} \hat{\beta} \\
+Var(\hat{\mu}_C) &= \begin{bmatrix} 1 & 0 & \bar{y}_\text{pre} \end{bmatrix} 
+Cov(\hat{\beta})
+\begin{bmatrix} 1 \\ 0 \\ \bar{y}_\text{pre} \end{bmatrix}
+\end{align}
+
+The standard error for $\hat{R}$ is computed using the delta method. In general, when the relative
+effect is expressed as the ratio of two random variables, $R = \frac{N}{D}$, the standard error
+of the estimator is 
+$$Var\left( \frac{\hat{N}}{\hat{D}} \right) \approx \frac{Var(\hat{N})}{\mu_D^2} + \frac{\mu_N^2 Var(\hat{D})}{\mu_D^4} - \frac{2 \mu_N Cov(\hat{N}, \hat{D})}{\mu_D^3}$$
+
+The final variance of the relative effect uses
+
+\begin{align}
+Var(\hat{\mu}_C) &= \begin{bmatrix} 1 & 0 & \bar{y}_\text{pre} \end{bmatrix} 
+Cov(\hat{\beta})
+\begin{bmatrix} 1 \\ 0 \\ \bar{y}_\text{pre} \end{bmatrix} \\
+Cov(\hat{\beta}_1, \hat{\mu}_c) &= \begin{bmatrix} 0 & 1 & 0 \end{bmatrix} 
+Cov(\hat{\beta})
+\begin{bmatrix} 1 \\ 0 \\ \bar{y}_\text{pre} \end{bmatrix} \\
+Var(\hat{R}) &\approx \frac{Var(\hat{\beta}_1)}{\hat{\mu}_C^2} + 
+  \frac{\hat{\beta}_1^2 Var(\hat{\mu}_C)}{\hat{\mu}_C^4} - 
+  \frac{2 \hat{\beta}_1 Cov(\hat{\beta}_1, \hat{\mu}_C)}{\hat{\mu}_C^3}
+\end{align}
+
+## Leveraging CUPED Assumption
+
+When leveraging CUPED's assumption of perfect randomization, there is a clever
+rewrite. In general, the intercept of a regression is computed as $\hat{\beta}_0 = \bar{y}_C - \hat{\beta}_2 \bar{X}_C$. Then, we can make the rewrite
 
 \begin{align}
 \hat{\mu}_C &= E[y | T = 0, y_\text{pre} = \bar{y}_\text{pre}] \\
@@ -289,36 +428,23 @@ In general, the intercept of a regression is computed as $\hat{\beta}_0 = \bar{y
   &= \bar{y}_C - \hat{\beta}_2 (\bar{X}_C - \bar{X}) \\
 R &= \frac{\hat{\beta}_1}{\hat{\mu}_C}
 \end{align}
-The relative effect can be computed using aggregated data.
 
-The standard error is computed using the delta method. In general, when the relative
-effect is expressed as the ratio of two random variables, $R = \frac{N}{D}$, the standard error
-of the estimator is 
-$$Var\left( \frac{\hat{N}}{\hat{D}} \right) \approx \frac{Var(\hat{N})}{\mu_D^2} + \frac{\mu_N^2 Var(\hat{D})}{\mu_D^4} - \frac{2 \mu_N Cov(\hat{N}, \hat{D})}{\mu_D^3}$$
-
-In the case of the relative effect, we will need to define the variance of
-the denominator.
+For variance
 
 \begin{align}
 Var(\hat{\mu}_C) &= Var(\bar{y}_C) + Var(\hat{\beta}_2 (\bar{X}_C - \bar{X})) - 2Cov(\bar{y}_C, \hat{\beta}_2 (\bar{X}_C - \bar{X})) \\
-  &= \sigma^2_0 / n_0 + (\bar{X}_C - \bar{X})^2 Var(\hat{\beta}_2)
+  &= \sigma^2_C / n_C
 \end{align}
 Because of centering, the covariance term is zero. 
 The final variance of the relative effect uses
 
 \begin{align}
-\sigma^2 &= \frac{(n_T - 1) \sigma^2_T + (n_C - 1) \sigma^2_C}{N - 3} \\
-SS_X &= (N-1) Var(X) \\
-R^2_{X,T} &= \frac{Cov(T, X)^2}{Var(T)Var(X)} \\
-Var(\hat{\beta}_2) &= \frac{\sigma^2}{SS_X (1 - R^2_{X,T})} \\
-Var(\hat{\mu}_C) &= \sigma^2_0 / n_0 + (\bar{X}_C - \bar{X})^2 Var(\hat{\beta}_2) \\
+Var(\hat{\mu}_C) &= \sigma^2_C / n_C \\
+Cov(\hat{\beta}_1, \hat{\mu}_C) &= -\sigma^2_C / n_C \\
 Var(\hat{R}) &\approx \frac{Var(\hat{\beta}_1)}{\hat{\mu}_C^2} + 
   \frac{\hat{\beta}_1^2 Var(\hat{\mu}_C)}{\hat{\mu}_C^4} - 
   \frac{2 \hat{\beta}_1 Cov(\hat{\beta}_1, \hat{\mu}_C)}{\hat{\mu}_C^3}
 \end{align}
-
-Under perfect randomization $\bar{X}_C = \bar{X}_T = \bar{X}$ so $\hat{\mu}_C = \sigma^2_0 / n_0$,
-removing the need to track $Var(\hat{\beta}_2)$. This is a very convenient property.
 
 # Code
 
@@ -339,178 +465,6 @@ model = lm(y ~ treated + x, data)
 
 coeftest(model, vcovHC(model, "HC0"))
 ```
-
-```{r}
-#' Compute Treatment Effects from Aggregated Data using FWL
-#'
-#' @description Calculates the Average Treatment Effect (ATE) and Relative Lift 
-#' using the Frisch-Waugh-Lovell (FWL) theorem. This approach effectively 
-#' residualizes the outcome and treatment against the covariate using 
-#' aggregate-level sufficient statistics.
-#'
-#' @param n_treatment Count of users in Treatment
-#' @param sum_y_treatment Sum of outcomes in Treatment
-#' @param sum_x_treatment Sum of covariates in Treatment
-#' @param sum_y2_treatment Sum of squared outcomes in Treatment
-#' @param sum_x2_treatment Sum of squared covariates in Treatment
-#' @param sum_y_x_treatment Sum of cross-products (y*p) in Treatment
-#' @param n_control Count of users in Control
-#' @param sum_y_control Sum of outcomes in Control
-#' @param sum_x_control Sum of covariates in Control
-#' @param sum_y2_control Sum of squared outcomes in Control
-#' @param sum_x2_control Sum of squared covariates in Control
-#' @param sum_y_x_control Sum of cross-products (y*p) in Control
-#'
-#' @return A list containing:
-#' \itemize{
-#'   \item \code{ate}: The absolute average treatment effect.
-#'   \item \code{se_ate}: The robust standard error of the ATE.
-#'   \item \code{relative_effect}: The lift relative to the control baseline.
-#'   \item \code{se_relative}: The standard error of the relative effect.
-#'   \item \code{p_value}: Two-tailed p-value for the ATE.
-#' }
-#' 
-#' @export
-compute_ab_stats <- function(n_treatment, sum_y_treatment, sum_x_treatment, sum_y2_treatment, sum_x2_treatment, sum_y_x_treatment,
-                             n_control, sum_y_control, sum_x_control, sum_y2_control, sum_x2_control, sum_y_x_control) {
-
-  # Sums
-  n <- n_treatment + n_control
-  sum_y <- sum_y_treatment + sum_y_control
-  sum_x <- sum_x_treatment + sum_x_control
-  sum_y_x <- sum_y_x_treatment + sum_y_x_control
-  sum_x2 <- sum_x2_treatment + sum_x2_control
-  
-  # Means
-  mean_y_treatment <- sum_y_treatment / n_treatment
-  mean_y_control <- sum_y_control / n_control
-  mean_x_treatment <- sum_x_treatment / n_treatment
-  mean_x_control <- sum_x_control / n_control
-  mean_x <- sum_x / n
-  mean_t <- n_treatment / n
-  
-  # Covariances
-  var_x <- ((sum_x2 / n) - (mean_x^2)) * (n / (n-1))
-  cov_y_x <- ((sum_y_x / n) - (sum_y / n) * (sum_x / n)) * (n / (n-1))
-  cov_t_x <- ((sum_x_treatment / n) - (mean_t * mean_x)) * (n / (n-1))
-  cov_t_y <- ((sum_y_treatment / n) - (mean_t * (sum_y / n))) * (n / (n-1))
-  var_t <- mean_t * (1 - mean_t) # bernoulli variance
-
-  # FWL Coefficients
-  gamma_y <- cov_y_x / var_x
-  gamma_t <- cov_t_x / var_x
-
-  # Group-Robust Variances
-  # Residual variance calculation (Var(y - gamma*x))
-  var_from_aggs = function(sum_y2, n, mean_y) {
-    ((sum_y2 / n) - (mean_y)^2) * (n / (n - 0))
-  }
-  
-  var_y_treatment = var_from_aggs(sum_y2_treatment, n_treatment, mean_y_treatment)
-  var_x_treatment = var_from_aggs(sum_x2_treatment, n_treatment, mean_x_treatment)
-  cov_y_x_treatment <- ((sum_y_x_treatment / n_treatment) - (mean_y_treatment * mean_x_treatment))  * (n_treatment / (n_treatment-0))
-  resid_var1 <- var_y_treatment + (gamma_y^2 * var_x_treatment) - (2 * gamma_y * cov_y_x_treatment)
-
-  var_y_control <- var_from_aggs(sum_y2_control, n_control, mean_y_control)
-  var_x_control <- var_from_aggs(sum_x2_control, n_control, mean_x_control)
-  cov_y_x_control <- ((sum_y_x_control / n_control) - (mean_y_control * mean_x_control)) * (n_control / (n_control-0))
-  resid_var0 <- var_y_control + (gamma_y^2 * var_x_control) - (2 * gamma_y * cov_y_x_control)
-
-  # ATE
-  
-  D = var_t * var_x - cov_t_x^2
-  ate = beta1 = (var_x * cov_t_y - cov_t_x * cov_y_x) / D
-  beta2 = (var_t * cov_y_x - cov_t_x * cov_t_y) / D
-  se_ate <- sqrt((resid_var1 / n_treatment) + (resid_var0 / n_control))
-  
-  # Relative Effect
-  # Correcting the control mean by the covariate imbalance
-  mu0_adj <- mean_y_control - gamma_y * (mean_x_control - mean_x)
-  rel_effect <- ate / mu0_adj
-  
-  # SE of Relative Effect
-  var_mu0 <- resid_var0 / n_control
-  se_rel <- sqrt((se_ate^2 / mu0_adj^2) + (ate^2 * var_mu0 / mu0_adj^4))
-  
-  return(list(
-    ate = ate,
-    se_ate = se_ate,
-    relative_effect = rel_effect,
-    se_relative = se_rel,
-    p_value = 2 * (1 - pnorm(abs(ate / se_ate)))
-  ))
-}
-```
-
-# New version
-
-```{r}
-compute_ab_stats <- function(n_treatment, sum_y_treatment, sum_x_treatment, sum_y2_treatment, sum_x2_treatment, sum_y_x_treatment,
-                             n_control, sum_y_control, sum_x_control, sum_y2_control, sum_x2_control, sum_y_x_control) {
-
-  n <- n_treatment + n_control
-  mean_t <- n_treatment / n
-  
-  # 1. Global Variances and Covariances
-  # We use the raw sample variance/cov (1/n) to match OLS matrix math exactly
-  var_x <- (sum_x2_treatment + sum_x2_control)/n - ((sum_x_treatment + sum_x_control)/n)^2
-  var_t <- mean_t * (1 - mean_t)
-  
-  cov_tx <- (sum_x_treatment/n) - (mean_t * (sum_x_treatment + sum_x_control)/n)
-  cov_ty <- (sum_y_treatment/n) - (mean_t * (sum_y_treatment + sum_y_control)/n)
-  cov_xy <- (sum_y_x_treatment + sum_y_x_control)/n - 
-            ((sum_x_treatment + sum_x_control)/n * (sum_y_treatment + sum_y_control)/n)
-
-  # 2. Solve the OLS System (y = beta0 + ate*T + slope_x*x)
-  # Determinant of the covariance matrix
-  D <- var_t * var_x - cov_tx^2
-  
-  ate <- (var_x * cov_ty - cov_tx * cov_xy) / D
-  slope_x <- (var_t * cov_xy - cov_tx * cov_ty) / D
-
-  # 3. Residual Variances (HC0 style)
-  # Note: Use slope_x (partial slope), NOT gamma_y (simple slope)
-  calc_resid_var <- function(n_g, s_y2, s_x2, s_yx, m_y, m_x, b_x) {
-    v_y <- (s_y2 / n_g) - m_y^2
-    v_x <- (s_x2 / n_g) - m_x^2
-    c_xy <- (s_yx / n_g) - (m_y * m_x)
-    # Var(y - slope_x * x) inside the group
-    return(v_y + (b_x^2 * v_x) - (2 * b_x * c_xy))
-  }
-
-  mean_y_c <- sum_y_control / n_control
-  mean_x_c <- sum_x_control / n_control
-  mean_y_t <- sum_y_treatment / n_treatment
-  mean_x_t <- sum_x_treatment / n_treatment
-
-  v_resid_t <- calc_resid_var(n_treatment, sum_y2_treatment, sum_x2_treatment, sum_y_x_treatment, mean_y_t, mean_x_t, slope_x)
-  v_resid_c <- calc_resid_var(n_control, sum_y2_control, sum_x2_control, sum_y_x_control, mean_y_c, mean_x_c, slope_x)
-
-  # 4. Robust SE for ATE
-  # This formula accounts for the correlation between T and x (The 1-rho^2 factor)
-  rho2 <- (cov_tx^2) / (var_t * var_x)
-  se_ate <- sqrt(((v_resid_t / n_treatment) + (v_resid_c / n_control)) / (1 - rho2))
-
-  # 5. Relative Effect (Lift)
-  # mu0_adj is the expected y in control if x was at the global mean
-  mean_x_global <- (sum_x_treatment + sum_x_control) / n
-  mu0_adj <- mean_y_c - slope_x * (mean_x_c - mean_x_global)
-  rel_effect <- ate / mu0_adj
-  
-  # Delta Method for SE of relative lift (assuming mu0_adj is independent of ate for simplicity)
-  se_rel <- sqrt((se_ate^2 / mu0_adj^2) + (ate^2 * (v_resid_c/n_control) / mu0_adj^4))
-
-  return(list(
-    ate = ate,
-    se_ate = se_ate,
-    relative_effect = rel_effect,
-    se_relative = se_rel,
-    p_value = 2 * (1 - pnorm(abs(ate / se_ate)))
-  ))
-}
-```
-
-# Most robust using only second order approximation
 
 ```{r}
 compute_ab_stats <- function(n_treatment, sum_y_treatment, sum_x_treatment, sum_y2_treatment, sum_x2_treatment, sum_y_x_treatment,

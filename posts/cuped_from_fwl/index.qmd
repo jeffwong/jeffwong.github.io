@@ -3,6 +3,12 @@ title: "Creating CUPED from FWL (under construction)"
 author: "Jeffrey Wong"
 date: "2026-02-02"
 categories: [experimentation, statistics]
+format:
+  html:
+    toc: true
+    toc-location: left
+    toc-depth: 3
+    toc-title: Contents
 ---
 
 ```{r setup, include=FALSE}
@@ -20,7 +26,7 @@ require(broom)
 
 [CUPED](https://dl.acm.org/doi/pdf/10.1145/2433396.2433413) is a well known technique to greatly increase statistical power in a controlled experiment. The CUPED formulation has similarities to the OLS model
 
-$$y = \beta_0 + T\beta_1 + (y_{\text{pre}}-1_n \mu_c) \beta_2 + \varepsilon$$
+$$y = \beta_0 + T\beta_1 + (y_{\text{pre}}-1_n \bar{y}_\text{pre, c}) \beta_2 + \varepsilon$$
 
 This blog post describes how the CUPED formulation can come out of the
 [Frisch Waugh Lovell theorem](https://en.wikipedia.org/wiki/Frisch–Waugh–Lovell_theorem) for
@@ -32,7 +38,7 @@ like the R learner, MLRate, Double ML etc.
 
 In this model, variation in $y$ is explained by the previous values contained in $y_{\text{pre}}$. For example, if someone watched a lot of movies during the pretreatment window, they are likely to watch a lot of movies during the posttreatment window too. Their particular $y$ values are explainable, and we can reduce the residual variance. This increases power.
 
-While there are 3 parameters in the model, only 2 are meaningful. $\hat{\beta}_1$ represents the average treatment effect, and $\hat{\beta}_0$ represents the baseline value for the average user who is in the control, so $\hat{\beta}_0 = E[y | T = 0, y_{\text{pre}} = \mu_c]$. While $\beta_2$ is useful for decreasing variance, it is not useful for inference. It does not play a role in computing the treatment effect. $\beta_2$ is referred to as a nuisance variable.
+While there are 3 parameters in the model, only 2 are meaningful. $\hat{\beta}_1$ represents the average treatment effect, and $\hat{\beta}_0$ represents the baseline value for the average user who is in the control, so $\hat{\beta}_0 = E[y | T = 0, y_{\text{pre}} = \bar{y}_\text{pre, c}]$. While $\beta_2$ is useful for decreasing variance, it is not useful for inference. It does not play a role in computing the treatment effect. $\beta_2$ is referred to as a nuisance variable.
 
 The CUPED formulation has a special computing strategy, making it not only great for statistical power, but also easy to implement.
 
@@ -448,51 +454,16 @@ Var(\hat{R}) &\approx \frac{Var(\hat{\beta}_1)}{\hat{\mu}_C^2} +
 
 # Code
 
-## Data Generator
+In this section we'll demonstrate 2 examples. We will replicate the difficult
+data generator above, with whales and preassignment bias. In addition, we will
+run an easier data generator that follows naive assumptions.
+
+Below are the implementations for estimating the linear model via OLS,
+OLS with 2nd order aggregates, and CUPED
 
 ```{r}
-# set.seed(100)
-# n = 1000
-# data = data.frame(
-#   treated = sample(0:1, n, replace = TRUE),
-#   baseline = rnorm(n, 20),
-#   x = rnorm(n),
-#   effect_if_treated = rnorm(n, 2, 1)
-# ) %>%
-#   mutate(
-#     effect = treated * effect_if_treated,
-#     y = baseline + effect + 0.5 * x
-#   )
-
-set.seed(100)
-n <- 100000
-baseline_effect <- 1
-hte_factor <- 1
-
-# Generate X with whales
-x <- rlnorm(n, meanlog = 2, sdlog = 1)
-
-# Simulate imbalance
-data <- data.frame(x = x) %>%
-  arrange(desc(X)) %>%
-  mutate(
-    # Create a propensity vector where the first half has high propensity
-    # but the second half has low propensity. Since the data is sorted this
-    # corresponds to a correlation with X.
-    prob_t = c(rep(0.6, n/2), rep(0.4, n/2)),
-    treated = rbinom(n, 1, prob_t),
-    noise = rnorm(n, 0, 15)
-   ) %>%
-  mutate(
-    effect_if_treated = rnorm(n, baseline_effect, 1) + hte_factor * x,
-    y = noise + rnorm(n, 1, 1)*x + effect_if_treated * treated
-  )
-```
-
-## OLS on raw data
-
-```{r}
-model = lm(y ~ treated + x, data)
+ols = function(data) {
+  model = lm(y ~ treated + x, data)
 covariances = vcovHC(model, 'HC0')
 
 # ATE
@@ -519,13 +490,9 @@ ols_solution = list(
   relative_effect = as.numeric(rel_effect),
   se_relative = as.numeric(se_rel_effect)
 )
-print(ols_solution)
-```
+}
 
-## First Principles with 2nd order aggs
-
-```{r}
-compute_ab_stats <- function(n_treatment, sum_y_treatment, sum_x_treatment, sum_y2_treatment, sum_x2_treatment, sum_y_x_treatment,
+ols_from_2nd_order_aggs <- function(n_treatment, sum_y_treatment, sum_x_treatment, sum_y2_treatment, sum_x2_treatment, sum_y_x_treatment,
                              n_control, sum_y_control, sum_x_control, sum_y2_control, sum_x2_control, sum_y_x_control) {
 
   n <- n_treatment + n_control
@@ -602,9 +569,8 @@ compute_ab_stats <- function(n_treatment, sum_y_treatment, sum_x_treatment, sum_
     se_relative = as.numeric(se_rel_effect)
   ))
 }
-```
 
-```{r}
+ols_from_2nd_order = function(data) {
 aggs = data %>%
   group_by(treated) %>%
   summarise(
@@ -634,7 +600,7 @@ sum_y2_control = control_aggs %>% pull(sum_y2)
 sum_x2_control = control_aggs %>% pull(sum_x2)
 sum_y_x_control = control_aggs %>% pull(sum_y_x)
 
-ols_2nd_order_solution = compute_ab_stats(
+ols_2nd_order_solution = ols_from_2nd_order_aggs(
   n_treatment = n_treatment,
   sum_y_treatment = sum_y_treatment,
   sum_x_treatment = sum_x_treatment,
@@ -648,23 +614,19 @@ ols_2nd_order_solution = compute_ab_stats(
   sum_x2_control = sum_x2_control,
   sum_y_x_control = sum_y_x_control
 )
-print(ols_2nd_order_solution)
-```
+}
 
-## CUPED
-
-```{r}
-compute_cuped_stats <- function(df) {
+cuped <- function(data) {
   # 1. Calculate the CUPED slope (theta) using the pooled covariance
   # CUPED typically assumes Cov(X, T) = 0, so it calculates theta globally
-  theta <- cov(df$y, df$x) / var(df$x)
+  theta <- cov(data$y, data$x) / var(data$x)
   
   # 2. Generate the adjusted outcome
   # Y_cuped = Y - theta * (X - mean(X))
-  df$y_cuped <- df$y - theta * (df$x - mean(df$x))
+  data$y_cuped <- data$y - theta * (data$x - mean(data$x))
   
   # 3. Calculate Group Statistics
-  stats <- df %>%
+  stats <- data %>%
     group_by(treated) %>%
     summarise(
       n = n(),
@@ -710,15 +672,76 @@ compute_cuped_stats <- function(df) {
     se_relative = se_rel
   ))
 }
-
-# Execute comparison
-cuped_solution <- compute_cuped_stats(data)
-print(cuped_solution)
 ```
 
-## Side by Side Comparisons
+## Hard Scenario
+
+### Data Generator
 
 ```{r}
+set.seed(100)
+n <- 100000
+baseline_effect <- 1
+hte_factor <- 1
+
+# Generate X with whales
+x <- rlnorm(n, meanlog = 2, sdlog = 1)
+
+# Simulate imbalance
+data <- data.frame(x = x) %>%
+  arrange(desc(x)) %>%
+  mutate(
+    # Create a propensity vector where the first half has high propensity
+    # but the second half has low propensity. Since the data is sorted this
+    # corresponds to a correlation with X.
+    prob_t = c(rep(0.6, n/2), rep(0.4, n/2)),
+    treated = rbinom(n, 1, prob_t),
+    noise = rnorm(n, 0, 15)
+   ) %>%
+  mutate(
+    effect_if_treated = rnorm(n, baseline_effect, 1) + hte_factor * x,
+    y = noise + rnorm(n, 1, 1)*x + effect_if_treated * treated
+  )
+```
+
+### Estimates
+
+```{r}
+ols_solution = ols(data)
+ols_2nd_order_solution = ols_from_2nd_order(data)
+cuped_solution = cuped(data)
+rbind(
+  ols_solution %>% data.frame(),
+  ols_2nd_order_solution %>% data.frame(),
+  cuped_solution %>% data.frame()
+)
+```
+
+## Easy Scenario
+
+### Data Generator
+
+```{r}
+set.seed(100)
+n = 1000
+data = data.frame(
+  treated = sample(0:1, n, replace = TRUE),
+  baseline = rnorm(n, 20),
+  x = rnorm(n),
+  effect_if_treated = rnorm(n, 2, 1)
+) %>%
+  mutate(
+    effect = treated * effect_if_treated,
+    y = baseline + effect + 0.5 * x
+  )
+```
+
+### Estimates
+
+```{r}
+ols_solution = ols(data)
+ols_2nd_order_solution = ols_from_2nd_order(data)
+cuped_solution = cuped(data)
 rbind(
   ols_solution %>% data.frame(),
   ols_2nd_order_solution %>% data.frame(),

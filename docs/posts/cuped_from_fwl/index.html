@@ -338,7 +338,7 @@ Var(\hat{\beta}) &amp;= (M^T M)^{-1} \left( \sum_{i=1}^{n} m_i m_i^T \hat{\varep
 <h2 class="anchored" data-anchor-id="heteroskedastic-consistent-by-groups-with-only-2nd-order-moments">Heteroskedastic Consistent (by groups) with only 2nd order moments</h2>
 <p>Finding an estimator that only uses 2nd order moments would be very convenient. The best estimator operating within these constraints is the HC by group sandwich estimator. Similar to how the t test allowed variability across the treatment and control groups, we allow the meat matrix to vary by groups. However, we do not allow the meat matrix to vary by individual <span class="math inline">\(m_i\)</span> and <span class="math inline">\(\hat{\varepsilon}_i\)</span>. The formulation would be <span class="math display">\[\widehat{\text{Var}}(\hat{\beta}) = (M^T M)^{-1} \left( \sum_g \sigma_g^2 (X_g^T X_g) \right) (M^T M)^{-1}\]</span></p>
 <p>The residual variance for a group <span class="math inline">\(g\)</span> is <span class="math inline">\(\sigma^2_g\)</span>, and is defined <span class="math display">\[Var(\varepsilon_{i, g}) = Var(y_{i,g} - (\hat{\beta}_0 + \hat{\beta}_1 T_i + \hat{\beta}_2 y_{i, \text{pre}}))\]</span></p>
-<p>If <span class="math inline">\(g\)</span> is defined by treatment or control, then <span class="math inline">\(\hat{\beta}_0\)</span> and <span class="math inline">\(\hat{\beta}_1 T_i\)</span> are constants within group <span class="math inline">\(g\)</span>. Thus, the group variance is simply <span class="math display">\[\sigma^2_g = Var(y_g - \hat{\beta}_2 y_{\text{pre}, g}) = Var(y_g) + \hat{\beta}_2^2 Var(y_{\text{pre}, g}) - 2 Cov(y_g, y_{\text{pre}, g})\]</span></p>
+<p>If <span class="math inline">\(g\)</span> is defined by treatment or control, then <span class="math inline">\(\hat{\beta}_0\)</span> and <span class="math inline">\(\hat{\beta}_1 T_i\)</span> are constants within group <span class="math inline">\(g\)</span>. Thus, the group variance is simply <span class="math display">\[\sigma^2_g = Var(y_g - \hat{\beta}_2 y_{\text{pre}, g}) = Var(y_g) + \hat{\beta}_2^2 Var(y_{\text{pre}, g}) - 2\hat{\beta}_2 Cov(y_g, y_{\text{pre}, g})\]</span></p>
 <p>The entire covariance matrix for the parameters can be derived from aggregated data. Remember, this is the best approximation possible to the sandwich when only 2nd order information is available.</p>
 </section>
 </section>
@@ -461,8 +461,8 @@ X-squared = 3.0692, df = 1, p-value = 0.07979</code></pre>
 </div>
 </section>
 </section>
-<section id="for-relative-effects-copy" class="level1">
-<h1>For Relative Effects (Copy)</h1>
+<section id="for-relative-effects" class="level1">
+<h1>For Relative Effects</h1>
 <p>The relative effect wants to compute <span class="math display">\[\hat{R} = \frac{\hat{\beta}_1}{E[y | T = 0, y_\text{pre} = \bar{y}_\text{pre}]} = \frac{\hat{\beta}_1}{\hat{\beta}_0 + \hat{\beta}_2 \bar{y}_\text{pre}} = \frac{\hat{\beta}_1}{\hat{\mu}_C}\]</span></p>
 <p>Since we were able to derive the point estimates of the parameter vector <span class="math inline">\(\hat{\beta}\)</span>, the point estimate of the relative effect is simple. Now onto its variance.</p>
 <p>Using a trick from <a href="https://arxiv.org/pdf/2412.08788">Delta Vectors</a>, we can write the denominator can be written as a multiplication with the parameter vector. Then its variance is simply</p>
@@ -510,190 +510,339 @@ Var(\hat{R}) &amp;\approx \frac{Var(\hat{\beta}_1)}{\hat{\mu}_C^2} +
 </section>
 <section id="code" class="level1">
 <h1>Code</h1>
+<section id="data-generator" class="level2">
+<h2 class="anchored" data-anchor-id="data-generator">Data Generator</h2>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">100</span>)</span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>n <span class="ot">=</span> <span class="dv">1000</span></span>
-<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>data <span class="ot">=</span> <span class="fu">data.frame</span>(</span>
-<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">treated =</span> <span class="fu">sample</span>(<span class="dv">0</span><span class="sc">:</span><span class="dv">1</span>, n, <span class="at">replace =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">baseline =</span> <span class="fu">rnorm</span>(n),</span>
-<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">x =</span> <span class="fu">rnorm</span>(n),</span>
-<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">effect_if_treated =</span> <span class="fu">rnorm</span>(n, <span class="dv">2</span>, <span class="dv">1</span>)</span>
-<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>) <span class="sc">%&gt;%</span></span>
-<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">effect =</span> treated <span class="sc">*</span> effect_if_treated,</span>
-<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">y =</span> baseline <span class="sc">+</span> effect <span class="sc">+</span> <span class="fl">0.5</span> <span class="sc">*</span> x</span>
-<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a>model <span class="ot">=</span> <span class="fu">lm</span>(y <span class="sc">~</span> treated <span class="sc">+</span> x, data)</span>
-<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a><span class="fu">coeftest</span>(model, <span class="fu">vcovHC</span>(model, <span class="st">"HC0"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co"># set.seed(100)</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="co"># n = 1000</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="co"># data = data.frame(</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="co">#   treated = sample(0:1, n, replace = TRUE),</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="co">#   baseline = rnorm(n, 20),</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a><span class="co">#   x = rnorm(n),</span></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a><span class="co">#   effect_if_treated = rnorm(n, 2, 1)</span></span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a><span class="co"># ) %&gt;%</span></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a><span class="co">#   mutate(</span></span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a><span class="co">#     effect = treated * effect_if_treated,</span></span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a><span class="co">#     y = baseline + effect + 0.5 * x</span></span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a><span class="co">#   )</span></span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">100</span>)</span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">100000</span></span>
+<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a>baseline_effect <span class="ot">&lt;-</span> <span class="dv">1</span></span>
+<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a>hte_factor <span class="ot">&lt;-</span> <span class="dv">1</span></span>
+<span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-19"><a href="#cb16-19" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate X with whales</span></span>
+<span id="cb16-20"><a href="#cb16-20" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">rlnorm</span>(n, <span class="at">meanlog =</span> <span class="dv">2</span>, <span class="at">sdlog =</span> <span class="dv">1</span>)</span>
+<span id="cb16-21"><a href="#cb16-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-22"><a href="#cb16-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Simulate imbalance</span></span>
+<span id="cb16-23"><a href="#cb16-23" aria-hidden="true" tabindex="-1"></a>data <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">x =</span> x) <span class="sc">%&gt;%</span></span>
+<span id="cb16-24"><a href="#cb16-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(X)) <span class="sc">%&gt;%</span></span>
+<span id="cb16-25"><a href="#cb16-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb16-26"><a href="#cb16-26" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Create a propensity vector where the first half has high propensity</span></span>
+<span id="cb16-27"><a href="#cb16-27" aria-hidden="true" tabindex="-1"></a>    <span class="co"># but the second half has low propensity. Since the data is sorted this</span></span>
+<span id="cb16-28"><a href="#cb16-28" aria-hidden="true" tabindex="-1"></a>    <span class="co"># corresponds to a correlation with X.</span></span>
+<span id="cb16-29"><a href="#cb16-29" aria-hidden="true" tabindex="-1"></a>    <span class="at">prob_t =</span> <span class="fu">c</span>(<span class="fu">rep</span>(<span class="fl">0.6</span>, n<span class="sc">/</span><span class="dv">2</span>), <span class="fu">rep</span>(<span class="fl">0.4</span>, n<span class="sc">/</span><span class="dv">2</span>)),</span>
+<span id="cb16-30"><a href="#cb16-30" aria-hidden="true" tabindex="-1"></a>    <span class="at">treated =</span> <span class="fu">rbinom</span>(n, <span class="dv">1</span>, prob_t),</span>
+<span id="cb16-31"><a href="#cb16-31" aria-hidden="true" tabindex="-1"></a>    <span class="at">noise =</span> <span class="fu">rnorm</span>(n, <span class="dv">0</span>, <span class="dv">15</span>)</span>
+<span id="cb16-32"><a href="#cb16-32" aria-hidden="true" tabindex="-1"></a>   ) <span class="sc">%&gt;%</span></span>
+<span id="cb16-33"><a href="#cb16-33" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb16-34"><a href="#cb16-34" aria-hidden="true" tabindex="-1"></a>    <span class="at">effect_if_treated =</span> <span class="fu">rnorm</span>(n, baseline_effect, <span class="dv">1</span>) <span class="sc">+</span> hte_factor <span class="sc">*</span> x,</span>
+<span id="cb16-35"><a href="#cb16-35" aria-hidden="true" tabindex="-1"></a>    <span class="at">y =</span> noise <span class="sc">+</span> <span class="fu">rnorm</span>(n, <span class="dv">1</span>, <span class="dv">1</span>)<span class="sc">*</span>x <span class="sc">+</span> effect_if_treated <span class="sc">*</span> treated</span>
+<span id="cb16-36"><a href="#cb16-36" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="ols-on-raw-data" class="level2">
+<h2 class="anchored" data-anchor-id="ols-on-raw-data">OLS on raw data</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>model <span class="ot">=</span> <span class="fu">lm</span>(y <span class="sc">~</span> treated <span class="sc">+</span> x, data)</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>covariances <span class="ot">=</span> <span class="fu">vcovHC</span>(model, <span class="st">'HC0'</span>)</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="co"># ATE</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>ate <span class="ot">=</span> <span class="fu">coef</span>(model)[<span class="dv">2</span>]</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>var_ate <span class="ot">=</span> covariances[<span class="dv">2</span>,<span class="dv">2</span>]</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>se_ate <span class="ot">=</span> <span class="fu">sqrt</span>(var_ate)</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Relative ATE</span></span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>mean_x_c <span class="ot">=</span> data <span class="sc">%&gt;%</span> <span class="fu">filter</span>(treated <span class="sc">==</span> <span class="dv">0</span>) <span class="sc">%&gt;%</span> <span class="fu">pull</span>(x) <span class="sc">%&gt;%</span> mean</span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>baseline <span class="ot">=</span> <span class="fu">coef</span>(model)[<span class="dv">1</span>] <span class="sc">+</span> <span class="fu">coef</span>(model)[<span class="dv">3</span>] <span class="sc">*</span> mean_x_c</span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>rel_effect <span class="ot">=</span> ate <span class="sc">/</span> baseline</span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>var_baseline <span class="ot">=</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">0</span>, mean_x_c), <span class="at">nrow =</span> <span class="dv">1</span>) <span class="sc">%*%</span> covariances <span class="sc">%*%</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">0</span>, mean_x_c)</span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a>cov_ate_baseline <span class="ot">=</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">0</span>), <span class="at">nrow =</span> <span class="dv">1</span>) <span class="sc">%*%</span> covariances <span class="sc">%*%</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">0</span>, mean_x_c)</span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Delta Method</span></span>
+<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a>var_rel_effect <span class="ot">=</span> var_ate<span class="sc">/</span>baseline<span class="sc">^</span><span class="dv">2</span> <span class="sc">+</span> ate<span class="sc">^</span><span class="dv">2</span> <span class="sc">*</span> var_baseline<span class="sc">/</span>baseline<span class="sc">^</span><span class="dv">4</span> <span class="sc">-</span> <span class="dv">2</span><span class="sc">*</span>ate<span class="sc">*</span>cov_ate_baseline<span class="sc">/</span>baseline<span class="sc">^</span><span class="dv">3</span></span>
+<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a>se_rel_effect <span class="ot">=</span> <span class="fu">sqrt</span>(var_rel_effect)</span>
+<span id="cb17-20"><a href="#cb17-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-21"><a href="#cb17-21" aria-hidden="true" tabindex="-1"></a>ols_solution <span class="ot">=</span> <span class="fu">list</span>(</span>
+<span id="cb17-22"><a href="#cb17-22" aria-hidden="true" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">'OLS'</span>,</span>
+<span id="cb17-23"><a href="#cb17-23" aria-hidden="true" tabindex="-1"></a>  <span class="at">ate =</span> <span class="fu">as.numeric</span>(ate),</span>
+<span id="cb17-24"><a href="#cb17-24" aria-hidden="true" tabindex="-1"></a>  <span class="at">se_ate =</span> <span class="fu">as.numeric</span>(se_ate),</span>
+<span id="cb17-25"><a href="#cb17-25" aria-hidden="true" tabindex="-1"></a>  <span class="at">relative_effect =</span> <span class="fu">as.numeric</span>(rel_effect),</span>
+<span id="cb17-26"><a href="#cb17-26" aria-hidden="true" tabindex="-1"></a>  <span class="at">se_relative =</span> <span class="fu">as.numeric</span>(se_rel_effect)</span>
+<span id="cb17-27"><a href="#cb17-27" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb17-28"><a href="#cb17-28" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(ols_solution)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>
-t test of coefficients:
+<pre><code>$method
+[1] "OLS"
 
-            Estimate Std. Error t value Pr(&gt;|t|)    
-(Intercept) 0.020944   0.047026  0.4454   0.6561    
-treated     2.008227   0.075594 26.5660   &lt;2e-16 ***
-x           0.456856   0.036653 12.4643   &lt;2e-16 ***
----
-Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</code></pre>
-</div>
-</div>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>compute_ab_stats <span class="ot">&lt;-</span> <span class="cf">function</span>(n_treatment, sum_y_treatment, sum_x_treatment, sum_y2_treatment, sum_x2_treatment, sum_y_x_treatment,</span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>                             n_control, sum_y_control, sum_x_control, sum_y2_control, sum_x2_control, sum_y_x_control) {</span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>  <span class="co"># 1. Global Aggregates</span></span>
-<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>  n <span class="ot">&lt;-</span> n_treatment <span class="sc">+</span> n_control</span>
-<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>  sum_y <span class="ot">&lt;-</span> sum_y_treatment <span class="sc">+</span> sum_y_control</span>
-<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>  sum_x <span class="ot">&lt;-</span> sum_x_treatment <span class="sc">+</span> sum_x_control</span>
-<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>  sum_x2 <span class="ot">&lt;-</span> sum_x2_treatment <span class="sc">+</span> sum_x2_control</span>
-<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>  sum_y_x <span class="ot">&lt;-</span> sum_y_x_treatment <span class="sc">+</span> sum_y_x_control</span>
-<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>  <span class="co"># 2. Build the Global Information Matrix (X'X) </span></span>
-<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Design: [Intercept, Treatment_Indicator, Covariate]</span></span>
-<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>  XX <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(</span>
-<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>    n,           n_treatment,     sum_x,</span>
-<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>    n_treatment, n_treatment,     sum_x_treatment,</span>
-<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>    sum_x,       sum_x_treatment, sum_x2</span>
-<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a>  ), <span class="at">nrow =</span> <span class="dv">3</span>, <span class="at">byrow =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a>  <span class="co"># X'Y Vector</span></span>
-<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a>  XY <span class="ot">&lt;-</span> <span class="fu">c</span>(sum_y, sum_y_treatment, sum_y_x)</span>
-<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Solve for coefficients (beta)</span></span>
-<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a>  XX_inv <span class="ot">&lt;-</span> <span class="fu">solve</span>(XX)</span>
-<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a>  beta <span class="ot">&lt;-</span> XX_inv <span class="sc">%*%</span> XY</span>
-<span id="cb18-25"><a href="#cb18-25" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb18-26"><a href="#cb18-26" aria-hidden="true" tabindex="-1"></a>  ate <span class="ot">&lt;-</span> beta[<span class="dv">2</span>]</span>
-<span id="cb18-27"><a href="#cb18-27" aria-hidden="true" tabindex="-1"></a>  slope_x <span class="ot">&lt;-</span> beta[<span class="dv">3</span>]</span>
-<span id="cb18-28"><a href="#cb18-28" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-29"><a href="#cb18-29" aria-hidden="true" tabindex="-1"></a>  <span class="co"># 3. Calculate Group-Specific Residual Variances (sigma^2_g)</span></span>
-<span id="cb18-30"><a href="#cb18-30" aria-hidden="true" tabindex="-1"></a>  <span class="co"># This uses the partial slope (slope_x) to find the unexplained variance</span></span>
-<span id="cb18-31"><a href="#cb18-31" aria-hidden="true" tabindex="-1"></a>  calc_resid_var <span class="ot">&lt;-</span> <span class="cf">function</span>(n_g, s_y, s_x, s_y2, s_x2, s_yx, b_x) {</span>
-<span id="cb18-32"><a href="#cb18-32" aria-hidden="true" tabindex="-1"></a>    m_y <span class="ot">&lt;-</span> s_y <span class="sc">/</span> n_g</span>
-<span id="cb18-33"><a href="#cb18-33" aria-hidden="true" tabindex="-1"></a>    m_x <span class="ot">&lt;-</span> s_x <span class="sc">/</span> n_g</span>
-<span id="cb18-34"><a href="#cb18-34" aria-hidden="true" tabindex="-1"></a>    v_y <span class="ot">&lt;-</span> (s_y2 <span class="sc">/</span> n_g) <span class="sc">-</span> m_y<span class="sc">^</span><span class="dv">2</span></span>
-<span id="cb18-35"><a href="#cb18-35" aria-hidden="true" tabindex="-1"></a>    v_x <span class="ot">&lt;-</span> (s_x2 <span class="sc">/</span> n_g) <span class="sc">-</span> m_x<span class="sc">^</span><span class="dv">2</span></span>
-<span id="cb18-36"><a href="#cb18-36" aria-hidden="true" tabindex="-1"></a>    cov_yx <span class="ot">&lt;-</span> (s_yx <span class="sc">/</span> n_g) <span class="sc">-</span> (m_y <span class="sc">*</span> m_x)</span>
-<span id="cb18-37"><a href="#cb18-37" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Variance of the residuals: Var(y - beta_x * x)</span></span>
-<span id="cb18-38"><a href="#cb18-38" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(v_y <span class="sc">+</span> (b_x<span class="sc">^</span><span class="dv">2</span> <span class="sc">*</span> v_x) <span class="sc">-</span> (<span class="dv">2</span> <span class="sc">*</span> b_x <span class="sc">*</span> cov_yx))</span>
-<span id="cb18-39"><a href="#cb18-39" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb18-40"><a href="#cb18-40" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-41"><a href="#cb18-41" aria-hidden="true" tabindex="-1"></a>  var_resid_t <span class="ot">&lt;-</span> <span class="fu">calc_resid_var</span>(n_treatment, sum_y_treatment, sum_x_treatment, </span>
-<span id="cb18-42"><a href="#cb18-42" aria-hidden="true" tabindex="-1"></a>                                sum_y2_treatment, sum_x2_treatment, sum_y_x_treatment, slope_x)</span>
-<span id="cb18-43"><a href="#cb18-43" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb18-44"><a href="#cb18-44" aria-hidden="true" tabindex="-1"></a>  var_resid_c <span class="ot">&lt;-</span> <span class="fu">calc_resid_var</span>(n_control, sum_y_control, sum_x_control, </span>
-<span id="cb18-45"><a href="#cb18-45" aria-hidden="true" tabindex="-1"></a>                                sum_y2_control, sum_x2_control, sum_y_x_control, slope_x)</span>
-<span id="cb18-46"><a href="#cb18-46" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-47"><a href="#cb18-47" aria-hidden="true" tabindex="-1"></a>  <span class="co"># 4. Build the "Meat" Matrix (X' * Omega * X)</span></span>
-<span id="cb18-48"><a href="#cb18-48" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Reconstructing the middle of the sandwich using grouped homoskedasticity</span></span>
-<span id="cb18-49"><a href="#cb18-49" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb18-50"><a href="#cb18-50" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Treatment Meat Contribution</span></span>
-<span id="cb18-51"><a href="#cb18-51" aria-hidden="true" tabindex="-1"></a>  XX_t <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(</span>
-<span id="cb18-52"><a href="#cb18-52" aria-hidden="true" tabindex="-1"></a>    n_treatment,     n_treatment,     sum_x_treatment,</span>
-<span id="cb18-53"><a href="#cb18-53" aria-hidden="true" tabindex="-1"></a>    n_treatment,     n_treatment,     sum_x_treatment,</span>
-<span id="cb18-54"><a href="#cb18-54" aria-hidden="true" tabindex="-1"></a>    sum_x_treatment, sum_x_treatment, sum_x2_treatment</span>
-<span id="cb18-55"><a href="#cb18-55" aria-hidden="true" tabindex="-1"></a>  ), <span class="at">nrow =</span> <span class="dv">3</span>, <span class="at">byrow =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb18-56"><a href="#cb18-56" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb18-57"><a href="#cb18-57" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Control Meat Contribution (Treatment columns/rows are 0)</span></span>
-<span id="cb18-58"><a href="#cb18-58" aria-hidden="true" tabindex="-1"></a>  XX_c <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(</span>
-<span id="cb18-59"><a href="#cb18-59" aria-hidden="true" tabindex="-1"></a>    n_control,       <span class="dv">0</span>,               sum_x_control,</span>
-<span id="cb18-60"><a href="#cb18-60" aria-hidden="true" tabindex="-1"></a>    <span class="dv">0</span>,               <span class="dv">0</span>,               <span class="dv">0</span>,</span>
-<span id="cb18-61"><a href="#cb18-61" aria-hidden="true" tabindex="-1"></a>    sum_x_control,   <span class="dv">0</span>,               sum_x2_control</span>
-<span id="cb18-62"><a href="#cb18-62" aria-hidden="true" tabindex="-1"></a>  ), <span class="at">nrow =</span> <span class="dv">3</span>, <span class="at">byrow =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb18-63"><a href="#cb18-63" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb18-64"><a href="#cb18-64" aria-hidden="true" tabindex="-1"></a>  Meat <span class="ot">&lt;-</span> (XX_t <span class="sc">*</span> var_resid_t) <span class="sc">+</span> (XX_c <span class="sc">*</span> var_resid_c)</span>
-<span id="cb18-65"><a href="#cb18-65" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-66"><a href="#cb18-66" aria-hidden="true" tabindex="-1"></a>  <span class="co"># 5. Sandwich Estimator</span></span>
-<span id="cb18-67"><a href="#cb18-67" aria-hidden="true" tabindex="-1"></a>  V_cov <span class="ot">&lt;-</span> XX_inv <span class="sc">%*%</span> Meat <span class="sc">%*%</span> XX_inv</span>
-<span id="cb18-68"><a href="#cb18-68" aria-hidden="true" tabindex="-1"></a>  se_ate <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(V_cov[<span class="dv">2</span>, <span class="dv">2</span>])</span>
-<span id="cb18-69"><a href="#cb18-69" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-70"><a href="#cb18-70" aria-hidden="true" tabindex="-1"></a>  <span class="co"># 6. Relative Effect (Lift)</span></span>
-<span id="cb18-71"><a href="#cb18-71" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Adjusting Control Mean by evaluated global mean of x</span></span>
-<span id="cb18-72"><a href="#cb18-72" aria-hidden="true" tabindex="-1"></a>  mean_x_global <span class="ot">&lt;-</span> sum_x <span class="sc">/</span> n</span>
-<span id="cb18-73"><a href="#cb18-73" aria-hidden="true" tabindex="-1"></a>  mean_y_c <span class="ot">&lt;-</span> sum_y_control <span class="sc">/</span> n_control</span>
-<span id="cb18-74"><a href="#cb18-74" aria-hidden="true" tabindex="-1"></a>  mean_x_c <span class="ot">&lt;-</span> sum_x_control <span class="sc">/</span> n_control</span>
-<span id="cb18-75"><a href="#cb18-75" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb18-76"><a href="#cb18-76" aria-hidden="true" tabindex="-1"></a>  mu0_adj <span class="ot">&lt;-</span> mean_y_c <span class="sc">-</span> slope_x <span class="sc">*</span> (mean_x_c <span class="sc">-</span> mean_x_global)</span>
-<span id="cb18-77"><a href="#cb18-77" aria-hidden="true" tabindex="-1"></a>  rel_effect <span class="ot">&lt;-</span> ate <span class="sc">/</span> mu0_adj</span>
-<span id="cb18-78"><a href="#cb18-78" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb18-79"><a href="#cb18-79" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Delta Method for SE of Relative Effect</span></span>
-<span id="cb18-80"><a href="#cb18-80" aria-hidden="true" tabindex="-1"></a>  <span class="co"># We use the variance of the adjusted control mean (var_resid_c / n_control)</span></span>
-<span id="cb18-81"><a href="#cb18-81" aria-hidden="true" tabindex="-1"></a>  var_mu0 <span class="ot">&lt;-</span> var_resid_c <span class="sc">/</span> n_control</span>
-<span id="cb18-82"><a href="#cb18-82" aria-hidden="true" tabindex="-1"></a>  se_rel <span class="ot">&lt;-</span> <span class="fu">sqrt</span>((se_ate<span class="sc">^</span><span class="dv">2</span> <span class="sc">/</span> mu0_adj<span class="sc">^</span><span class="dv">2</span>) <span class="sc">+</span> (ate<span class="sc">^</span><span class="dv">2</span> <span class="sc">*</span> var_mu0 <span class="sc">/</span> mu0_adj<span class="sc">^</span><span class="dv">4</span>))</span>
-<span id="cb18-83"><a href="#cb18-83" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-84"><a href="#cb18-84" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(<span class="fu">list</span>(</span>
-<span id="cb18-85"><a href="#cb18-85" aria-hidden="true" tabindex="-1"></a>    <span class="at">ate =</span> <span class="fu">as.numeric</span>(ate),</span>
-<span id="cb18-86"><a href="#cb18-86" aria-hidden="true" tabindex="-1"></a>    <span class="at">se_ate =</span> <span class="fu">as.numeric</span>(se_ate),</span>
-<span id="cb18-87"><a href="#cb18-87" aria-hidden="true" tabindex="-1"></a>    <span class="at">relative_effect =</span> <span class="fu">as.numeric</span>(rel_effect),</span>
-<span id="cb18-88"><a href="#cb18-88" aria-hidden="true" tabindex="-1"></a>    <span class="at">se_relative =</span> <span class="fu">as.numeric</span>(se_rel),</span>
-<span id="cb18-89"><a href="#cb18-89" aria-hidden="true" tabindex="-1"></a>    <span class="at">p_value =</span> <span class="dv">2</span> <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> <span class="fu">pnorm</span>(<span class="fu">abs</span>(ate <span class="sc">/</span> se_ate)))</span>
-<span id="cb18-90"><a href="#cb18-90" aria-hidden="true" tabindex="-1"></a>  ))</span>
-<span id="cb18-91"><a href="#cb18-91" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>aggs <span class="ot">=</span> data <span class="sc">%&gt;%</span></span>
-<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(treated) <span class="sc">%&gt;%</span></span>
-<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
-<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(),</span>
-<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">sum_y =</span> <span class="fu">sum</span>(y),</span>
-<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">sum_y2 =</span> <span class="fu">sum</span>(y<span class="sc">^</span><span class="dv">2</span>),</span>
-<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">sum_x =</span> <span class="fu">sum</span>(x),</span>
-<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">sum_x2 =</span> <span class="fu">sum</span>(x<span class="sc">^</span><span class="dv">2</span>),</span>
-<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">sum_y_x =</span> <span class="fu">sum</span>(y <span class="sc">*</span> x)</span>
-<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>treatment_aggs <span class="ot">=</span> aggs <span class="sc">%&gt;%</span></span>
-<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(treated <span class="sc">==</span> <span class="dv">1</span>)</span>
-<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>control_aggs <span class="ot">=</span> aggs <span class="sc">%&gt;%</span></span>
-<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(treated <span class="sc">==</span> <span class="dv">0</span>)</span>
-<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a>  n_treatment <span class="ot">=</span> treatment_aggs <span class="sc">%&gt;%</span> <span class="fu">pull</span>(n)</span>
-<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a>  sum_y_treatment <span class="ot">=</span> treatment_aggs <span class="sc">%&gt;%</span> <span class="fu">pull</span>(sum_y)</span>
-<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a>  sum_x_treatment <span class="ot">=</span> treatment_aggs <span class="sc">%&gt;%</span> <span class="fu">pull</span>(sum_x)</span>
-<span id="cb19-20"><a href="#cb19-20" aria-hidden="true" tabindex="-1"></a>  sum_y2_treatment <span class="ot">=</span> treatment_aggs <span class="sc">%&gt;%</span> <span class="fu">pull</span>(sum_y2)</span>
-<span id="cb19-21"><a href="#cb19-21" aria-hidden="true" tabindex="-1"></a>  sum_x2_treatment <span class="ot">=</span> treatment_aggs <span class="sc">%&gt;%</span> <span class="fu">pull</span>(sum_x2)</span>
-<span id="cb19-22"><a href="#cb19-22" aria-hidden="true" tabindex="-1"></a>  sum_y_x_treatment <span class="ot">=</span> treatment_aggs <span class="sc">%&gt;%</span> <span class="fu">pull</span>(sum_y_x)</span>
-<span id="cb19-23"><a href="#cb19-23" aria-hidden="true" tabindex="-1"></a>  n_control <span class="ot">=</span> control_aggs <span class="sc">%&gt;%</span> <span class="fu">pull</span>(n)</span>
-<span id="cb19-24"><a href="#cb19-24" aria-hidden="true" tabindex="-1"></a>  sum_y_control <span class="ot">=</span> control_aggs <span class="sc">%&gt;%</span> <span class="fu">pull</span>(sum_y)</span>
-<span id="cb19-25"><a href="#cb19-25" aria-hidden="true" tabindex="-1"></a>  sum_x_control <span class="ot">=</span> control_aggs <span class="sc">%&gt;%</span> <span class="fu">pull</span>(sum_x)</span>
-<span id="cb19-26"><a href="#cb19-26" aria-hidden="true" tabindex="-1"></a>  sum_y2_control <span class="ot">=</span> control_aggs <span class="sc">%&gt;%</span> <span class="fu">pull</span>(sum_y2)</span>
-<span id="cb19-27"><a href="#cb19-27" aria-hidden="true" tabindex="-1"></a>  sum_x2_control <span class="ot">=</span> control_aggs <span class="sc">%&gt;%</span> <span class="fu">pull</span>(sum_x2)</span>
-<span id="cb19-28"><a href="#cb19-28" aria-hidden="true" tabindex="-1"></a>  sum_y_x_control <span class="ot">=</span> control_aggs <span class="sc">%&gt;%</span> <span class="fu">pull</span>(sum_y_x)</span>
-<span id="cb19-29"><a href="#cb19-29" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-30"><a href="#cb19-30" aria-hidden="true" tabindex="-1"></a><span class="fu">compute_ab_stats</span>(</span>
-<span id="cb19-31"><a href="#cb19-31" aria-hidden="true" tabindex="-1"></a>  <span class="at">n_treatment =</span> treatment_aggs <span class="sc">%&gt;%</span> <span class="fu">pull</span>(n),</span>
-<span id="cb19-32"><a href="#cb19-32" aria-hidden="true" tabindex="-1"></a>  <span class="at">sum_y_treatment =</span> treatment_aggs <span class="sc">%&gt;%</span> <span class="fu">pull</span>(sum_y),</span>
-<span id="cb19-33"><a href="#cb19-33" aria-hidden="true" tabindex="-1"></a>  <span class="at">sum_x_treatment =</span> treatment_aggs <span class="sc">%&gt;%</span> <span class="fu">pull</span>(sum_x),</span>
-<span id="cb19-34"><a href="#cb19-34" aria-hidden="true" tabindex="-1"></a>  <span class="at">sum_y2_treatment =</span> treatment_aggs <span class="sc">%&gt;%</span> <span class="fu">pull</span>(sum_y2),</span>
-<span id="cb19-35"><a href="#cb19-35" aria-hidden="true" tabindex="-1"></a>  <span class="at">sum_x2_treatment =</span> treatment_aggs <span class="sc">%&gt;%</span> <span class="fu">pull</span>(sum_x2),</span>
-<span id="cb19-36"><a href="#cb19-36" aria-hidden="true" tabindex="-1"></a>  <span class="at">sum_y_x_treatment =</span> treatment_aggs <span class="sc">%&gt;%</span> <span class="fu">pull</span>(sum_y_x),</span>
-<span id="cb19-37"><a href="#cb19-37" aria-hidden="true" tabindex="-1"></a>  <span class="at">n_control =</span> control_aggs <span class="sc">%&gt;%</span> <span class="fu">pull</span>(n),</span>
-<span id="cb19-38"><a href="#cb19-38" aria-hidden="true" tabindex="-1"></a>  <span class="at">sum_y_control =</span> control_aggs <span class="sc">%&gt;%</span> <span class="fu">pull</span>(sum_y),</span>
-<span id="cb19-39"><a href="#cb19-39" aria-hidden="true" tabindex="-1"></a>  <span class="at">sum_x_control =</span> control_aggs <span class="sc">%&gt;%</span> <span class="fu">pull</span>(sum_x) ,</span>
-<span id="cb19-40"><a href="#cb19-40" aria-hidden="true" tabindex="-1"></a>  <span class="at">sum_y2_control =</span> control_aggs <span class="sc">%&gt;%</span> <span class="fu">pull</span>(sum_y2),</span>
-<span id="cb19-41"><a href="#cb19-41" aria-hidden="true" tabindex="-1"></a>  <span class="at">sum_x2_control =</span> control_aggs <span class="sc">%&gt;%</span> <span class="fu">pull</span>(sum_x2),</span>
-<span id="cb19-42"><a href="#cb19-42" aria-hidden="true" tabindex="-1"></a>  <span class="at">sum_y_x_control =</span> control_aggs <span class="sc">%&gt;%</span> <span class="fu">pull</span>(sum_y_x)</span>
-<span id="cb19-43"><a href="#cb19-43" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>$ate
-[1] 2.008227
+$ate
+[1] 12.79828
 
 $se_ate
-[1] 0.07548562
+[1] 0.2043816
 
 $relative_effect
-[1] 90.22866
+[1] 1.214927
 
 $se_relative
-[1] 190.3977
+[1] 0.03033267</code></pre>
+</div>
+</div>
+</section>
+<section id="first-principles-with-2nd-order-aggs" class="level2">
+<h2 class="anchored" data-anchor-id="first-principles-with-2nd-order-aggs">First Principles with 2nd order aggs</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>compute_ab_stats <span class="ot">&lt;-</span> <span class="cf">function</span>(n_treatment, sum_y_treatment, sum_x_treatment, sum_y2_treatment, sum_x2_treatment, sum_y_x_treatment,</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>                             n_control, sum_y_control, sum_x_control, sum_y2_control, sum_x2_control, sum_y_x_control) {</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>  n <span class="ot">&lt;-</span> n_treatment <span class="sc">+</span> n_control</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>  sum_y <span class="ot">&lt;-</span> sum_y_treatment <span class="sc">+</span> sum_y_control</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>  sum_x <span class="ot">&lt;-</span> sum_x_treatment <span class="sc">+</span> sum_x_control</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>  sum_x2 <span class="ot">&lt;-</span> sum_x2_treatment <span class="sc">+</span> sum_x2_control</span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>  sum_y_x <span class="ot">&lt;-</span> sum_y_x_treatment <span class="sc">+</span> sum_y_x_control</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>  XtX <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(</span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>    n,           n_treatment,     sum_x,</span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>    n_treatment, n_treatment,     sum_x_treatment,</span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>    sum_x,       sum_x_treatment, sum_x2</span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>  ), <span class="at">nrow =</span> <span class="dv">3</span>, <span class="at">byrow =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>  XtX_inv <span class="ot">&lt;-</span> <span class="fu">solve</span>(XtX)</span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a>  Xty <span class="ot">&lt;-</span> <span class="fu">c</span>(sum_y, sum_y_treatment, sum_y_x)</span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a>  beta <span class="ot">&lt;-</span> XtX_inv <span class="sc">%*%</span> Xty</span>
+<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a>  ate <span class="ot">&lt;-</span> beta[<span class="dv">2</span>]</span>
+<span id="cb19-20"><a href="#cb19-20" aria-hidden="true" tabindex="-1"></a>  slope_x <span class="ot">&lt;-</span> beta[<span class="dv">3</span>]</span>
+<span id="cb19-21"><a href="#cb19-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-22"><a href="#cb19-22" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Group Robust Covariances</span></span>
+<span id="cb19-23"><a href="#cb19-23" aria-hidden="true" tabindex="-1"></a>  residual_variance_for_group <span class="ot">&lt;-</span> <span class="cf">function</span>(n_g, s_y, s_x, s_y2, s_x2, s_yx, b_x) {</span>
+<span id="cb19-24"><a href="#cb19-24" aria-hidden="true" tabindex="-1"></a>    m_y <span class="ot">&lt;-</span> s_y <span class="sc">/</span> n_g</span>
+<span id="cb19-25"><a href="#cb19-25" aria-hidden="true" tabindex="-1"></a>    m_x <span class="ot">&lt;-</span> s_x <span class="sc">/</span> n_g</span>
+<span id="cb19-26"><a href="#cb19-26" aria-hidden="true" tabindex="-1"></a>    v_y <span class="ot">&lt;-</span> (s_y2 <span class="sc">/</span> n_g) <span class="sc">-</span> m_y<span class="sc">^</span><span class="dv">2</span></span>
+<span id="cb19-27"><a href="#cb19-27" aria-hidden="true" tabindex="-1"></a>    v_x <span class="ot">&lt;-</span> (s_x2 <span class="sc">/</span> n_g) <span class="sc">-</span> m_x<span class="sc">^</span><span class="dv">2</span></span>
+<span id="cb19-28"><a href="#cb19-28" aria-hidden="true" tabindex="-1"></a>    cov_yx <span class="ot">&lt;-</span> (s_yx <span class="sc">/</span> n_g) <span class="sc">-</span> (m_y <span class="sc">*</span> m_x)</span>
+<span id="cb19-29"><a href="#cb19-29" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(v_y <span class="sc">+</span> (b_x<span class="sc">^</span><span class="dv">2</span> <span class="sc">*</span> v_x) <span class="sc">-</span> (<span class="dv">2</span> <span class="sc">*</span> b_x <span class="sc">*</span> cov_yx))</span>
+<span id="cb19-30"><a href="#cb19-30" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb19-31"><a href="#cb19-31" aria-hidden="true" tabindex="-1"></a>  sigma2_treatment <span class="ot">&lt;-</span> <span class="fu">residual_variance_for_group</span>(n_treatment, sum_y_treatment, sum_x_treatment, </span>
+<span id="cb19-32"><a href="#cb19-32" aria-hidden="true" tabindex="-1"></a>                                                  sum_y2_treatment, sum_x2_treatment, sum_y_x_treatment, slope_x)</span>
+<span id="cb19-33"><a href="#cb19-33" aria-hidden="true" tabindex="-1"></a>  sigma2_control <span class="ot">&lt;-</span> <span class="fu">residual_variance_for_group</span>(n_control, sum_y_control, sum_x_control, </span>
+<span id="cb19-34"><a href="#cb19-34" aria-hidden="true" tabindex="-1"></a>                                                sum_y2_control, sum_x2_control, sum_y_x_control, slope_x)</span>
+<span id="cb19-35"><a href="#cb19-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-36"><a href="#cb19-36" aria-hidden="true" tabindex="-1"></a>  <span class="co"># meat matrix for treatment</span></span>
+<span id="cb19-37"><a href="#cb19-37" aria-hidden="true" tabindex="-1"></a>  XtX_treatment <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(</span>
+<span id="cb19-38"><a href="#cb19-38" aria-hidden="true" tabindex="-1"></a>    n_treatment,     n_treatment,     sum_x_treatment,</span>
+<span id="cb19-39"><a href="#cb19-39" aria-hidden="true" tabindex="-1"></a>    n_treatment,     n_treatment,     sum_x_treatment,</span>
+<span id="cb19-40"><a href="#cb19-40" aria-hidden="true" tabindex="-1"></a>    sum_x_treatment, sum_x_treatment, sum_x2_treatment</span>
+<span id="cb19-41"><a href="#cb19-41" aria-hidden="true" tabindex="-1"></a>  ), <span class="at">nrow =</span> <span class="dv">3</span>, <span class="at">byrow =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb19-42"><a href="#cb19-42" aria-hidden="true" tabindex="-1"></a>  <span class="co"># meat matrix for control. Many elements are zeroed out.</span></span>
+<span id="cb19-43"><a href="#cb19-43" aria-hidden="true" tabindex="-1"></a>  XtX_control <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(</span>
+<span id="cb19-44"><a href="#cb19-44" aria-hidden="true" tabindex="-1"></a>    n_control,       <span class="dv">0</span>,               sum_x_control,</span>
+<span id="cb19-45"><a href="#cb19-45" aria-hidden="true" tabindex="-1"></a>    <span class="dv">0</span>,               <span class="dv">0</span>,               <span class="dv">0</span>,</span>
+<span id="cb19-46"><a href="#cb19-46" aria-hidden="true" tabindex="-1"></a>    sum_x_control,   <span class="dv">0</span>,               sum_x2_control</span>
+<span id="cb19-47"><a href="#cb19-47" aria-hidden="true" tabindex="-1"></a>  ), <span class="at">nrow =</span> <span class="dv">3</span>, <span class="at">byrow =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb19-48"><a href="#cb19-48" aria-hidden="true" tabindex="-1"></a>  Meat <span class="ot">&lt;-</span> (XtX_treatment <span class="sc">*</span> sigma2_treatment) <span class="sc">+</span> (XtX_control <span class="sc">*</span> sigma2_control)</span>
+<span id="cb19-49"><a href="#cb19-49" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-50"><a href="#cb19-50" aria-hidden="true" tabindex="-1"></a>  covariances <span class="ot">&lt;-</span> XtX_inv <span class="sc">%*%</span> Meat <span class="sc">%*%</span> XtX_inv</span>
+<span id="cb19-51"><a href="#cb19-51" aria-hidden="true" tabindex="-1"></a>  var_ate <span class="ot">=</span> covariances[<span class="dv">2</span>, <span class="dv">2</span>]</span>
+<span id="cb19-52"><a href="#cb19-52" aria-hidden="true" tabindex="-1"></a>  se_ate <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(var_ate)</span>
+<span id="cb19-53"><a href="#cb19-53" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-54"><a href="#cb19-54" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Relative effects</span></span>
+<span id="cb19-55"><a href="#cb19-55" aria-hidden="true" tabindex="-1"></a>  <span class="do">## Point estimate</span></span>
+<span id="cb19-56"><a href="#cb19-56" aria-hidden="true" tabindex="-1"></a>  mean_x_global <span class="ot">&lt;-</span> sum_x <span class="sc">/</span> n</span>
+<span id="cb19-57"><a href="#cb19-57" aria-hidden="true" tabindex="-1"></a>  mean_y_c <span class="ot">&lt;-</span> sum_y_control <span class="sc">/</span> n_control</span>
+<span id="cb19-58"><a href="#cb19-58" aria-hidden="true" tabindex="-1"></a>  mean_x_c <span class="ot">&lt;-</span> sum_x_control <span class="sc">/</span> n_control</span>
+<span id="cb19-59"><a href="#cb19-59" aria-hidden="true" tabindex="-1"></a>  mu_control <span class="ot">&lt;-</span> mean_y_c <span class="sc">-</span> slope_x <span class="sc">*</span> (mean_x_c <span class="sc">-</span> mean_x_global)</span>
+<span id="cb19-60"><a href="#cb19-60" aria-hidden="true" tabindex="-1"></a>  rel_effect <span class="ot">&lt;-</span> ate <span class="sc">/</span> mu_control</span>
+<span id="cb19-61"><a href="#cb19-61" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb19-62"><a href="#cb19-62" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Variance</span></span>
+<span id="cb19-63"><a href="#cb19-63" aria-hidden="true" tabindex="-1"></a>  var_mu_control <span class="ot">=</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">0</span>, mean_x_c), <span class="at">nrow =</span> <span class="dv">1</span>) <span class="sc">%*%</span> covariances <span class="sc">%*%</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">0</span>, mean_x_c)</span>
+<span id="cb19-64"><a href="#cb19-64" aria-hidden="true" tabindex="-1"></a>  cov_ate_mu_control <span class="ot">=</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">0</span>), <span class="at">nrow =</span> <span class="dv">1</span>) <span class="sc">%*%</span> covariances <span class="sc">%*%</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">0</span>, mean_x_c)</span>
+<span id="cb19-65"><a href="#cb19-65" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb19-66"><a href="#cb19-66" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Delta Method</span></span>
+<span id="cb19-67"><a href="#cb19-67" aria-hidden="true" tabindex="-1"></a>  var_rel_effect <span class="ot">=</span> var_ate<span class="sc">/</span>mu_control<span class="sc">^</span><span class="dv">2</span> <span class="sc">+</span> ate<span class="sc">^</span><span class="dv">2</span> <span class="sc">*</span> var_mu_control<span class="sc">/</span>mu_control<span class="sc">^</span><span class="dv">4</span> <span class="sc">-</span> <span class="dv">2</span><span class="sc">*</span>ate<span class="sc">*</span>cov_ate_mu_control<span class="sc">/</span>mu_control<span class="sc">^</span><span class="dv">3</span></span>
+<span id="cb19-68"><a href="#cb19-68" aria-hidden="true" tabindex="-1"></a>  se_rel_effect <span class="ot">=</span> <span class="fu">sqrt</span>(var_rel_effect)</span>
+<span id="cb19-69"><a href="#cb19-69" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-70"><a href="#cb19-70" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(<span class="fu">list</span>(</span>
+<span id="cb19-71"><a href="#cb19-71" aria-hidden="true" tabindex="-1"></a>    <span class="at">method =</span> <span class="st">'OLS with 2nd order aggs'</span>,</span>
+<span id="cb19-72"><a href="#cb19-72" aria-hidden="true" tabindex="-1"></a>    <span class="at">ate =</span> <span class="fu">as.numeric</span>(ate),</span>
+<span id="cb19-73"><a href="#cb19-73" aria-hidden="true" tabindex="-1"></a>    <span class="at">se_ate =</span> <span class="fu">as.numeric</span>(se_ate),</span>
+<span id="cb19-74"><a href="#cb19-74" aria-hidden="true" tabindex="-1"></a>    <span class="at">relative_effect =</span> <span class="fu">as.numeric</span>(rel_effect),</span>
+<span id="cb19-75"><a href="#cb19-75" aria-hidden="true" tabindex="-1"></a>    <span class="at">se_relative =</span> <span class="fu">as.numeric</span>(se_rel_effect)</span>
+<span id="cb19-76"><a href="#cb19-76" aria-hidden="true" tabindex="-1"></a>  ))</span>
+<span id="cb19-77"><a href="#cb19-77" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>aggs <span class="ot">=</span> data <span class="sc">%&gt;%</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(treated) <span class="sc">%&gt;%</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(),</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">sum_y =</span> <span class="fu">sum</span>(y),</span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">sum_y2 =</span> <span class="fu">sum</span>(y<span class="sc">^</span><span class="dv">2</span>),</span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">sum_x =</span> <span class="fu">sum</span>(x),</span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">sum_x2 =</span> <span class="fu">sum</span>(x<span class="sc">^</span><span class="dv">2</span>),</span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">sum_y_x =</span> <span class="fu">sum</span>(y <span class="sc">*</span> x)</span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a>treatment_aggs <span class="ot">=</span> aggs <span class="sc">%&gt;%</span></span>
+<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(treated <span class="sc">==</span> <span class="dv">1</span>)</span>
+<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a>control_aggs <span class="ot">=</span> aggs <span class="sc">%&gt;%</span></span>
+<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(treated <span class="sc">==</span> <span class="dv">0</span>)</span>
+<span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-17"><a href="#cb20-17" aria-hidden="true" tabindex="-1"></a>n_treatment <span class="ot">=</span> treatment_aggs <span class="sc">%&gt;%</span> <span class="fu">pull</span>(n)</span>
+<span id="cb20-18"><a href="#cb20-18" aria-hidden="true" tabindex="-1"></a>sum_y_treatment <span class="ot">=</span> treatment_aggs <span class="sc">%&gt;%</span> <span class="fu">pull</span>(sum_y)</span>
+<span id="cb20-19"><a href="#cb20-19" aria-hidden="true" tabindex="-1"></a>sum_x_treatment <span class="ot">=</span> treatment_aggs <span class="sc">%&gt;%</span> <span class="fu">pull</span>(sum_x)</span>
+<span id="cb20-20"><a href="#cb20-20" aria-hidden="true" tabindex="-1"></a>sum_y2_treatment <span class="ot">=</span> treatment_aggs <span class="sc">%&gt;%</span> <span class="fu">pull</span>(sum_y2)</span>
+<span id="cb20-21"><a href="#cb20-21" aria-hidden="true" tabindex="-1"></a>sum_x2_treatment <span class="ot">=</span> treatment_aggs <span class="sc">%&gt;%</span> <span class="fu">pull</span>(sum_x2)</span>
+<span id="cb20-22"><a href="#cb20-22" aria-hidden="true" tabindex="-1"></a>sum_y_x_treatment <span class="ot">=</span> treatment_aggs <span class="sc">%&gt;%</span> <span class="fu">pull</span>(sum_y_x)</span>
+<span id="cb20-23"><a href="#cb20-23" aria-hidden="true" tabindex="-1"></a>n_control <span class="ot">=</span> control_aggs <span class="sc">%&gt;%</span> <span class="fu">pull</span>(n)</span>
+<span id="cb20-24"><a href="#cb20-24" aria-hidden="true" tabindex="-1"></a>sum_y_control <span class="ot">=</span> control_aggs <span class="sc">%&gt;%</span> <span class="fu">pull</span>(sum_y)</span>
+<span id="cb20-25"><a href="#cb20-25" aria-hidden="true" tabindex="-1"></a>sum_x_control <span class="ot">=</span> control_aggs <span class="sc">%&gt;%</span> <span class="fu">pull</span>(sum_x)</span>
+<span id="cb20-26"><a href="#cb20-26" aria-hidden="true" tabindex="-1"></a>sum_y2_control <span class="ot">=</span> control_aggs <span class="sc">%&gt;%</span> <span class="fu">pull</span>(sum_y2)</span>
+<span id="cb20-27"><a href="#cb20-27" aria-hidden="true" tabindex="-1"></a>sum_x2_control <span class="ot">=</span> control_aggs <span class="sc">%&gt;%</span> <span class="fu">pull</span>(sum_x2)</span>
+<span id="cb20-28"><a href="#cb20-28" aria-hidden="true" tabindex="-1"></a>sum_y_x_control <span class="ot">=</span> control_aggs <span class="sc">%&gt;%</span> <span class="fu">pull</span>(sum_y_x)</span>
+<span id="cb20-29"><a href="#cb20-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-30"><a href="#cb20-30" aria-hidden="true" tabindex="-1"></a>ols_2nd_order_solution <span class="ot">=</span> <span class="fu">compute_ab_stats</span>(</span>
+<span id="cb20-31"><a href="#cb20-31" aria-hidden="true" tabindex="-1"></a>  <span class="at">n_treatment =</span> n_treatment,</span>
+<span id="cb20-32"><a href="#cb20-32" aria-hidden="true" tabindex="-1"></a>  <span class="at">sum_y_treatment =</span> sum_y_treatment,</span>
+<span id="cb20-33"><a href="#cb20-33" aria-hidden="true" tabindex="-1"></a>  <span class="at">sum_x_treatment =</span> sum_x_treatment,</span>
+<span id="cb20-34"><a href="#cb20-34" aria-hidden="true" tabindex="-1"></a>  <span class="at">sum_y2_treatment =</span> sum_y2_treatment,</span>
+<span id="cb20-35"><a href="#cb20-35" aria-hidden="true" tabindex="-1"></a>  <span class="at">sum_x2_treatment =</span> sum_x2_treatment,</span>
+<span id="cb20-36"><a href="#cb20-36" aria-hidden="true" tabindex="-1"></a>  <span class="at">sum_y_x_treatment =</span> sum_y_x_treatment,</span>
+<span id="cb20-37"><a href="#cb20-37" aria-hidden="true" tabindex="-1"></a>  <span class="at">n_control =</span> n_control,</span>
+<span id="cb20-38"><a href="#cb20-38" aria-hidden="true" tabindex="-1"></a>  <span class="at">sum_y_control =</span> sum_y_control,</span>
+<span id="cb20-39"><a href="#cb20-39" aria-hidden="true" tabindex="-1"></a>  <span class="at">sum_x_control =</span> sum_x_control,</span>
+<span id="cb20-40"><a href="#cb20-40" aria-hidden="true" tabindex="-1"></a>  <span class="at">sum_y2_control =</span> sum_y2_control,</span>
+<span id="cb20-41"><a href="#cb20-41" aria-hidden="true" tabindex="-1"></a>  <span class="at">sum_x2_control =</span> sum_x2_control,</span>
+<span id="cb20-42"><a href="#cb20-42" aria-hidden="true" tabindex="-1"></a>  <span class="at">sum_y_x_control =</span> sum_y_x_control</span>
+<span id="cb20-43"><a href="#cb20-43" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb20-44"><a href="#cb20-44" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(ols_2nd_order_solution)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>$method
+[1] "OLS with 2nd order aggs"
 
-$p_value
-[1] 0</code></pre>
+$ate
+[1] 12.79828
+
+$se_ate
+[1] 0.1676463
+
+$relative_effect
+[1] 0.9680216
+
+$se_relative
+[1] 0.01918627</code></pre>
+</div>
+</div>
+</section>
+<section id="cuped" class="level2">
+<h2 class="anchored" data-anchor-id="cuped">CUPED</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>compute_cuped_stats <span class="ot">&lt;-</span> <span class="cf">function</span>(df) {</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># 1. Calculate the CUPED slope (theta) using the pooled covariance</span></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>  <span class="co"># CUPED typically assumes Cov(X, T) = 0, so it calculates theta globally</span></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>  theta <span class="ot">&lt;-</span> <span class="fu">cov</span>(df<span class="sc">$</span>y, df<span class="sc">$</span>x) <span class="sc">/</span> <span class="fu">var</span>(df<span class="sc">$</span>x)</span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>  <span class="co"># 2. Generate the adjusted outcome</span></span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Y_cuped = Y - theta * (X - mean(X))</span></span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a>  df<span class="sc">$</span>y_cuped <span class="ot">&lt;-</span> df<span class="sc">$</span>y <span class="sc">-</span> theta <span class="sc">*</span> (df<span class="sc">$</span>x <span class="sc">-</span> <span class="fu">mean</span>(df<span class="sc">$</span>x))</span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a>  <span class="co"># 3. Calculate Group Statistics</span></span>
+<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a>  stats <span class="ot">&lt;-</span> df <span class="sc">%&gt;%</span></span>
+<span id="cb22-12"><a href="#cb22-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(treated) <span class="sc">%&gt;%</span></span>
+<span id="cb22-13"><a href="#cb22-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">summarise</span>(</span>
+<span id="cb22-14"><a href="#cb22-14" aria-hidden="true" tabindex="-1"></a>      <span class="at">n =</span> <span class="fu">n</span>(),</span>
+<span id="cb22-15"><a href="#cb22-15" aria-hidden="true" tabindex="-1"></a>      <span class="at">mean_y =</span> <span class="fu">mean</span>(y_cuped),</span>
+<span id="cb22-16"><a href="#cb22-16" aria-hidden="true" tabindex="-1"></a>      <span class="at">var_y =</span> <span class="fu">var</span>(y_cuped),</span>
+<span id="cb22-17"><a href="#cb22-17" aria-hidden="true" tabindex="-1"></a>      <span class="at">.groups =</span> <span class="st">'drop'</span></span>
+<span id="cb22-18"><a href="#cb22-18" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb22-19"><a href="#cb22-19" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb22-20"><a href="#cb22-20" aria-hidden="true" tabindex="-1"></a>  n_t <span class="ot">&lt;-</span> stats<span class="sc">$</span>n[stats<span class="sc">$</span>treated <span class="sc">==</span> <span class="dv">1</span>]</span>
+<span id="cb22-21"><a href="#cb22-21" aria-hidden="true" tabindex="-1"></a>  n_c <span class="ot">&lt;-</span> stats<span class="sc">$</span>n[stats<span class="sc">$</span>treated <span class="sc">==</span> <span class="dv">0</span>]</span>
+<span id="cb22-22"><a href="#cb22-22" aria-hidden="true" tabindex="-1"></a>  mu_t <span class="ot">&lt;-</span> stats<span class="sc">$</span>mean_y[stats<span class="sc">$</span>treated <span class="sc">==</span> <span class="dv">1</span>]</span>
+<span id="cb22-23"><a href="#cb22-23" aria-hidden="true" tabindex="-1"></a>  mu_c <span class="ot">&lt;-</span> stats<span class="sc">$</span>mean_y[stats<span class="sc">$</span>treated <span class="sc">==</span> <span class="dv">0</span>]</span>
+<span id="cb22-24"><a href="#cb22-24" aria-hidden="true" tabindex="-1"></a>  v_t <span class="ot">&lt;-</span> stats<span class="sc">$</span>var_y[stats<span class="sc">$</span>treated <span class="sc">==</span> <span class="dv">1</span>]</span>
+<span id="cb22-25"><a href="#cb22-25" aria-hidden="true" tabindex="-1"></a>  v_c <span class="ot">&lt;-</span> stats<span class="sc">$</span>var_y[stats<span class="sc">$</span>treated <span class="sc">==</span> <span class="dv">0</span>]</span>
+<span id="cb22-26"><a href="#cb22-26" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb22-27"><a href="#cb22-27" aria-hidden="true" tabindex="-1"></a>  <span class="co"># 4. Average Treatment Effect (ATE)</span></span>
+<span id="cb22-28"><a href="#cb22-28" aria-hidden="true" tabindex="-1"></a>  ate <span class="ot">&lt;-</span> mu_t <span class="sc">-</span> mu_c</span>
+<span id="cb22-29"><a href="#cb22-29" aria-hidden="true" tabindex="-1"></a>  se_ate <span class="ot">&lt;-</span> <span class="fu">sqrt</span>((v_t <span class="sc">/</span> n_t) <span class="sc">+</span> (v_c <span class="sc">/</span> n_c))</span>
+<span id="cb22-30"><a href="#cb22-30" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb22-31"><a href="#cb22-31" aria-hidden="true" tabindex="-1"></a>  <span class="co"># 5. Relative Effect (Lift)</span></span>
+<span id="cb22-32"><a href="#cb22-32" aria-hidden="true" tabindex="-1"></a>  relative_effect <span class="ot">&lt;-</span> ate <span class="sc">/</span> mu_c</span>
+<span id="cb22-33"><a href="#cb22-33" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb22-34"><a href="#cb22-34" aria-hidden="true" tabindex="-1"></a>  <span class="co"># 6. Delta Method for Relative SE</span></span>
+<span id="cb22-35"><a href="#cb22-35" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Var(N/D) approx Var(N)/D^2 + N^2*Var(D)/D^4 - 2*N*Cov(N,D)/D^3</span></span>
+<span id="cb22-36"><a href="#cb22-36" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Here: N = mu_t - mu_c, D = mu_c</span></span>
+<span id="cb22-37"><a href="#cb22-37" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Cov(mu_t - mu_c, mu_c) = -Var(mu_c) = -v_c / n_c</span></span>
+<span id="cb22-38"><a href="#cb22-38" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb22-39"><a href="#cb22-39" aria-hidden="true" tabindex="-1"></a>  var_n <span class="ot">&lt;-</span> (v_t <span class="sc">/</span> n_t) <span class="sc">+</span> (v_c <span class="sc">/</span> n_c)</span>
+<span id="cb22-40"><a href="#cb22-40" aria-hidden="true" tabindex="-1"></a>  var_d <span class="ot">&lt;-</span> v_c <span class="sc">/</span> n_c</span>
+<span id="cb22-41"><a href="#cb22-41" aria-hidden="true" tabindex="-1"></a>  cov_nd <span class="ot">&lt;-</span> <span class="sc">-</span>(v_c <span class="sc">/</span> n_c)</span>
+<span id="cb22-42"><a href="#cb22-42" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb22-43"><a href="#cb22-43" aria-hidden="true" tabindex="-1"></a>  se_rel <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(</span>
+<span id="cb22-44"><a href="#cb22-44" aria-hidden="true" tabindex="-1"></a>    (var_n <span class="sc">/</span> mu_c<span class="sc">^</span><span class="dv">2</span>) <span class="sc">+</span> </span>
+<span id="cb22-45"><a href="#cb22-45" aria-hidden="true" tabindex="-1"></a>    (ate<span class="sc">^</span><span class="dv">2</span> <span class="sc">*</span> var_d <span class="sc">/</span> mu_c<span class="sc">^</span><span class="dv">4</span>) <span class="sc">-</span> </span>
+<span id="cb22-46"><a href="#cb22-46" aria-hidden="true" tabindex="-1"></a>    (<span class="dv">2</span> <span class="sc">*</span> ate <span class="sc">*</span> cov_nd <span class="sc">/</span> mu_c<span class="sc">^</span><span class="dv">3</span>)</span>
+<span id="cb22-47"><a href="#cb22-47" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb22-48"><a href="#cb22-48" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb22-49"><a href="#cb22-49" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(<span class="fu">list</span>(</span>
+<span id="cb22-50"><a href="#cb22-50" aria-hidden="true" tabindex="-1"></a>    <span class="at">method =</span> <span class="st">"CUPED"</span>,</span>
+<span id="cb22-51"><a href="#cb22-51" aria-hidden="true" tabindex="-1"></a>    <span class="at">ate =</span> ate,</span>
+<span id="cb22-52"><a href="#cb22-52" aria-hidden="true" tabindex="-1"></a>    <span class="at">se_ate =</span> se_ate,</span>
+<span id="cb22-53"><a href="#cb22-53" aria-hidden="true" tabindex="-1"></a>    <span class="at">relative_effect =</span> relative_effect,</span>
+<span id="cb22-54"><a href="#cb22-54" aria-hidden="true" tabindex="-1"></a>    <span class="at">se_relative =</span> se_rel</span>
+<span id="cb22-55"><a href="#cb22-55" aria-hidden="true" tabindex="-1"></a>  ))</span>
+<span id="cb22-56"><a href="#cb22-56" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb22-57"><a href="#cb22-57" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-58"><a href="#cb22-58" aria-hidden="true" tabindex="-1"></a><span class="co"># Execute comparison</span></span>
+<span id="cb22-59"><a href="#cb22-59" aria-hidden="true" tabindex="-1"></a>cuped_solution <span class="ot">&lt;-</span> <span class="fu">compute_cuped_stats</span>(data)</span>
+<span id="cb22-60"><a href="#cb22-60" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(cuped_solution)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>$method
+[1] "CUPED"
+
+$ate
+[1] 12.6496
+
+$se_ate
+[1] 0.1667247
+
+$relative_effect
+[1] 0.9513963
+
+$se_relative
+[1] 0.01900091</code></pre>
+</div>
+</div>
+</section>
+<section id="side-by-side-comparisons" class="level2">
+<h2 class="anchored" data-anchor-id="side-by-side-comparisons">Side by Side Comparisons</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">rbind</span>(</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>  ols_solution <span class="sc">%&gt;%</span> <span class="fu">data.frame</span>(),</span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>  ols_2nd_order_solution <span class="sc">%&gt;%</span> <span class="fu">data.frame</span>(),</span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>  cuped_solution <span class="sc">%&gt;%</span> <span class="fu">data.frame</span>()</span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                   method      ate    se_ate relative_effect se_relative
+1                     OLS 12.79828 0.2043816       1.2149266  0.03033267
+2 OLS with 2nd order aggs 12.79828 0.1676463       0.9680216  0.01918627
+3                   CUPED 12.64960 0.1667247       0.9513963  0.01900091</code></pre>
 </div>
 </div>
 
 
+</section>
 </section>
 
 </main> <!-- /main -->

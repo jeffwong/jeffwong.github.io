@@ -234,7 +234,7 @@ $$Var(\varepsilon_{i, g}) = Var(y_{i,g} - (\hat{\beta}_0 + \hat{\beta}_1 T_i + \
 
 If $g$ is defined by treatment or control, then $\hat{\beta}_0$ and $\hat{\beta}_1 T_i$ are
 constants within group $g$. Thus, the group variance is simply
-$$\sigma^2_g = Var(y_g - \hat{\beta}_2 y_{\text{pre}, g}) = Var(y_g) + \hat{\beta}_2^2 Var(y_{\text{pre}, g}) - 2 Cov(y_g, y_{\text{pre}, g})$$
+$$\sigma^2_g = Var(y_g - \hat{\beta}_2 y_{\text{pre}, g}) = Var(y_g) + \hat{\beta}_2^2 Var(y_{\text{pre}, g}) - 2\hat{\beta}_2 Cov(y_g, y_{\text{pre}, g})$$
 
 The entire covariance matrix for the parameters can be derived from aggregated data.
 Remember, this is the best approximation possible to the sandwich when only 2nd order
@@ -380,7 +380,7 @@ cat(sprintf("CUPED ATE:                   %.4f (SE: %.4f)\n", cuped_ate, cuped_s
 cat(sprintf("OLS ATE (Group-Robust):      %.4f (SE: %.4f)\n", ols_ate, ols_se))
 ```
 
-# For Relative Effects (Copy)
+# For Relative Effects
 
 The relative effect wants to compute $$\hat{R} = \frac{\hat{\beta}_1}{E[y | T = 0, y_\text{pre} = \bar{y}_\text{pre}]} = \frac{\hat{\beta}_1}{\hat{\beta}_0 + \hat{\beta}_2 \bar{y}_\text{pre}} = \frac{\hat{\beta}_1}{\hat{\mu}_C}$$
 
@@ -448,114 +448,158 @@ Var(\hat{R}) &\approx \frac{Var(\hat{\beta}_1)}{\hat{\mu}_C^2} +
 
 # Code
 
-```{r}
-set.seed(100)
-n = 1000
-data = data.frame(
-  treated = sample(0:1, n, replace = TRUE),
-  baseline = rnorm(n),
-  x = rnorm(n),
-  effect_if_treated = rnorm(n, 2, 1)
-) %>%
-  mutate(
-    effect = treated * effect_if_treated,
-    y = baseline + effect + 0.5 * x
-  )
-model = lm(y ~ treated + x, data)
+## Data Generator
 
-coeftest(model, vcovHC(model, "HC0"))
+```{r}
+# set.seed(100)
+# n = 1000
+# data = data.frame(
+#   treated = sample(0:1, n, replace = TRUE),
+#   baseline = rnorm(n, 20),
+#   x = rnorm(n),
+#   effect_if_treated = rnorm(n, 2, 1)
+# ) %>%
+#   mutate(
+#     effect = treated * effect_if_treated,
+#     y = baseline + effect + 0.5 * x
+#   )
+
+set.seed(100)
+n <- 100000
+baseline_effect <- 1
+hte_factor <- 1
+
+# Generate X with whales
+x <- rlnorm(n, meanlog = 2, sdlog = 1)
+
+# Simulate imbalance
+data <- data.frame(x = x) %>%
+  arrange(desc(X)) %>%
+  mutate(
+    # Create a propensity vector where the first half has high propensity
+    # but the second half has low propensity. Since the data is sorted this
+    # corresponds to a correlation with X.
+    prob_t = c(rep(0.6, n/2), rep(0.4, n/2)),
+    treated = rbinom(n, 1, prob_t),
+    noise = rnorm(n, 0, 15)
+   ) %>%
+  mutate(
+    effect_if_treated = rnorm(n, baseline_effect, 1) + hte_factor * x,
+    y = noise + rnorm(n, 1, 1)*x + effect_if_treated * treated
+  )
 ```
+
+## OLS on raw data
+
+```{r}
+model = lm(y ~ treated + x, data)
+covariances = vcovHC(model, 'HC0')
+
+# ATE
+ate = coef(model)[2]
+var_ate = covariances[2,2]
+se_ate = sqrt(var_ate)
+
+# Relative ATE
+mean_x_c = data %>% filter(treated == 0) %>% pull(x) %>% mean
+baseline = coef(model)[1] + coef(model)[3] * mean_x_c
+rel_effect = ate / baseline
+
+var_baseline = matrix(c(1, 0, mean_x_c), nrow = 1) %*% covariances %*% c(1, 0, mean_x_c)
+cov_ate_baseline = matrix(c(0, 1, 0), nrow = 1) %*% covariances %*% c(1, 0, mean_x_c)
+
+# Delta Method
+var_rel_effect = var_ate/baseline^2 + ate^2 * var_baseline/baseline^4 - 2*ate*cov_ate_baseline/baseline^3
+se_rel_effect = sqrt(var_rel_effect)
+
+ols_solution = list(
+  method = 'OLS',
+  ate = as.numeric(ate),
+  se_ate = as.numeric(se_ate),
+  relative_effect = as.numeric(rel_effect),
+  se_relative = as.numeric(se_rel_effect)
+)
+print(ols_solution)
+```
+
+## First Principles with 2nd order aggs
 
 ```{r}
 compute_ab_stats <- function(n_treatment, sum_y_treatment, sum_x_treatment, sum_y2_treatment, sum_x2_treatment, sum_y_x_treatment,
                              n_control, sum_y_control, sum_x_control, sum_y2_control, sum_x2_control, sum_y_x_control) {
 
-  # 1. Global Aggregates
   n <- n_treatment + n_control
   sum_y <- sum_y_treatment + sum_y_control
   sum_x <- sum_x_treatment + sum_x_control
   sum_x2 <- sum_x2_treatment + sum_x2_control
   sum_y_x <- sum_y_x_treatment + sum_y_x_control
 
-  # 2. Build the Global Information Matrix (X'X) 
-  # Design: [Intercept, Treatment_Indicator, Covariate]
-  XX <- matrix(c(
+  XtX <- matrix(c(
     n,           n_treatment,     sum_x,
     n_treatment, n_treatment,     sum_x_treatment,
     sum_x,       sum_x_treatment, sum_x2
   ), nrow = 3, byrow = TRUE)
-
-  # X'Y Vector
-  XY <- c(sum_y, sum_y_treatment, sum_y_x)
-
-  # Solve for coefficients (beta)
-  XX_inv <- solve(XX)
-  beta <- XX_inv %*% XY
+  XtX_inv <- solve(XtX)
+  Xty <- c(sum_y, sum_y_treatment, sum_y_x)
+  beta <- XtX_inv %*% Xty
   
   ate <- beta[2]
   slope_x <- beta[3]
 
-  # 3. Calculate Group-Specific Residual Variances (sigma^2_g)
-  # This uses the partial slope (slope_x) to find the unexplained variance
-  calc_resid_var <- function(n_g, s_y, s_x, s_y2, s_x2, s_yx, b_x) {
+  # Group Robust Covariances
+  residual_variance_for_group <- function(n_g, s_y, s_x, s_y2, s_x2, s_yx, b_x) {
     m_y <- s_y / n_g
     m_x <- s_x / n_g
     v_y <- (s_y2 / n_g) - m_y^2
     v_x <- (s_x2 / n_g) - m_x^2
     cov_yx <- (s_yx / n_g) - (m_y * m_x)
-    # Variance of the residuals: Var(y - beta_x * x)
     return(v_y + (b_x^2 * v_x) - (2 * b_x * cov_yx))
   }
+  sigma2_treatment <- residual_variance_for_group(n_treatment, sum_y_treatment, sum_x_treatment, 
+                                                  sum_y2_treatment, sum_x2_treatment, sum_y_x_treatment, slope_x)
+  sigma2_control <- residual_variance_for_group(n_control, sum_y_control, sum_x_control, 
+                                                sum_y2_control, sum_x2_control, sum_y_x_control, slope_x)
 
-  var_resid_t <- calc_resid_var(n_treatment, sum_y_treatment, sum_x_treatment, 
-                                sum_y2_treatment, sum_x2_treatment, sum_y_x_treatment, slope_x)
-  
-  var_resid_c <- calc_resid_var(n_control, sum_y_control, sum_x_control, 
-                                sum_y2_control, sum_x2_control, sum_y_x_control, slope_x)
-
-  # 4. Build the "Meat" Matrix (X' * Omega * X)
-  # Reconstructing the middle of the sandwich using grouped homoskedasticity
-  
-  # Treatment Meat Contribution
-  XX_t <- matrix(c(
+  # meat matrix for treatment
+  XtX_treatment <- matrix(c(
     n_treatment,     n_treatment,     sum_x_treatment,
     n_treatment,     n_treatment,     sum_x_treatment,
     sum_x_treatment, sum_x_treatment, sum_x2_treatment
   ), nrow = 3, byrow = TRUE)
-  
-  # Control Meat Contribution (Treatment columns/rows are 0)
-  XX_c <- matrix(c(
+  # meat matrix for control. Many elements are zeroed out.
+  XtX_control <- matrix(c(
     n_control,       0,               sum_x_control,
     0,               0,               0,
     sum_x_control,   0,               sum_x2_control
   ), nrow = 3, byrow = TRUE)
-  
-  Meat <- (XX_t * var_resid_t) + (XX_c * var_resid_c)
+  Meat <- (XtX_treatment * sigma2_treatment) + (XtX_control * sigma2_control)
 
-  # 5. Sandwich Estimator
-  V_cov <- XX_inv %*% Meat %*% XX_inv
-  se_ate <- sqrt(V_cov[2, 2])
+  covariances <- XtX_inv %*% Meat %*% XtX_inv
+  var_ate = covariances[2, 2]
+  se_ate <- sqrt(var_ate)
 
-  # 6. Relative Effect (Lift)
-  # Adjusting Control Mean by evaluated global mean of x
+  # Relative effects
+  ## Point estimate
   mean_x_global <- sum_x / n
   mean_y_c <- sum_y_control / n_control
   mean_x_c <- sum_x_control / n_control
+  mu_control <- mean_y_c - slope_x * (mean_x_c - mean_x_global)
+  rel_effect <- ate / mu_control
   
-  mu0_adj <- mean_y_c - slope_x * (mean_x_c - mean_x_global)
-  rel_effect <- ate / mu0_adj
+  # Variance
+  var_mu_control = matrix(c(1, 0, mean_x_c), nrow = 1) %*% covariances %*% c(1, 0, mean_x_c)
+  cov_ate_mu_control = matrix(c(0, 1, 0), nrow = 1) %*% covariances %*% c(1, 0, mean_x_c)
   
-  # Delta Method for SE of Relative Effect
-  # We use the variance of the adjusted control mean (var_resid_c / n_control)
-  var_mu0 <- var_resid_c / n_control
-  se_rel <- sqrt((se_ate^2 / mu0_adj^2) + (ate^2 * var_mu0 / mu0_adj^4))
+  # Delta Method
+  var_rel_effect = var_ate/mu_control^2 + ate^2 * var_mu_control/mu_control^4 - 2*ate*cov_ate_mu_control/mu_control^3
+  se_rel_effect = sqrt(var_rel_effect)
 
   return(list(
+    method = 'OLS with 2nd order aggs',
     ate = as.numeric(ate),
     se_ate = as.numeric(se_ate),
     relative_effect = as.numeric(rel_effect),
-    se_relative = as.numeric(se_rel),
-    p_value = 2 * (1 - pnorm(abs(ate / se_ate)))
+    se_relative = as.numeric(se_rel_effect)
   ))
 }
 ```
@@ -577,31 +621,107 @@ treatment_aggs = aggs %>%
 control_aggs = aggs %>%
   filter(treated == 0)
 
-  n_treatment = treatment_aggs %>% pull(n)
-  sum_y_treatment = treatment_aggs %>% pull(sum_y)
-  sum_x_treatment = treatment_aggs %>% pull(sum_x)
-  sum_y2_treatment = treatment_aggs %>% pull(sum_y2)
-  sum_x2_treatment = treatment_aggs %>% pull(sum_x2)
-  sum_y_x_treatment = treatment_aggs %>% pull(sum_y_x)
-  n_control = control_aggs %>% pull(n)
-  sum_y_control = control_aggs %>% pull(sum_y)
-  sum_x_control = control_aggs %>% pull(sum_x)
-  sum_y2_control = control_aggs %>% pull(sum_y2)
-  sum_x2_control = control_aggs %>% pull(sum_x2)
-  sum_y_x_control = control_aggs %>% pull(sum_y_x)
+n_treatment = treatment_aggs %>% pull(n)
+sum_y_treatment = treatment_aggs %>% pull(sum_y)
+sum_x_treatment = treatment_aggs %>% pull(sum_x)
+sum_y2_treatment = treatment_aggs %>% pull(sum_y2)
+sum_x2_treatment = treatment_aggs %>% pull(sum_x2)
+sum_y_x_treatment = treatment_aggs %>% pull(sum_y_x)
+n_control = control_aggs %>% pull(n)
+sum_y_control = control_aggs %>% pull(sum_y)
+sum_x_control = control_aggs %>% pull(sum_x)
+sum_y2_control = control_aggs %>% pull(sum_y2)
+sum_x2_control = control_aggs %>% pull(sum_x2)
+sum_y_x_control = control_aggs %>% pull(sum_y_x)
 
-compute_ab_stats(
-  n_treatment = treatment_aggs %>% pull(n),
-  sum_y_treatment = treatment_aggs %>% pull(sum_y),
-  sum_x_treatment = treatment_aggs %>% pull(sum_x),
-  sum_y2_treatment = treatment_aggs %>% pull(sum_y2),
-  sum_x2_treatment = treatment_aggs %>% pull(sum_x2),
-  sum_y_x_treatment = treatment_aggs %>% pull(sum_y_x),
-  n_control = control_aggs %>% pull(n),
-  sum_y_control = control_aggs %>% pull(sum_y),
-  sum_x_control = control_aggs %>% pull(sum_x) ,
-  sum_y2_control = control_aggs %>% pull(sum_y2),
-  sum_x2_control = control_aggs %>% pull(sum_x2),
-  sum_y_x_control = control_aggs %>% pull(sum_y_x)
+ols_2nd_order_solution = compute_ab_stats(
+  n_treatment = n_treatment,
+  sum_y_treatment = sum_y_treatment,
+  sum_x_treatment = sum_x_treatment,
+  sum_y2_treatment = sum_y2_treatment,
+  sum_x2_treatment = sum_x2_treatment,
+  sum_y_x_treatment = sum_y_x_treatment,
+  n_control = n_control,
+  sum_y_control = sum_y_control,
+  sum_x_control = sum_x_control,
+  sum_y2_control = sum_y2_control,
+  sum_x2_control = sum_x2_control,
+  sum_y_x_control = sum_y_x_control
+)
+print(ols_2nd_order_solution)
+```
+
+## CUPED
+
+```{r}
+compute_cuped_stats <- function(df) {
+  # 1. Calculate the CUPED slope (theta) using the pooled covariance
+  # CUPED typically assumes Cov(X, T) = 0, so it calculates theta globally
+  theta <- cov(df$y, df$x) / var(df$x)
+  
+  # 2. Generate the adjusted outcome
+  # Y_cuped = Y - theta * (X - mean(X))
+  df$y_cuped <- df$y - theta * (df$x - mean(df$x))
+  
+  # 3. Calculate Group Statistics
+  stats <- df %>%
+    group_by(treated) %>%
+    summarise(
+      n = n(),
+      mean_y = mean(y_cuped),
+      var_y = var(y_cuped),
+      .groups = 'drop'
+    )
+  
+  n_t <- stats$n[stats$treated == 1]
+  n_c <- stats$n[stats$treated == 0]
+  mu_t <- stats$mean_y[stats$treated == 1]
+  mu_c <- stats$mean_y[stats$treated == 0]
+  v_t <- stats$var_y[stats$treated == 1]
+  v_c <- stats$var_y[stats$treated == 0]
+  
+  # 4. Average Treatment Effect (ATE)
+  ate <- mu_t - mu_c
+  se_ate <- sqrt((v_t / n_t) + (v_c / n_c))
+  
+  # 5. Relative Effect (Lift)
+  relative_effect <- ate / mu_c
+  
+  # 6. Delta Method for Relative SE
+  # Var(N/D) approx Var(N)/D^2 + N^2*Var(D)/D^4 - 2*N*Cov(N,D)/D^3
+  # Here: N = mu_t - mu_c, D = mu_c
+  # Cov(mu_t - mu_c, mu_c) = -Var(mu_c) = -v_c / n_c
+  
+  var_n <- (v_t / n_t) + (v_c / n_c)
+  var_d <- v_c / n_c
+  cov_nd <- -(v_c / n_c)
+  
+  se_rel <- sqrt(
+    (var_n / mu_c^2) + 
+    (ate^2 * var_d / mu_c^4) - 
+    (2 * ate * cov_nd / mu_c^3)
+  )
+  
+  return(list(
+    method = "CUPED",
+    ate = ate,
+    se_ate = se_ate,
+    relative_effect = relative_effect,
+    se_relative = se_rel
+  ))
+}
+
+# Execute comparison
+cuped_solution <- compute_cuped_stats(data)
+print(cuped_solution)
+```
+
+## Side by Side Comparisons
+
+```{r}
+rbind(
+  ols_solution %>% data.frame(),
+  ols_2nd_order_solution %>% data.frame(),
+  cuped_solution %>% data.frame()
 )
 ```

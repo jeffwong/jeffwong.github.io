@@ -960,7 +960,7 @@ font-style: inherit;">print</span>(results)</span></code></pre></div></div>
   <pubDate>Sun, 08 Feb 2026 00:00:00 GMT</pubDate>
 </item>
 <item>
-  <title>Creating CUPED from FWL (under construction)</title>
+  <title>Creating CUPED from FWL</title>
   <dc:creator>Jeffrey Wong</dc:creator>
   <link>https://jeffwong.github.io/posts/cuped_from_fwl/</link>
   <description><![CDATA[ 
@@ -970,10 +970,10 @@ font-style: inherit;">print</span>(results)</span></code></pre></div></div>
 
 
 <p><a href="https://dl.acm.org/doi/pdf/10.1145/2433396.2433413">CUPED</a> is a well known technique to greatly increase statistical power in a controlled experiment. The CUPED formulation has similarities to the OLS model</p>
-<p><img src="https://latex.codecogs.com/png.latex?y%20=%20%5Cbeta_0%20+%20T%5Cbeta_1%20+%20(y_%7B%5Ctext%7Bpre%7D%7D-1_n%20%5Cmu_c)%20%5Cbeta_2%20+%20%5Cvarepsilon"></p>
+<p><img src="https://latex.codecogs.com/png.latex?y%20=%20%5Cbeta_0%20+%20T%5Cbeta_1%20+%20(y_%7B%5Ctext%7Bpre%7D%7D-1_n%20%5Cbar%7By%7D_%5Ctext%7Bpre,%20c%7D)%20%5Cbeta_2%20+%20%5Cvarepsilon"></p>
 <p>This blog post describes how the CUPED formulation can come out of the <a href="https://en.wikipedia.org/wiki/Frisch–Waugh–Lovell_theorem">Frisch Waugh Lovell theorem</a> for ordinary least squares. This is my favorite way to derive the CUPED estimator, and this exercise can help to build a deeper appreciation for the algebra of variance reduction. I particularly like this formulation because the FWL is very similar to the formulation of other modern causal ML techniques for variance reduction like the R learner, MLRate, Double ML etc.</p>
 <p>In this model, variation in <img src="https://latex.codecogs.com/png.latex?y"> is explained by the previous values contained in <img src="https://latex.codecogs.com/png.latex?y_%7B%5Ctext%7Bpre%7D%7D">. For example, if someone watched a lot of movies during the pretreatment window, they are likely to watch a lot of movies during the posttreatment window too. Their particular <img src="https://latex.codecogs.com/png.latex?y"> values are explainable, and we can reduce the residual variance. This increases power.</p>
-<p>While there are 3 parameters in the model, only 2 are meaningful. <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Cbeta%7D_1"> represents the average treatment effect, and <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Cbeta%7D_0"> represents the baseline value for the average user who is in the control, so <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Cbeta%7D_0%20=%20E%5By%20%7C%20T%20=%200,%20y_%7B%5Ctext%7Bpre%7D%7D%20=%20%5Cmu_c%5D">. While <img src="https://latex.codecogs.com/png.latex?%5Cbeta_2"> is useful for decreasing variance, it is not useful for inference. It does not play a role in computing the treatment effect. <img src="https://latex.codecogs.com/png.latex?%5Cbeta_2"> is referred to as a nuisance variable.</p>
+<p>While there are 3 parameters in the model, only 2 are meaningful. <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Cbeta%7D_1"> represents the average treatment effect, and <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Cbeta%7D_0"> represents the baseline value for the average user who is in the control, so <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Cbeta%7D_0%20=%20E%5By%20%7C%20T%20=%200,%20y_%7B%5Ctext%7Bpre%7D%7D%20=%20%5Cbar%7By%7D_%5Ctext%7Bpre,%20c%7D%5D">. While <img src="https://latex.codecogs.com/png.latex?%5Cbeta_2"> is useful for decreasing variance, it is not useful for inference. It does not play a role in computing the treatment effect. <img src="https://latex.codecogs.com/png.latex?%5Cbeta_2"> is referred to as a nuisance variable.</p>
 <p>The CUPED formulation has a special computing strategy, making it not only great for statistical power, but also easy to implement.</p>
 <section id="the-fwl" class="level1">
 <h1>The FWL</h1>
@@ -1478,7 +1478,7 @@ font-style: inherit;">=</span> <span class="cf" style="color: #003B4F;
 background-color: null;
 font-weight: bold;
 font-style: inherit;">function</span>(data) {</span>
-<span id="cb16-2">  model <span class="ot" style="color: #003B4F;
+<span id="cb16-2">model <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">=</span> <span class="fu" style="color: #4758AB;
 background-color: null;
@@ -1538,7 +1538,16 @@ background-color: null;
 font-style: inherit;">pull</span>(x) <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">%&gt;%</span> mean</span>
-<span id="cb16-12">baseline <span class="ot" style="color: #003B4F;
+<span id="cb16-12">mean_x <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">=</span> data <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%&gt;%</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">pull</span>(x) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%&gt;%</span> mean</span>
+<span id="cb16-13">baseline <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">=</span> <span class="fu" style="color: #4758AB;
 background-color: null;
@@ -1552,14 +1561,14 @@ font-style: inherit;">coef</span>(model)[<span class="dv" style="color: #AD0000;
 background-color: null;
 font-style: inherit;">3</span>] <span class="sc" style="color: #5E5E5E;
 background-color: null;
-font-style: inherit;">*</span> mean_x_c</span>
-<span id="cb16-13">rel_effect <span class="ot" style="color: #003B4F;
+font-style: inherit;">*</span> mean_x</span>
+<span id="cb16-14">rel_effect <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">=</span> ate <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">/</span> baseline</span>
-<span id="cb16-14"></span>
-<span id="cb16-15">var_baseline <span class="ot" style="color: #003B4F;
+<span id="cb16-15"></span>
+<span id="cb16-16">var_baseline <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">=</span> <span class="fu" style="color: #4758AB;
 background-color: null;
@@ -1583,8 +1592,8 @@ font-style: inherit;">c</span>(<span class="dv" style="color: #AD0000;
 background-color: null;
 font-style: inherit;">1</span>, <span class="dv" style="color: #AD0000;
 background-color: null;
-font-style: inherit;">0</span>, mean_x_c)</span>
-<span id="cb16-16">cov_ate_baseline <span class="ot" style="color: #003B4F;
+font-style: inherit;">0</span>, mean_x)</span>
+<span id="cb16-17">cov_ate_baseline <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">=</span> <span class="fu" style="color: #4758AB;
 background-color: null;
@@ -1610,12 +1619,12 @@ font-style: inherit;">c</span>(<span class="dv" style="color: #AD0000;
 background-color: null;
 font-style: inherit;">1</span>, <span class="dv" style="color: #AD0000;
 background-color: null;
-font-style: inherit;">0</span>, mean_x_c)</span>
-<span id="cb16-17"></span>
-<span id="cb16-18"><span class="co" style="color: #5E5E5E;
+font-style: inherit;">0</span>, mean_x)</span>
+<span id="cb16-18"></span>
+<span id="cb16-19"><span class="co" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;"># Delta Method</span></span>
-<span id="cb16-19">var_rel_effect <span class="ot" style="color: #003B4F;
+<span id="cb16-20">var_rel_effect <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">=</span> var_ate<span class="sc" style="color: #5E5E5E;
 background-color: null;
@@ -1652,90 +1661,90 @@ background-color: null;
 font-style: inherit;">^</span><span class="dv" style="color: #AD0000;
 background-color: null;
 font-style: inherit;">3</span></span>
-<span id="cb16-20">se_rel_effect <span class="ot" style="color: #003B4F;
+<span id="cb16-21">se_rel_effect <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">=</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">sqrt</span>(var_rel_effect)</span>
-<span id="cb16-21"></span>
-<span id="cb16-22">ols_solution <span class="ot" style="color: #003B4F;
+<span id="cb16-22"></span>
+<span id="cb16-23">ols_solution <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">=</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">list</span>(</span>
-<span id="cb16-23">  <span class="at" style="color: #657422;
+<span id="cb16-24">  <span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">method =</span> <span class="st" style="color: #20794D;
 background-color: null;
 font-style: inherit;">'OLS'</span>,</span>
-<span id="cb16-24">  <span class="at" style="color: #657422;
+<span id="cb16-25">  <span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">ate =</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">as.numeric</span>(ate),</span>
-<span id="cb16-25">  <span class="at" style="color: #657422;
+<span id="cb16-26">  <span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">se_ate =</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">as.numeric</span>(se_ate),</span>
-<span id="cb16-26">  <span class="at" style="color: #657422;
+<span id="cb16-27">  <span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">relative_effect =</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">as.numeric</span>(rel_effect),</span>
-<span id="cb16-27">  <span class="at" style="color: #657422;
+<span id="cb16-28">  <span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">se_relative =</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">as.numeric</span>(se_rel_effect)</span>
-<span id="cb16-28">)</span>
-<span id="cb16-29">}</span>
-<span id="cb16-30"></span>
-<span id="cb16-31">ols_from_2nd_order_aggs <span class="ot" style="color: #003B4F;
+<span id="cb16-29">)</span>
+<span id="cb16-30">}</span>
+<span id="cb16-31"></span>
+<span id="cb16-32">ols_from_2nd_order_aggs <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">&lt;-</span> <span class="cf" style="color: #003B4F;
 background-color: null;
 font-weight: bold;
 font-style: inherit;">function</span>(n_treatment, sum_y_treatment, sum_x_treatment, sum_y2_treatment, sum_x2_treatment, sum_y_x_treatment,</span>
-<span id="cb16-32">                             n_control, sum_y_control, sum_x_control, sum_y2_control, sum_x2_control, sum_y_x_control) {</span>
-<span id="cb16-33"></span>
-<span id="cb16-34">  n <span class="ot" style="color: #003B4F;
+<span id="cb16-33">                             n_control, sum_y_control, sum_x_control, sum_y2_control, sum_x2_control, sum_y_x_control) {</span>
+<span id="cb16-34"></span>
+<span id="cb16-35">  n <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">&lt;-</span> n_treatment <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">+</span> n_control</span>
-<span id="cb16-35">  sum_y <span class="ot" style="color: #003B4F;
+<span id="cb16-36">  sum_y <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">&lt;-</span> sum_y_treatment <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">+</span> sum_y_control</span>
-<span id="cb16-36">  sum_x <span class="ot" style="color: #003B4F;
+<span id="cb16-37">  sum_x <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">&lt;-</span> sum_x_treatment <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">+</span> sum_x_control</span>
-<span id="cb16-37">  sum_x2 <span class="ot" style="color: #003B4F;
+<span id="cb16-38">  sum_x2 <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">&lt;-</span> sum_x2_treatment <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">+</span> sum_x2_control</span>
-<span id="cb16-38">  sum_y_x <span class="ot" style="color: #003B4F;
+<span id="cb16-39">  sum_y_x <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">&lt;-</span> sum_y_x_treatment <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">+</span> sum_y_x_control</span>
-<span id="cb16-39"></span>
-<span id="cb16-40">  XtX <span class="ot" style="color: #003B4F;
+<span id="cb16-40"></span>
+<span id="cb16-41">  XtX <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">matrix</span>(<span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">c</span>(</span>
-<span id="cb16-41">    n,           n_treatment,     sum_x,</span>
-<span id="cb16-42">    n_treatment, n_treatment,     sum_x_treatment,</span>
-<span id="cb16-43">    sum_x,       sum_x_treatment, sum_x2</span>
-<span id="cb16-44">  ), <span class="at" style="color: #657422;
+<span id="cb16-42">    n,           n_treatment,     sum_x,</span>
+<span id="cb16-43">    n_treatment, n_treatment,     sum_x_treatment,</span>
+<span id="cb16-44">    sum_x,       sum_x_treatment, sum_x2</span>
+<span id="cb16-45">  ), <span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">nrow =</span> <span class="dv" style="color: #AD0000;
 background-color: null;
@@ -1744,53 +1753,53 @@ background-color: null;
 font-style: inherit;">byrow =</span> <span class="cn" style="color: #8f5902;
 background-color: null;
 font-style: inherit;">TRUE</span>)</span>
-<span id="cb16-45">  XtX_inv <span class="ot" style="color: #003B4F;
+<span id="cb16-46">  XtX_inv <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">solve</span>(XtX)</span>
-<span id="cb16-46">  Xty <span class="ot" style="color: #003B4F;
+<span id="cb16-47">  Xty <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">c</span>(sum_y, sum_y_treatment, sum_y_x)</span>
-<span id="cb16-47">  beta <span class="ot" style="color: #003B4F;
+<span id="cb16-48">  beta <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">&lt;-</span> XtX_inv <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">%*%</span> Xty</span>
-<span id="cb16-48">  </span>
-<span id="cb16-49">  ate <span class="ot" style="color: #003B4F;
+<span id="cb16-49">  </span>
+<span id="cb16-50">  ate <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">&lt;-</span> beta[<span class="dv" style="color: #AD0000;
 background-color: null;
 font-style: inherit;">2</span>]</span>
-<span id="cb16-50">  slope_x <span class="ot" style="color: #003B4F;
+<span id="cb16-51">  slope_x <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">&lt;-</span> beta[<span class="dv" style="color: #AD0000;
 background-color: null;
 font-style: inherit;">3</span>]</span>
-<span id="cb16-51"></span>
-<span id="cb16-52">  <span class="co" style="color: #5E5E5E;
+<span id="cb16-52"></span>
+<span id="cb16-53">  <span class="co" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;"># Group Robust Covariances</span></span>
-<span id="cb16-53">  residual_variance_for_group <span class="ot" style="color: #003B4F;
+<span id="cb16-54">  residual_variance_for_group <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">&lt;-</span> <span class="cf" style="color: #003B4F;
 background-color: null;
 font-weight: bold;
 font-style: inherit;">function</span>(n_g, s_y, s_x, s_y2, s_x2, s_yx, b_x) {</span>
-<span id="cb16-54">    m_y <span class="ot" style="color: #003B4F;
+<span id="cb16-55">    m_y <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">&lt;-</span> s_y <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">/</span> n_g</span>
-<span id="cb16-55">    m_x <span class="ot" style="color: #003B4F;
+<span id="cb16-56">    m_x <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">&lt;-</span> s_x <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">/</span> n_g</span>
-<span id="cb16-56">    v_y <span class="ot" style="color: #003B4F;
+<span id="cb16-57">    v_y <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">&lt;-</span> (s_y2 <span class="sc" style="color: #5E5E5E;
 background-color: null;
@@ -1801,7 +1810,7 @@ background-color: null;
 font-style: inherit;">^</span><span class="dv" style="color: #AD0000;
 background-color: null;
 font-style: inherit;">2</span></span>
-<span id="cb16-57">    v_x <span class="ot" style="color: #003B4F;
+<span id="cb16-58">    v_x <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">&lt;-</span> (s_x2 <span class="sc" style="color: #5E5E5E;
 background-color: null;
@@ -1812,7 +1821,7 @@ background-color: null;
 font-style: inherit;">^</span><span class="dv" style="color: #AD0000;
 background-color: null;
 font-style: inherit;">2</span></span>
-<span id="cb16-58">    cov_yx <span class="ot" style="color: #003B4F;
+<span id="cb16-59">    cov_yx <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">&lt;-</span> (s_yx <span class="sc" style="color: #5E5E5E;
 background-color: null;
@@ -1821,7 +1830,7 @@ background-color: null;
 font-style: inherit;">-</span> (m_y <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">*</span> m_x)</span>
-<span id="cb16-59">    <span class="fu" style="color: #4758AB;
+<span id="cb16-60">    <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">return</span>(v_y <span class="sc" style="color: #5E5E5E;
 background-color: null;
@@ -1840,34 +1849,34 @@ background-color: null;
 font-style: inherit;">*</span> b_x <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">*</span> cov_yx))</span>
-<span id="cb16-60">  }</span>
-<span id="cb16-61">  sigma2_treatment <span class="ot" style="color: #003B4F;
+<span id="cb16-61">  }</span>
+<span id="cb16-62">  sigma2_treatment <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">residual_variance_for_group</span>(n_treatment, sum_y_treatment, sum_x_treatment, </span>
-<span id="cb16-62">                                                  sum_y2_treatment, sum_x2_treatment, sum_y_x_treatment, slope_x)</span>
-<span id="cb16-63">  sigma2_control <span class="ot" style="color: #003B4F;
+<span id="cb16-63">                                                  sum_y2_treatment, sum_x2_treatment, sum_y_x_treatment, slope_x)</span>
+<span id="cb16-64">  sigma2_control <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">residual_variance_for_group</span>(n_control, sum_y_control, sum_x_control, </span>
-<span id="cb16-64">                                                sum_y2_control, sum_x2_control, sum_y_x_control, slope_x)</span>
-<span id="cb16-65"></span>
-<span id="cb16-66">  <span class="co" style="color: #5E5E5E;
+<span id="cb16-65">                                                sum_y2_control, sum_x2_control, sum_y_x_control, slope_x)</span>
+<span id="cb16-66"></span>
+<span id="cb16-67">  <span class="co" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;"># meat matrix for treatment</span></span>
-<span id="cb16-67">  XtX_treatment <span class="ot" style="color: #003B4F;
+<span id="cb16-68">  XtX_treatment <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">matrix</span>(<span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">c</span>(</span>
-<span id="cb16-68">    n_treatment,     n_treatment,     sum_x_treatment,</span>
 <span id="cb16-69">    n_treatment,     n_treatment,     sum_x_treatment,</span>
-<span id="cb16-70">    sum_x_treatment, sum_x_treatment, sum_x2_treatment</span>
-<span id="cb16-71">  ), <span class="at" style="color: #657422;
+<span id="cb16-70">    n_treatment,     n_treatment,     sum_x_treatment,</span>
+<span id="cb16-71">    sum_x_treatment, sum_x_treatment, sum_x2_treatment</span>
+<span id="cb16-72">  ), <span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">nrow =</span> <span class="dv" style="color: #AD0000;
 background-color: null;
@@ -1876,30 +1885,30 @@ background-color: null;
 font-style: inherit;">byrow =</span> <span class="cn" style="color: #8f5902;
 background-color: null;
 font-style: inherit;">TRUE</span>)</span>
-<span id="cb16-72">  <span class="co" style="color: #5E5E5E;
+<span id="cb16-73">  <span class="co" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;"># meat matrix for control. Many elements are zeroed out.</span></span>
-<span id="cb16-73">  XtX_control <span class="ot" style="color: #003B4F;
+<span id="cb16-74">  XtX_control <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">matrix</span>(<span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">c</span>(</span>
-<span id="cb16-74">    n_control,       <span class="dv" style="color: #AD0000;
+<span id="cb16-75">    n_control,       <span class="dv" style="color: #AD0000;
 background-color: null;
 font-style: inherit;">0</span>,               sum_x_control,</span>
-<span id="cb16-75">    <span class="dv" style="color: #AD0000;
+<span id="cb16-76">    <span class="dv" style="color: #AD0000;
 background-color: null;
 font-style: inherit;">0</span>,               <span class="dv" style="color: #AD0000;
 background-color: null;
 font-style: inherit;">0</span>,               <span class="dv" style="color: #AD0000;
 background-color: null;
 font-style: inherit;">0</span>,</span>
-<span id="cb16-76">    sum_x_control,   <span class="dv" style="color: #AD0000;
+<span id="cb16-77">    sum_x_control,   <span class="dv" style="color: #AD0000;
 background-color: null;
 font-style: inherit;">0</span>,               sum_x2_control</span>
-<span id="cb16-77">  ), <span class="at" style="color: #657422;
+<span id="cb16-78">  ), <span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">nrow =</span> <span class="dv" style="color: #AD0000;
 background-color: null;
@@ -1908,7 +1917,7 @@ background-color: null;
 font-style: inherit;">byrow =</span> <span class="cn" style="color: #8f5902;
 background-color: null;
 font-style: inherit;">TRUE</span>)</span>
-<span id="cb16-78">  Meat <span class="ot" style="color: #003B4F;
+<span id="cb16-79">  Meat <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">&lt;-</span> (XtX_treatment <span class="sc" style="color: #5E5E5E;
 background-color: null;
@@ -1917,49 +1926,49 @@ background-color: null;
 font-style: inherit;">+</span> (XtX_control <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">*</span> sigma2_control)</span>
-<span id="cb16-79"></span>
-<span id="cb16-80">  covariances <span class="ot" style="color: #003B4F;
+<span id="cb16-80"></span>
+<span id="cb16-81">  covariances <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">&lt;-</span> XtX_inv <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">%*%</span> Meat <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">%*%</span> XtX_inv</span>
-<span id="cb16-81">  var_ate <span class="ot" style="color: #003B4F;
+<span id="cb16-82">  var_ate <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">=</span> covariances[<span class="dv" style="color: #AD0000;
 background-color: null;
 font-style: inherit;">2</span>, <span class="dv" style="color: #AD0000;
 background-color: null;
 font-style: inherit;">2</span>]</span>
-<span id="cb16-82">  se_ate <span class="ot" style="color: #003B4F;
+<span id="cb16-83">  se_ate <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">sqrt</span>(var_ate)</span>
-<span id="cb16-83"></span>
-<span id="cb16-84">  <span class="co" style="color: #5E5E5E;
+<span id="cb16-84"></span>
+<span id="cb16-85">  <span class="co" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;"># Relative effects</span></span>
-<span id="cb16-85">  <span class="do" style="color: #5E5E5E;
+<span id="cb16-86">  <span class="do" style="color: #5E5E5E;
 background-color: null;
 font-style: italic;">## Point estimate</span></span>
-<span id="cb16-86">  mean_x_global <span class="ot" style="color: #003B4F;
+<span id="cb16-87">  mean_x_global <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">&lt;-</span> sum_x <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">/</span> n</span>
-<span id="cb16-87">  mean_y_c <span class="ot" style="color: #003B4F;
+<span id="cb16-88">  mean_y_c <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">&lt;-</span> sum_y_control <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">/</span> n_control</span>
-<span id="cb16-88">  mean_x_c <span class="ot" style="color: #003B4F;
+<span id="cb16-89">  mean_x_c <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">&lt;-</span> sum_x_control <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">/</span> n_control</span>
-<span id="cb16-89">  mu_control <span class="ot" style="color: #003B4F;
+<span id="cb16-90">  mu_control <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">&lt;-</span> mean_y_c <span class="sc" style="color: #5E5E5E;
 background-color: null;
@@ -1968,16 +1977,16 @@ background-color: null;
 font-style: inherit;">*</span> (mean_x_c <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">-</span> mean_x_global)</span>
-<span id="cb16-90">  rel_effect <span class="ot" style="color: #003B4F;
+<span id="cb16-91">  rel_effect <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">&lt;-</span> ate <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">/</span> mu_control</span>
-<span id="cb16-91">  </span>
-<span id="cb16-92">  <span class="co" style="color: #5E5E5E;
+<span id="cb16-92">  </span>
+<span id="cb16-93">  <span class="co" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;"># Variance</span></span>
-<span id="cb16-93">  var_mu_control <span class="ot" style="color: #003B4F;
+<span id="cb16-94">  var_mu_control <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">=</span> <span class="fu" style="color: #4758AB;
 background-color: null;
@@ -1987,7 +1996,7 @@ font-style: inherit;">c</span>(<span class="dv" style="color: #AD0000;
 background-color: null;
 font-style: inherit;">1</span>, <span class="dv" style="color: #AD0000;
 background-color: null;
-font-style: inherit;">0</span>, mean_x_c), <span class="at" style="color: #657422;
+font-style: inherit;">0</span>, mean_x_global), <span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">nrow =</span> <span class="dv" style="color: #AD0000;
 background-color: null;
@@ -2001,8 +2010,8 @@ font-style: inherit;">c</span>(<span class="dv" style="color: #AD0000;
 background-color: null;
 font-style: inherit;">1</span>, <span class="dv" style="color: #AD0000;
 background-color: null;
-font-style: inherit;">0</span>, mean_x_c)</span>
-<span id="cb16-94">  cov_ate_mu_control <span class="ot" style="color: #003B4F;
+font-style: inherit;">0</span>, mean_x_global)</span>
+<span id="cb16-95">  cov_ate_mu_control <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">=</span> <span class="fu" style="color: #4758AB;
 background-color: null;
@@ -2028,12 +2037,12 @@ font-style: inherit;">c</span>(<span class="dv" style="color: #AD0000;
 background-color: null;
 font-style: inherit;">1</span>, <span class="dv" style="color: #AD0000;
 background-color: null;
-font-style: inherit;">0</span>, mean_x_c)</span>
-<span id="cb16-95">  </span>
-<span id="cb16-96">  <span class="co" style="color: #5E5E5E;
+font-style: inherit;">0</span>, mean_x_global)</span>
+<span id="cb16-96">  </span>
+<span id="cb16-97">  <span class="co" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;"># Delta Method</span></span>
-<span id="cb16-97">  var_rel_effect <span class="ot" style="color: #003B4F;
+<span id="cb16-98">  var_rel_effect <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">=</span> var_ate<span class="sc" style="color: #5E5E5E;
 background-color: null;
@@ -2070,75 +2079,75 @@ background-color: null;
 font-style: inherit;">^</span><span class="dv" style="color: #AD0000;
 background-color: null;
 font-style: inherit;">3</span></span>
-<span id="cb16-98">  se_rel_effect <span class="ot" style="color: #003B4F;
+<span id="cb16-99">  se_rel_effect <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">=</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">sqrt</span>(var_rel_effect)</span>
-<span id="cb16-99"></span>
-<span id="cb16-100">  <span class="fu" style="color: #4758AB;
+<span id="cb16-100"></span>
+<span id="cb16-101">  <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">return</span>(<span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">list</span>(</span>
-<span id="cb16-101">    <span class="at" style="color: #657422;
+<span id="cb16-102">    <span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">method =</span> <span class="st" style="color: #20794D;
 background-color: null;
 font-style: inherit;">'OLS with 2nd order aggs'</span>,</span>
-<span id="cb16-102">    <span class="at" style="color: #657422;
+<span id="cb16-103">    <span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">ate =</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">as.numeric</span>(ate),</span>
-<span id="cb16-103">    <span class="at" style="color: #657422;
+<span id="cb16-104">    <span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">se_ate =</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">as.numeric</span>(se_ate),</span>
-<span id="cb16-104">    <span class="at" style="color: #657422;
+<span id="cb16-105">    <span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">relative_effect =</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">as.numeric</span>(rel_effect),</span>
-<span id="cb16-105">    <span class="at" style="color: #657422;
+<span id="cb16-106">    <span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">se_relative =</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">as.numeric</span>(se_rel_effect)</span>
-<span id="cb16-106">  ))</span>
-<span id="cb16-107">}</span>
-<span id="cb16-108"></span>
-<span id="cb16-109">ols_from_2nd_order <span class="ot" style="color: #003B4F;
+<span id="cb16-107">  ))</span>
+<span id="cb16-108">}</span>
+<span id="cb16-109"></span>
+<span id="cb16-110">ols_from_2nd_order <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">=</span> <span class="cf" style="color: #003B4F;
 background-color: null;
 font-weight: bold;
 font-style: inherit;">function</span>(data) {</span>
-<span id="cb16-110">aggs <span class="ot" style="color: #003B4F;
+<span id="cb16-111">aggs <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">=</span> data <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">%&gt;%</span></span>
-<span id="cb16-111">  <span class="fu" style="color: #4758AB;
+<span id="cb16-112">  <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">group_by</span>(treated) <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">%&gt;%</span></span>
-<span id="cb16-112">  <span class="fu" style="color: #4758AB;
+<span id="cb16-113">  <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">summarise</span>(</span>
-<span id="cb16-113">    <span class="at" style="color: #657422;
+<span id="cb16-114">    <span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">n =</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">n</span>(),</span>
-<span id="cb16-114">    <span class="at" style="color: #657422;
+<span id="cb16-115">    <span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">sum_y =</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">sum</span>(y),</span>
-<span id="cb16-115">    <span class="at" style="color: #657422;
+<span id="cb16-116">    <span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">sum_y2 =</span> <span class="fu" style="color: #4758AB;
 background-color: null;
@@ -2147,12 +2156,12 @@ background-color: null;
 font-style: inherit;">^</span><span class="dv" style="color: #AD0000;
 background-color: null;
 font-style: inherit;">2</span>),</span>
-<span id="cb16-116">    <span class="at" style="color: #657422;
+<span id="cb16-117">    <span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">sum_x =</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">sum</span>(x),</span>
-<span id="cb16-117">    <span class="at" style="color: #657422;
+<span id="cb16-118">    <span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">sum_x2 =</span> <span class="fu" style="color: #4758AB;
 background-color: null;
@@ -2161,182 +2170,182 @@ background-color: null;
 font-style: inherit;">^</span><span class="dv" style="color: #AD0000;
 background-color: null;
 font-style: inherit;">2</span>),</span>
-<span id="cb16-118">    <span class="at" style="color: #657422;
+<span id="cb16-119">    <span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">sum_y_x =</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">sum</span>(y <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">*</span> x)</span>
-<span id="cb16-119">  )</span>
-<span id="cb16-120"></span>
-<span id="cb16-121">treatment_aggs <span class="ot" style="color: #003B4F;
+<span id="cb16-120">  )</span>
+<span id="cb16-121"></span>
+<span id="cb16-122">treatment_aggs <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">=</span> aggs <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">%&gt;%</span></span>
-<span id="cb16-122">  <span class="fu" style="color: #4758AB;
+<span id="cb16-123">  <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">filter</span>(treated <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">==</span> <span class="dv" style="color: #AD0000;
 background-color: null;
 font-style: inherit;">1</span>)</span>
-<span id="cb16-123">control_aggs <span class="ot" style="color: #003B4F;
+<span id="cb16-124">control_aggs <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">=</span> aggs <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">%&gt;%</span></span>
-<span id="cb16-124">  <span class="fu" style="color: #4758AB;
+<span id="cb16-125">  <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">filter</span>(treated <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">==</span> <span class="dv" style="color: #AD0000;
 background-color: null;
 font-style: inherit;">0</span>)</span>
-<span id="cb16-125"></span>
-<span id="cb16-126">n_treatment <span class="ot" style="color: #003B4F;
+<span id="cb16-126"></span>
+<span id="cb16-127">n_treatment <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">=</span> treatment_aggs <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">%&gt;%</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">pull</span>(n)</span>
-<span id="cb16-127">sum_y_treatment <span class="ot" style="color: #003B4F;
+<span id="cb16-128">sum_y_treatment <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">=</span> treatment_aggs <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">%&gt;%</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">pull</span>(sum_y)</span>
-<span id="cb16-128">sum_x_treatment <span class="ot" style="color: #003B4F;
+<span id="cb16-129">sum_x_treatment <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">=</span> treatment_aggs <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">%&gt;%</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">pull</span>(sum_x)</span>
-<span id="cb16-129">sum_y2_treatment <span class="ot" style="color: #003B4F;
+<span id="cb16-130">sum_y2_treatment <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">=</span> treatment_aggs <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">%&gt;%</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">pull</span>(sum_y2)</span>
-<span id="cb16-130">sum_x2_treatment <span class="ot" style="color: #003B4F;
+<span id="cb16-131">sum_x2_treatment <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">=</span> treatment_aggs <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">%&gt;%</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">pull</span>(sum_x2)</span>
-<span id="cb16-131">sum_y_x_treatment <span class="ot" style="color: #003B4F;
+<span id="cb16-132">sum_y_x_treatment <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">=</span> treatment_aggs <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">%&gt;%</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">pull</span>(sum_y_x)</span>
-<span id="cb16-132">n_control <span class="ot" style="color: #003B4F;
+<span id="cb16-133">n_control <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">=</span> control_aggs <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">%&gt;%</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">pull</span>(n)</span>
-<span id="cb16-133">sum_y_control <span class="ot" style="color: #003B4F;
+<span id="cb16-134">sum_y_control <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">=</span> control_aggs <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">%&gt;%</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">pull</span>(sum_y)</span>
-<span id="cb16-134">sum_x_control <span class="ot" style="color: #003B4F;
+<span id="cb16-135">sum_x_control <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">=</span> control_aggs <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">%&gt;%</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">pull</span>(sum_x)</span>
-<span id="cb16-135">sum_y2_control <span class="ot" style="color: #003B4F;
+<span id="cb16-136">sum_y2_control <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">=</span> control_aggs <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">%&gt;%</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">pull</span>(sum_y2)</span>
-<span id="cb16-136">sum_x2_control <span class="ot" style="color: #003B4F;
+<span id="cb16-137">sum_x2_control <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">=</span> control_aggs <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">%&gt;%</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">pull</span>(sum_x2)</span>
-<span id="cb16-137">sum_y_x_control <span class="ot" style="color: #003B4F;
+<span id="cb16-138">sum_y_x_control <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">=</span> control_aggs <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">%&gt;%</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">pull</span>(sum_y_x)</span>
-<span id="cb16-138"></span>
-<span id="cb16-139">ols_2nd_order_solution <span class="ot" style="color: #003B4F;
+<span id="cb16-139"></span>
+<span id="cb16-140">ols_2nd_order_solution <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">=</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">ols_from_2nd_order_aggs</span>(</span>
-<span id="cb16-140">  <span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">n_treatment =</span> n_treatment,</span>
 <span id="cb16-141">  <span class="at" style="color: #657422;
 background-color: null;
-font-style: inherit;">sum_y_treatment =</span> sum_y_treatment,</span>
+font-style: inherit;">n_treatment =</span> n_treatment,</span>
 <span id="cb16-142">  <span class="at" style="color: #657422;
 background-color: null;
-font-style: inherit;">sum_x_treatment =</span> sum_x_treatment,</span>
+font-style: inherit;">sum_y_treatment =</span> sum_y_treatment,</span>
 <span id="cb16-143">  <span class="at" style="color: #657422;
 background-color: null;
-font-style: inherit;">sum_y2_treatment =</span> sum_y2_treatment,</span>
+font-style: inherit;">sum_x_treatment =</span> sum_x_treatment,</span>
 <span id="cb16-144">  <span class="at" style="color: #657422;
 background-color: null;
-font-style: inherit;">sum_x2_treatment =</span> sum_x2_treatment,</span>
+font-style: inherit;">sum_y2_treatment =</span> sum_y2_treatment,</span>
 <span id="cb16-145">  <span class="at" style="color: #657422;
 background-color: null;
-font-style: inherit;">sum_y_x_treatment =</span> sum_y_x_treatment,</span>
+font-style: inherit;">sum_x2_treatment =</span> sum_x2_treatment,</span>
 <span id="cb16-146">  <span class="at" style="color: #657422;
 background-color: null;
-font-style: inherit;">n_control =</span> n_control,</span>
+font-style: inherit;">sum_y_x_treatment =</span> sum_y_x_treatment,</span>
 <span id="cb16-147">  <span class="at" style="color: #657422;
 background-color: null;
-font-style: inherit;">sum_y_control =</span> sum_y_control,</span>
+font-style: inherit;">n_control =</span> n_control,</span>
 <span id="cb16-148">  <span class="at" style="color: #657422;
 background-color: null;
-font-style: inherit;">sum_x_control =</span> sum_x_control,</span>
+font-style: inherit;">sum_y_control =</span> sum_y_control,</span>
 <span id="cb16-149">  <span class="at" style="color: #657422;
 background-color: null;
-font-style: inherit;">sum_y2_control =</span> sum_y2_control,</span>
+font-style: inherit;">sum_x_control =</span> sum_x_control,</span>
 <span id="cb16-150">  <span class="at" style="color: #657422;
 background-color: null;
-font-style: inherit;">sum_x2_control =</span> sum_x2_control,</span>
+font-style: inherit;">sum_y2_control =</span> sum_y2_control,</span>
 <span id="cb16-151">  <span class="at" style="color: #657422;
 background-color: null;
+font-style: inherit;">sum_x2_control =</span> sum_x2_control,</span>
+<span id="cb16-152">  <span class="at" style="color: #657422;
+background-color: null;
 font-style: inherit;">sum_y_x_control =</span> sum_y_x_control</span>
-<span id="cb16-152">)</span>
-<span id="cb16-153">}</span>
-<span id="cb16-154"></span>
-<span id="cb16-155">cuped <span class="ot" style="color: #003B4F;
+<span id="cb16-153">)</span>
+<span id="cb16-154">}</span>
+<span id="cb16-155"></span>
+<span id="cb16-156">cuped <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">&lt;-</span> <span class="cf" style="color: #003B4F;
 background-color: null;
 font-weight: bold;
 font-style: inherit;">function</span>(data) {</span>
-<span id="cb16-156">  <span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;"># 1. Calculate the CUPED slope (theta) using the pooled covariance</span></span>
 <span id="cb16-157">  <span class="co" style="color: #5E5E5E;
 background-color: null;
+font-style: inherit;"># 1. Calculate the CUPED slope (theta) using the pooled covariance</span></span>
+<span id="cb16-158">  <span class="co" style="color: #5E5E5E;
+background-color: null;
 font-style: inherit;"># CUPED typically assumes Cov(X, T) = 0, so it calculates theta globally</span></span>
-<span id="cb16-158">  theta <span class="ot" style="color: #003B4F;
+<span id="cb16-159">  theta <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
 background-color: null;
@@ -2351,14 +2360,14 @@ background-color: null;
 font-style: inherit;">var</span>(data<span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">$</span>x)</span>
-<span id="cb16-159">  </span>
-<span id="cb16-160">  <span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;"># 2. Generate the adjusted outcome</span></span>
+<span id="cb16-160">  </span>
 <span id="cb16-161">  <span class="co" style="color: #5E5E5E;
 background-color: null;
+font-style: inherit;"># 2. Generate the adjusted outcome</span></span>
+<span id="cb16-162">  <span class="co" style="color: #5E5E5E;
+background-color: null;
 font-style: inherit;"># Y_cuped = Y - theta * (X - mean(X))</span></span>
-<span id="cb16-162">  data<span class="sc" style="color: #5E5E5E;
+<span id="cb16-163">  data<span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">$</span>y_cuped <span class="ot" style="color: #003B4F;
 background-color: null;
@@ -2377,46 +2386,46 @@ background-color: null;
 font-style: inherit;">mean</span>(data<span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">$</span>x))</span>
-<span id="cb16-163">  </span>
-<span id="cb16-164">  <span class="co" style="color: #5E5E5E;
+<span id="cb16-164">  </span>
+<span id="cb16-165">  <span class="co" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;"># 3. Calculate Group Statistics</span></span>
-<span id="cb16-165">  stats <span class="ot" style="color: #003B4F;
+<span id="cb16-166">  stats <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">&lt;-</span> data <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">%&gt;%</span></span>
-<span id="cb16-166">    <span class="fu" style="color: #4758AB;
+<span id="cb16-167">    <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">group_by</span>(treated) <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">%&gt;%</span></span>
-<span id="cb16-167">    <span class="fu" style="color: #4758AB;
+<span id="cb16-168">    <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">summarise</span>(</span>
-<span id="cb16-168">      <span class="at" style="color: #657422;
+<span id="cb16-169">      <span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">n =</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">n</span>(),</span>
-<span id="cb16-169">      <span class="at" style="color: #657422;
+<span id="cb16-170">      <span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">mean_y =</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">mean</span>(y_cuped),</span>
-<span id="cb16-170">      <span class="at" style="color: #657422;
+<span id="cb16-171">      <span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">var_y =</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">var</span>(y_cuped),</span>
-<span id="cb16-171">      <span class="at" style="color: #657422;
+<span id="cb16-172">      <span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">.groups =</span> <span class="st" style="color: #20794D;
 background-color: null;
 font-style: inherit;">'drop'</span></span>
-<span id="cb16-172">    )</span>
-<span id="cb16-173">  </span>
-<span id="cb16-174">  n_t <span class="ot" style="color: #003B4F;
+<span id="cb16-173">    )</span>
+<span id="cb16-174">  </span>
+<span id="cb16-175">  n_t <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">&lt;-</span> stats<span class="sc" style="color: #5E5E5E;
 background-color: null;
@@ -2427,7 +2436,7 @@ background-color: null;
 font-style: inherit;">==</span> <span class="dv" style="color: #AD0000;
 background-color: null;
 font-style: inherit;">1</span>]</span>
-<span id="cb16-175">  n_c <span class="ot" style="color: #003B4F;
+<span id="cb16-176">  n_c <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">&lt;-</span> stats<span class="sc" style="color: #5E5E5E;
 background-color: null;
@@ -2438,7 +2447,7 @@ background-color: null;
 font-style: inherit;">==</span> <span class="dv" style="color: #AD0000;
 background-color: null;
 font-style: inherit;">0</span>]</span>
-<span id="cb16-176">  mu_t <span class="ot" style="color: #003B4F;
+<span id="cb16-177">  mu_t <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">&lt;-</span> stats<span class="sc" style="color: #5E5E5E;
 background-color: null;
@@ -2449,7 +2458,7 @@ background-color: null;
 font-style: inherit;">==</span> <span class="dv" style="color: #AD0000;
 background-color: null;
 font-style: inherit;">1</span>]</span>
-<span id="cb16-177">  mu_c <span class="ot" style="color: #003B4F;
+<span id="cb16-178">  mu_c <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">&lt;-</span> stats<span class="sc" style="color: #5E5E5E;
 background-color: null;
@@ -2460,7 +2469,7 @@ background-color: null;
 font-style: inherit;">==</span> <span class="dv" style="color: #AD0000;
 background-color: null;
 font-style: inherit;">0</span>]</span>
-<span id="cb16-178">  v_t <span class="ot" style="color: #003B4F;
+<span id="cb16-179">  v_t <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">&lt;-</span> stats<span class="sc" style="color: #5E5E5E;
 background-color: null;
@@ -2471,7 +2480,7 @@ background-color: null;
 font-style: inherit;">==</span> <span class="dv" style="color: #AD0000;
 background-color: null;
 font-style: inherit;">1</span>]</span>
-<span id="cb16-179">  v_c <span class="ot" style="color: #003B4F;
+<span id="cb16-180">  v_c <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">&lt;-</span> stats<span class="sc" style="color: #5E5E5E;
 background-color: null;
@@ -2482,16 +2491,16 @@ background-color: null;
 font-style: inherit;">==</span> <span class="dv" style="color: #AD0000;
 background-color: null;
 font-style: inherit;">0</span>]</span>
-<span id="cb16-180">  </span>
-<span id="cb16-181">  <span class="co" style="color: #5E5E5E;
+<span id="cb16-181">  </span>
+<span id="cb16-182">  <span class="co" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;"># 4. Average Treatment Effect (ATE)</span></span>
-<span id="cb16-182">  ate <span class="ot" style="color: #003B4F;
+<span id="cb16-183">  ate <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">&lt;-</span> mu_t <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">-</span> mu_c</span>
-<span id="cb16-183">  se_ate <span class="ot" style="color: #003B4F;
+<span id="cb16-184">  se_ate <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
 background-color: null;
@@ -2502,30 +2511,30 @@ background-color: null;
 font-style: inherit;">+</span> (v_c <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">/</span> n_c))</span>
-<span id="cb16-184">  </span>
-<span id="cb16-185">  <span class="co" style="color: #5E5E5E;
+<span id="cb16-185">  </span>
+<span id="cb16-186">  <span class="co" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;"># 5. Relative Effect (Lift)</span></span>
-<span id="cb16-186">  relative_effect <span class="ot" style="color: #003B4F;
+<span id="cb16-187">  relative_effect <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">&lt;-</span> ate <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">/</span> mu_c</span>
-<span id="cb16-187">  </span>
-<span id="cb16-188">  <span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;"># 6. Delta Method for Relative SE</span></span>
+<span id="cb16-188">  </span>
 <span id="cb16-189">  <span class="co" style="color: #5E5E5E;
 background-color: null;
-font-style: inherit;"># Var(N/D) approx Var(N)/D^2 + N^2*Var(D)/D^4 - 2*N*Cov(N,D)/D^3</span></span>
+font-style: inherit;"># 6. Delta Method for Relative SE</span></span>
 <span id="cb16-190">  <span class="co" style="color: #5E5E5E;
 background-color: null;
-font-style: inherit;"># Here: N = mu_t - mu_c, D = mu_c</span></span>
+font-style: inherit;"># Var(N/D) approx Var(N)/D^2 + N^2*Var(D)/D^4 - 2*N*Cov(N,D)/D^3</span></span>
 <span id="cb16-191">  <span class="co" style="color: #5E5E5E;
 background-color: null;
+font-style: inherit;"># Here: N = mu_t - mu_c, D = mu_c</span></span>
+<span id="cb16-192">  <span class="co" style="color: #5E5E5E;
+background-color: null;
 font-style: inherit;"># Cov(mu_t - mu_c, mu_c) = -Var(mu_c) = -v_c / n_c</span></span>
-<span id="cb16-192">  </span>
-<span id="cb16-193">  var_n <span class="ot" style="color: #003B4F;
+<span id="cb16-193">  </span>
+<span id="cb16-194">  var_n <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">&lt;-</span> (v_t <span class="sc" style="color: #5E5E5E;
 background-color: null;
@@ -2534,25 +2543,25 @@ background-color: null;
 font-style: inherit;">+</span> (v_c <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">/</span> n_c)</span>
-<span id="cb16-194">  var_d <span class="ot" style="color: #003B4F;
+<span id="cb16-195">  var_d <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">&lt;-</span> v_c <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">/</span> n_c</span>
-<span id="cb16-195">  cov_nd <span class="ot" style="color: #003B4F;
+<span id="cb16-196">  cov_nd <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">&lt;-</span> <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">-</span>(v_c <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">/</span> n_c)</span>
-<span id="cb16-196">  </span>
-<span id="cb16-197">  se_rel <span class="ot" style="color: #003B4F;
+<span id="cb16-197">  </span>
+<span id="cb16-198">  se_rel <span class="ot" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">sqrt</span>(</span>
-<span id="cb16-198">    (var_n <span class="sc" style="color: #5E5E5E;
+<span id="cb16-199">    (var_n <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">/</span> mu_c<span class="sc" style="color: #5E5E5E;
 background-color: null;
@@ -2561,7 +2570,7 @@ background-color: null;
 font-style: inherit;">2</span>) <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">+</span> </span>
-<span id="cb16-199">    (ate<span class="sc" style="color: #5E5E5E;
+<span id="cb16-200">    (ate<span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">^</span><span class="dv" style="color: #AD0000;
 background-color: null;
@@ -2576,7 +2585,7 @@ background-color: null;
 font-style: inherit;">4</span>) <span class="sc" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">-</span> </span>
-<span id="cb16-200">    (<span class="dv" style="color: #AD0000;
+<span id="cb16-201">    (<span class="dv" style="color: #AD0000;
 background-color: null;
 font-style: inherit;">2</span> <span class="sc" style="color: #5E5E5E;
 background-color: null;
@@ -2589,32 +2598,32 @@ background-color: null;
 font-style: inherit;">^</span><span class="dv" style="color: #AD0000;
 background-color: null;
 font-style: inherit;">3</span>)</span>
-<span id="cb16-201">  )</span>
-<span id="cb16-202">  </span>
-<span id="cb16-203">  <span class="fu" style="color: #4758AB;
+<span id="cb16-202">  )</span>
+<span id="cb16-203">  </span>
+<span id="cb16-204">  <span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">return</span>(<span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">list</span>(</span>
-<span id="cb16-204">    <span class="at" style="color: #657422;
+<span id="cb16-205">    <span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">method =</span> <span class="st" style="color: #20794D;
 background-color: null;
 font-style: inherit;">"CUPED"</span>,</span>
-<span id="cb16-205">    <span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">ate =</span> ate,</span>
 <span id="cb16-206">    <span class="at" style="color: #657422;
 background-color: null;
-font-style: inherit;">se_ate =</span> se_ate,</span>
+font-style: inherit;">ate =</span> ate,</span>
 <span id="cb16-207">    <span class="at" style="color: #657422;
 background-color: null;
-font-style: inherit;">relative_effect =</span> relative_effect,</span>
+font-style: inherit;">se_ate =</span> se_ate,</span>
 <span id="cb16-208">    <span class="at" style="color: #657422;
 background-color: null;
+font-style: inherit;">relative_effect =</span> relative_effect,</span>
+<span id="cb16-209">    <span class="at" style="color: #657422;
+background-color: null;
 font-style: inherit;">se_relative =</span> se_rel</span>
-<span id="cb16-209">  ))</span>
-<span id="cb16-210">}</span></code></pre></div></div>
+<span id="cb16-210">  ))</span>
+<span id="cb16-211">}</span></code></pre></div></div>
 </div>
 <section id="hard-scenario" class="level2">
 <h2 class="anchored" data-anchor-id="hard-scenario">Hard Scenario</h2>
@@ -2803,8 +2812,8 @@ font-style: inherit;">data.frame</span>()</span>
 <span id="cb18-8">)</span></code></pre></div></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>                   method      ate    se_ate relative_effect se_relative
-1                     OLS 12.79828 0.2043816       1.2149266  0.03033267
-2 OLS with 2nd order aggs 12.79828 0.1676463       0.9680216  0.01918627
+1                     OLS 12.79828 0.2043816       0.9680216  0.02442650
+2 OLS with 2nd order aggs 12.79828 0.1676463       0.9680216  0.01924609
 3                   CUPED 12.64960 0.1667247       0.9513963  0.01900091</code></pre>
 </div>
 </div>
@@ -2930,8 +2939,8 @@ font-style: inherit;">data.frame</span>()</span>
 <span id="cb21-8">)</span></code></pre></div></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>                   method      ate     se_ate relative_effect se_relative
-1                     OLS 2.008227 0.07559402       0.1002166 0.003922817
-2 OLS with 2nd order aggs 2.008227 0.07548562       0.1002997 0.003920751
+1                     OLS 2.008227 0.07559402       0.1002997 0.003926700
+2 OLS with 2nd order aggs 2.008227 0.07548562       0.1002997 0.003920985
 3                   CUPED 2.005816 0.07555123       0.1001731 0.003924205</code></pre>
 </div>
 </div>

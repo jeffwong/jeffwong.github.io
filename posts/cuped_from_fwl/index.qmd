@@ -1,5 +1,5 @@
 ---
-title: "Creating CUPED from FWL (under construction)"
+title: "Creating CUPED from FWL"
 author: "Jeffrey Wong"
 date: "2026-02-02"
 categories: [experimentation, statistics]
@@ -463,7 +463,7 @@ OLS with 2nd order aggregates, and CUPED
 
 ```{r}
 ols = function(data) {
-  model = lm(y ~ treated + x, data)
+model = lm(y ~ treated + x, data)
 covariances = vcovHC(model, 'HC0')
 
 # ATE
@@ -473,11 +473,12 @@ se_ate = sqrt(var_ate)
 
 # Relative ATE
 mean_x_c = data %>% filter(treated == 0) %>% pull(x) %>% mean
-baseline = coef(model)[1] + coef(model)[3] * mean_x_c
+mean_x = data %>% pull(x) %>% mean
+baseline = coef(model)[1] + coef(model)[3] * mean_x
 rel_effect = ate / baseline
 
-var_baseline = matrix(c(1, 0, mean_x_c), nrow = 1) %*% covariances %*% c(1, 0, mean_x_c)
-cov_ate_baseline = matrix(c(0, 1, 0), nrow = 1) %*% covariances %*% c(1, 0, mean_x_c)
+var_baseline = matrix(c(1, 0, mean_x_c), nrow = 1) %*% covariances %*% c(1, 0, mean_x)
+cov_ate_baseline = matrix(c(0, 1, 0), nrow = 1) %*% covariances %*% c(1, 0, mean_x)
 
 # Delta Method
 var_rel_effect = var_ate/baseline^2 + ate^2 * var_baseline/baseline^4 - 2*ate*cov_ate_baseline/baseline^3
@@ -554,8 +555,8 @@ ols_from_2nd_order_aggs <- function(n_treatment, sum_y_treatment, sum_x_treatmen
   rel_effect <- ate / mu_control
   
   # Variance
-  var_mu_control = matrix(c(1, 0, mean_x_c), nrow = 1) %*% covariances %*% c(1, 0, mean_x_c)
-  cov_ate_mu_control = matrix(c(0, 1, 0), nrow = 1) %*% covariances %*% c(1, 0, mean_x_c)
+  var_mu_control = matrix(c(1, 0, mean_x_global), nrow = 1) %*% covariances %*% c(1, 0, mean_x_global)
+  cov_ate_mu_control = matrix(c(0, 1, 0), nrow = 1) %*% covariances %*% c(1, 0, mean_x_global)
   
   # Delta Method
   var_rel_effect = var_ate/mu_control^2 + ate^2 * var_mu_control/mu_control^4 - 2*ate*cov_ate_mu_control/mu_control^3

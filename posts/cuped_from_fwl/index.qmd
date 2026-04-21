@@ -477,7 +477,7 @@ mean_x = data %>% pull(x) %>% mean
 baseline = coef(model)[1] + coef(model)[3] * mean_x
 rel_effect = ate / baseline
 
-var_baseline = matrix(c(1, 0, mean_x_c), nrow = 1) %*% covariances %*% c(1, 0, mean_x)
+var_baseline = matrix(c(1, 0, mean_x), nrow = 1) %*% covariances %*% c(1, 0, mean_x)
 cov_ate_baseline = matrix(c(0, 1, 0), nrow = 1) %*% covariances %*% c(1, 0, mean_x)
 
 # Delta Method

@@ -571,7 +571,7 @@ Var(\hat{R}) &amp;\approx \frac{Var(\hat{\beta}_1)}{\hat{\mu}_C^2} +
 <span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a>baseline <span class="ot">=</span> <span class="fu">coef</span>(model)[<span class="dv">1</span>] <span class="sc">+</span> <span class="fu">coef</span>(model)[<span class="dv">3</span>] <span class="sc">*</span> mean_x</span>
 <span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a>rel_effect <span class="ot">=</span> ate <span class="sc">/</span> baseline</span>
 <span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a>var_baseline <span class="ot">=</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">0</span>, mean_x_c), <span class="at">nrow =</span> <span class="dv">1</span>) <span class="sc">%*%</span> covariances <span class="sc">%*%</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">0</span>, mean_x)</span>
+<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a>var_baseline <span class="ot">=</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">0</span>, mean_x), <span class="at">nrow =</span> <span class="dv">1</span>) <span class="sc">%*%</span> covariances <span class="sc">%*%</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">0</span>, mean_x)</span>
 <span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a>cov_ate_baseline <span class="ot">=</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">0</span>), <span class="at">nrow =</span> <span class="dv">1</span>) <span class="sc">%*%</span> covariances <span class="sc">%*%</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">0</span>, mean_x)</span>
 <span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb16-19"><a href="#cb16-19" aria-hidden="true" tabindex="-1"></a><span class="co"># Delta Method</span></span>
@@ -811,7 +811,7 @@ Var(\hat{R}) &amp;\approx \frac{Var(\hat{\beta}_1)}{\hat{\mu}_C^2} +
 <span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>                   method      ate    se_ate relative_effect se_relative
-1                     OLS 12.79828 0.2043816       0.9680216  0.02442650
+1                     OLS 12.79828 0.2043816       0.9680216  0.02515193
 2 OLS with 2nd order aggs 12.79828 0.1676463       0.9680216  0.01924609
 3                   CUPED 12.64960 0.1667247       0.9513963  0.01900091</code></pre>
 </div>
@@ -850,7 +850,7 @@ Var(\hat{R}) &amp;\approx \frac{Var(\hat{\beta}_1)}{\hat{\mu}_C^2} +
 <span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>                   method      ate     se_ate relative_effect se_relative
-1                     OLS 2.008227 0.07559402       0.1002997 0.003926700
+1                     OLS 2.008227 0.07559402       0.1002997 0.003926712
 2 OLS with 2nd order aggs 2.008227 0.07548562       0.1002997 0.003920985
 3                   CUPED 2.005816 0.07555123       0.1001731 0.003924205</code></pre>
 </div>

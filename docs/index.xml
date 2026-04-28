@@ -10,7 +10,900 @@
 <atom:link href="https://jeffwong.github.io/index.xml" rel="self" type="application/rss+xml"/>
 <description>Data science innovation from first principles.</description>
 <generator>quarto-1.8.27</generator>
-<lastBuildDate>Mon, 30 Mar 2026 00:00:00 GMT</lastBuildDate>
+<lastBuildDate>Tue, 21 Apr 2026 00:00:00 GMT</lastBuildDate>
+<item>
+  <title>A Better, Robust CUPED</title>
+  <dc:creator>Jeffrey Wong</dc:creator>
+  <link>https://jeffwong.github.io/posts/robust_cuped/</link>
+  <description><![CDATA[ 
+
+
+
+
+
+<p>We previously discussed the similarities and differences between CUPED and OLS. While CUPED is a computationally efficient implementation of a linear model, it has some unexpected properties. It has a strict assumption of perfect randomization. By using OLS, we can relax that assumption to the textbook assumption of conditional exogeneity. Using OLS, we can also formulate a group robust standard error.</p>
+<p>While OLS has some of these advantages, the form of the model still makes the ATE vulnerable. The model</p>
+<p><img src="https://latex.codecogs.com/png.latex?y%20=%20%5Cbeta_0%20+%20T%20%5Cbeta_1%20+%20X%20%5Cbeta_2%20+%20%5Cvarepsilon"> relies on a critical assumption: that the treatment effect <img src="https://latex.codecogs.com/png.latex?%5Ctau(X)%20=%20%5Cbeta_1"> is constant across all units. In reality, treatment effects are often heterogeneous. In these environments, the effect can be biased, or the regression adjustment can actually increase the variance of the effect over a regular t-test. This was Freedman’s major criticism of regression for experiments.</p>
+<p><a href="https://arxiv.org/pdf/1208.2301">Lin 2013</a> argued that changing the form of the model can make it robust. By including the interaction term, the regression adjustment will be at least as efficient as the unadjusted difference in means, even if the model is misspecified.</p>
+<section id="the-model-centering-and-interaction" class="level2">
+<h2 class="anchored" data-anchor-id="the-model-centering-and-interaction">The Model: Centering and Interaction</h2>
+<p>To guard against these edge cases, Lin proposes a fully interacted model. Crucially, we center our covariate <img src="https://latex.codecogs.com/png.latex?X"> around the global population mean <img src="https://latex.codecogs.com/png.latex?%5Cbar%7BX%7D">.</p>
+<p>The model form is: <img src="https://latex.codecogs.com/png.latex?y%20=%20%5Cbeta_0%20+%20%5Cbeta_1%20T%20+%20%5Cbeta_2%20(X%20-%20%5Cbar%7BX%7D)%20+%20%5Cbeta_3%20T%20%5Ccdot%20(X%20-%20%5Cbar%7BX%7D)%20+%20%5Cvarepsilon"></p>
+<p>Where:</p>
+<ol type="1">
+<li><img src="https://latex.codecogs.com/png.latex?%5Cbeta_0">: The expected baseline (the counterfactual mean of the population under control).</li>
+<li><img src="https://latex.codecogs.com/png.latex?%5Cbeta_1">: The Average Treatment Effect (ATE).</li>
+<li><img src="https://latex.codecogs.com/png.latex?%5Cbeta_2">: The relationship between <img src="https://latex.codecogs.com/png.latex?X"> and <img src="https://latex.codecogs.com/png.latex?Y"> in the control group.</li>
+<li><img src="https://latex.codecogs.com/png.latex?%5Cbeta_3">: The Heterogeneous Treatment Effect (HTE)—how the effect changes as <img src="https://latex.codecogs.com/png.latex?X"> varies.</li>
+</ol>
+</section>
+<section id="derivation-from-second-order-aggregates" class="level2">
+<h2 class="anchored" data-anchor-id="derivation-from-second-order-aggregates">Derivation from Second-Order Aggregates</h2>
+<p>Just as before we derive a solution using only second-order aggregates. The OLS normal equation is</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0AM%5ET%20M%20&amp;=%20%5Cbegin%7Bbmatrix%7D%0An%20&amp;%20%5Csum%20T_i%20&amp;%20%5Csum%20(X_i%20-%20%5Cbar%7BX%7D)%20&amp;%20%5Csum%20T_i(X_i%20-%20%5Cbar%7BX%7D)%20%5C%5C%0A%5Csum%20T_i%20&amp;%20%5Csum%20T_i%20&amp;%20%5Csum%20T_i(X_i%20-%20%5Cbar%7BX%7D)%20&amp;%20%5Csum%20T_i(X_i%20-%20%5Cbar%7BX%7D)%20%5C%5C%0A%5Csum%20(X_i%20-%20%5Cbar%7BX%7D)%20&amp;%20%5Csum%20T_i(X_i%20-%20%5Cbar%7BX%7D)%20&amp;%20%5Csum%20(X_i%20-%20%5Cbar%7BX%7D)%5E2%20&amp;%20%5Csum%20T_i(X_i%20-%20%5Cbar%7BX%7D)%5E2%20%5C%5C%0A%5Csum%20T_i(X_i%20-%20%5Cbar%7BX%7D)%20&amp;%20%5Csum%20T_i(X_i%20-%20%5Cbar%7BX%7D)%20&amp;%20%5Csum%20T_i(X_i%20-%20%5Cbar%7BX%7D)%5E2%20&amp;%20%5Csum%20T_i(X_i%20-%20%5Cbar%7BX%7D)%5E2%0A%5Cend%7Bbmatrix%7D%20%5C%5C%0AM%5ET%20y%20&amp;=%20%5Cbegin%7Bbmatrix%7D%0A%5Csum%20Y_i%20%5C%5C%0A%5Csum%20T_i%20Y_i%20%5C%5C%0A%5Csum%20(X_i%20-%20%5Cbar%7BX%7D)%20Y_i%20%5C%5C%0A%5Csum%20T_i(X_i%20-%20%5Cbar%7BX%7D)%20Y_i%0A%5Cend%7Bbmatrix%7D%20%5C%5C%0AM%5ET%20M%20%5Cbeta%20&amp;=%20M%5ET%20y%0A%5Cend%7Balign%7D"></p>
+</section>
+<section id="r-implementation" class="level2">
+<h2 class="anchored" data-anchor-id="r-implementation">R Implementation</h2>
+<p>The following function computes the aggregates using <code>dplyr</code>, solves for the Lin estimator, and applies the Delta Method to find the standard error for the Relative Effect (<img src="https://latex.codecogs.com/png.latex?%5Cbeta_1%20/%20%5Cbeta_0">).</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">library</span>(dplyr)</span></code></pre></div></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+Attaching package: 'dplyr'</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>The following objects are masked from 'package:stats':
+
+    filter, lag</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>The following objects are masked from 'package:base':
+
+    intersect, setdiff, setequal, union</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">#' Calculate Group-Specific Residual Sum of Squares (RSS)</span></span>
+<span id="cb5-2"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">#'</span></span>
+<span id="cb5-3"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">#' @param g_idx Integer. The group index (0 for Control, 1 for Treatment).</span></span>
+<span id="cb5-4"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">#' @param b Numeric vector. The 4x1 vector of model coefficients (alpha, tau, beta, gamma).</span></span>
+<span id="cb5-5"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">#' @param stats Dataframe. The summary table of 2nd-order aggregates.</span></span>
+<span id="cb5-6"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">#'</span></span>
+<span id="cb5-7"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">#' @return A numeric value representing the estimated RSS for the specified group.</span></span>
+<span id="cb5-8">calc_group_rss <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">function</span>(g_idx, b, stats) {</span>
+<span id="cb5-9">  g_data <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> stats <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%&gt;%</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">filter</span>(treated <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">==</span> g_idx)</span>
+<span id="cb5-10">  </span>
+<span id="cb5-11">  n_g     <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> g_data <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%&gt;%</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">pull</span>(n)</span>
+<span id="cb5-12">  s_y     <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> g_data <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%&gt;%</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">pull</span>(s_y)</span>
+<span id="cb5-13">  s_y2    <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> g_data <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%&gt;%</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">pull</span>(s_y2)</span>
+<span id="cb5-14">  s_xc    <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> g_data <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%&gt;%</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">pull</span>(s_xc)</span>
+<span id="cb5-15">  s_xc2   <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> g_data <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%&gt;%</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">pull</span>(s_xc2)</span>
+<span id="cb5-16">  s_xcy   <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> g_data <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%&gt;%</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">pull</span>(s_xcy)</span>
+<span id="cb5-17">  </span>
+<span id="cb5-18">  <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">if</span>(g_idx <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">==</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>) {</span>
+<span id="cb5-19">    <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># For Treatment, all terms in [1, T, xc, T*xc] are active</span></span>
+<span id="cb5-20">    z_sum_y <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(s_y, s_y, s_xcy, s_xcy)</span>
+<span id="cb5-21">    z_z_sum <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">matrix</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(</span>
+<span id="cb5-22">      n_g, n_g, s_xc, s_xc,</span>
+<span id="cb5-23">      n_g, n_g, s_xc, s_xc,</span>
+<span id="cb5-24">      s_xc, s_xc, s_xc2, s_xc2,</span>
+<span id="cb5-25">      s_xc, s_xc, s_xc2, s_xc2</span>
+<span id="cb5-26">    ), <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">4</span>)</span>
+<span id="cb5-27">  } <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">else</span> {</span>
+<span id="cb5-28">    <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># For Control, T and T*xc terms are 0</span></span>
+<span id="cb5-29">    z_sum_y <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(s_y, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, s_xcy, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>)</span>
+<span id="cb5-30">    z_z_sum <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">matrix</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(</span>
+<span id="cb5-31">      n_g, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, s_xc, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>,</span>
+<span id="cb5-32">      <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>,   <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>,    <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>,</span>
+<span id="cb5-33">      s_xc, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, s_xc2, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>,</span>
+<span id="cb5-34">      <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>,   <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>,    <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span></span>
+<span id="cb5-35">    ), <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">4</span>)</span>
+<span id="cb5-36">  }</span>
+<span id="cb5-37">  </span>
+<span id="cb5-38">  rss <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> s_y2 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span> <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">as.numeric</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">t</span>(b) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> z_sum_y) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">as.numeric</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">t</span>(b) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> z_z_sum <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> b)</span>
+<span id="cb5-39">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">return</span>(rss)</span>
+<span id="cb5-40">}</span>
+<span id="cb5-41"></span>
+<span id="cb5-42"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">#' Compute Lin's Agnostic Estimator with Delta Method SEs</span></span>
+<span id="cb5-43"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">#'</span></span>
+<span id="cb5-44"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">#' @param df Dataframe. Must contain 'x', 'y', and 'treated' (binary 0/1).</span></span>
+<span id="cb5-45"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">#'</span></span>
+<span id="cb5-46"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">#' @return A list containing ATE, HTE, Expected Baseline, Relative Effect, and their Standard Errors.</span></span>
+<span id="cb5-47">compute_lin_robust <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">function</span>(df) {</span>
+<span id="cb5-48">  x_bar <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mean</span>(df<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>x) <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># Global mean for population-level ATE</span></span>
+<span id="cb5-49">  </span>
+<span id="cb5-50">  <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># Step 1: Compute Aggregates</span></span>
+<span id="cb5-51">  stats <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> df <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%&gt;%</span></span>
+<span id="cb5-52">    <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mutate</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">xc =</span> x <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> x_bar) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%&gt;%</span></span>
+<span id="cb5-53">    <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">group_by</span>(treated) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%&gt;%</span></span>
+<span id="cb5-54">    <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">summarise</span>(</span>
+<span id="cb5-55">      <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">n =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">n</span>(),</span>
+<span id="cb5-56">      <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">s_xc =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sum</span>(xc),</span>
+<span id="cb5-57">      <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">s_y  =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sum</span>(y),</span>
+<span id="cb5-58">      <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">s_y2 =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sum</span>(y<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">^</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>),</span>
+<span id="cb5-59">      <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">s_xc2 =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sum</span>(xc<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">^</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>),</span>
+<span id="cb5-60">      <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">s_xcy =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sum</span>(xc <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> y),</span>
+<span id="cb5-61">      <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">.groups =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"drop"</span></span>
+<span id="cb5-62">    )</span>
+<span id="cb5-63"></span>
+<span id="cb5-64">  t_stats <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> stats <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%&gt;%</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">filter</span>(treated <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">==</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>)</span>
+<span id="cb5-65">  c_stats <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> stats <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%&gt;%</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">filter</span>(treated <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">==</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>)</span>
+<span id="cb5-66">  n_tot <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sum</span>(stats<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>n)</span>
+<span id="cb5-67">  </span>
+<span id="cb5-68">  <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># Step 2: Build Matrix M and Vector V</span></span>
+<span id="cb5-69">  M <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">matrix</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(</span>
+<span id="cb5-70">    n_tot, t_stats<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>n, (t_stats<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>s_xc <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> c_stats<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>s_xc), t_stats<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>s_xc,</span>
+<span id="cb5-71">    t_stats<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>n, t_stats<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>n, t_stats<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>s_xc, t_stats<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>s_xc,</span>
+<span id="cb5-72">    (t_stats<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>s_xc <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> c_stats<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>s_xc), t_stats<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>s_xc, (t_stats<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>s_xc2 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> c_stats<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>s_xc2), t_stats<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>s_xc2,</span>
+<span id="cb5-73">    t_stats<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>s_xc, t_stats<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>s_xc, t_stats<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>s_xc2, t_stats<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>s_xc2</span>
+<span id="cb5-74">  ), <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">nrow =</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">4</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">byrow =</span> <span class="cn" style="color: #8f5902;
+background-color: null;
+font-style: inherit;">TRUE</span>)</span>
+<span id="cb5-75"></span>
+<span id="cb5-76">  V <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sum</span>(stats<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>s_y), t_stats<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>s_y, <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sum</span>(stats<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>s_xcy), t_stats<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>s_xcy)</span>
+<span id="cb5-77"></span>
+<span id="cb5-78">  <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># Step 3: Solve for coefficients</span></span>
+<span id="cb5-79">  beta <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">solve</span>(M, V)</span>
+<span id="cb5-80">  </span>
+<span id="cb5-81">  <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># Step 4: Robust Variance Estimation (Sandwich)</span></span>
+<span id="cb5-82">  sig0 <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">calc_group_rss</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, beta, stats) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> (c_stats<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>n <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>)</span>
+<span id="cb5-83">  sig1 <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">calc_group_rss</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>, beta, stats) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> (t_stats<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>n <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>)</span>
+<span id="cb5-84">  </span>
+<span id="cb5-85">  Meat <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> (sig0 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">matrix</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(c_stats<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>n, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, c_stats<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>s_xc, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, </span>
+<span id="cb5-86">                           c_stats<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>s_xc, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, c_stats<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>s_xc2, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>), <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">4</span>)) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span></span>
+<span id="cb5-87">          (sig1 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">matrix</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(t_stats<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>n, t_stats<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>n, t_stats<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>s_xc, t_stats<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>s_xc, </span>
+<span id="cb5-88">                           t_stats<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>n, t_stats<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>n, t_stats<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>s_xc, t_stats<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>s_xc, </span>
+<span id="cb5-89">                           t_stats<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>s_xc, t_stats<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>s_xc, t_stats<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>s_xc2, t_stats<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>s_xc2, </span>
+<span id="cb5-90">                           t_stats<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>s_xc, t_stats<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>s_xc, t_stats<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>s_xc2, t_stats<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>s_xc2), <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">4</span>))</span>
+<span id="cb5-91">  </span>
+<span id="cb5-92">  M_inv <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">solve</span>(M)</span>
+<span id="cb5-93">  V_cov <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> M_inv <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> Meat <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> M_inv</span>
+<span id="cb5-94">  </span>
+<span id="cb5-95">  <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># Step 5: Relative Effect &amp; Delta Method</span></span>
+<span id="cb5-96">  alpha_hat <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> beta[<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>]</span>
+<span id="cb5-97">  tau_hat <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> beta[<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>]</span>
+<span id="cb5-98">  rel_effect <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> tau_hat <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> alpha_hat</span>
+<span id="cb5-99">  </span>
+<span id="cb5-100">  <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># Gradient of g(alpha, tau) = tau / alpha is [-tau/alpha^2, 1/alpha]</span></span>
+<span id="cb5-101">  grad_g <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span>tau_hat <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> (alpha_hat<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">^</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>), <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span> <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> alpha_hat)</span>
+<span id="cb5-102">  rel_var <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">t</span>(grad_g) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> V_cov[<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">:</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">:</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>] <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> grad_g</span>
+<span id="cb5-103">  </span>
+<span id="cb5-104">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">return</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">list</span>(</span>
+<span id="cb5-105">    <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">expected_baseline =</span> alpha_hat,</span>
+<span id="cb5-106">    <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">ate =</span> tau_hat,</span>
+<span id="cb5-107">    <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">ate_se =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sqrt</span>(V_cov[<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>,<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>]),</span>
+<span id="cb5-108">    <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">hte_slope =</span> beta[<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">4</span>],</span>
+<span id="cb5-109">    <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">relative_effect =</span> rel_effect,</span>
+<span id="cb5-110">    <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">relative_se =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sqrt</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">as.numeric</span>(rel_var))</span>
+<span id="cb5-111">  ))</span>
+<span id="cb5-112">}</span>
+<span id="cb5-113"></span>
+<span id="cb5-114"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># Execute</span></span>
+<span id="cb5-115"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">set.seed</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">100</span>)</span>
+<span id="cb5-116">n <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">100000</span></span>
+<span id="cb5-117">baseline_effect <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span></span>
+<span id="cb5-118">hte_factor <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span></span>
+<span id="cb5-119"></span>
+<span id="cb5-120"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># Generate X with whales</span></span>
+<span id="cb5-121">x <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rlnorm</span>(n, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">meanlog =</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">sdlog =</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>)</span>
+<span id="cb5-122"></span>
+<span id="cb5-123"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># Simulate imbalance</span></span>
+<span id="cb5-124">data <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">data.frame</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">x =</span> x) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%&gt;%</span></span>
+<span id="cb5-125">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">arrange</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">desc</span>(x)) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%&gt;%</span></span>
+<span id="cb5-126">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mutate</span>(</span>
+<span id="cb5-127">    <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># Create a propensity vector where the first half has high propensity</span></span>
+<span id="cb5-128">    <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># but the second half has low propensity. Since the data is sorted this</span></span>
+<span id="cb5-129">    <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># corresponds to a correlation with X.</span></span>
+<span id="cb5-130">    <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">prob_t =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rep</span>(<span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.6</span>, n<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>), <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rep</span>(<span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.4</span>, n<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>)),</span>
+<span id="cb5-131">    <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">treated =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rbinom</span>(n, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>, prob_t),</span>
+<span id="cb5-132">    <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">noise =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rnorm</span>(n, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">15</span>)</span>
+<span id="cb5-133">   ) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%&gt;%</span></span>
+<span id="cb5-134">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mutate</span>(</span>
+<span id="cb5-135">    <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">effect_if_treated =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rnorm</span>(n, baseline_effect, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> hte_factor <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> x,</span>
+<span id="cb5-136">    <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">y =</span> noise <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rnorm</span>(n, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>)<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span>x <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> effect_if_treated <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> treated</span>
+<span id="cb5-137">  )</span>
+<span id="cb5-138">results <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">compute_lin_robust</span>(data)</span>
+<span id="cb5-139"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">print</span>(results)</span></code></pre></div></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>$expected_baseline
+[1] 12.23248
+
+$ate
+[1] 13.09455
+
+$ate_se
+[1] 0.1604445
+
+$hte_slope
+[1] 0.9951046
+
+$relative_effect
+[1] 1.070474
+
+$relative_se
+[1] 0.02055102</code></pre>
+</div>
+</div>
+
+
+</section>
+
+ ]]></description>
+  <category>experimentation</category>
+  <category>statistics</category>
+  <guid>https://jeffwong.github.io/posts/robust_cuped/</guid>
+  <pubDate>Tue, 21 Apr 2026 00:00:00 GMT</pubDate>
+</item>
 <item>
   <title>Relative Treatment Effects</title>
   <dc:creator>Jeffrey Wong</dc:creator>
@@ -987,7 +1880,7 @@ font-style: inherit;">print</span>(results)</span></code></pre></div></div>
 <section id="step-1" class="level2">
 <h2 class="anchored" data-anchor-id="step-1">Step 1</h2>
 <p>The regression <img src="https://latex.codecogs.com/png.latex?y"> on <img src="https://latex.codecogs.com/png.latex?%5B1,%20X%5D"> is a simple least squares regression with an intercept, e.g.&nbsp;<img src="https://latex.codecogs.com/png.latex?y%20=%20%5Cgamma_%7By,%200%7D%20+%20X%5Cgamma_%7By,%201%7D%20+%20%5Cnu">. The solution for <img src="https://latex.codecogs.com/png.latex?%5Cgamma">, and the residuals <img src="https://latex.codecogs.com/png.latex?%5Ctilde%7By%7D"> are simply</p>
-<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0A%5Chat%7B%5Cgamma%7D_%7By,%201%7D%20&amp;=%20%5Cfrac%7BCov(X,%20y)%7D%7BVar(X)%7D%20%5C%5C%0A%5Chat%7B%5Cgamma%7D_%7By,%200%7D%20&amp;=%20%5Cbar%7By%7D%20-%20%5Chat%7B%5Cgamma%7D_%7By,%201%7D%20%5Cbar%7BX%7D%20%5C%5C%0A%5Ctilde%7BT%7D%20&amp;=%20y%20-%20(%5Chat%7B%5Cgamma%7D_%7By,%200%7D%20+%20X%20%5Chat%7B%5Cgamma%7D_%7By,%201%7D)%0A%5Cend%7Balign%7D"></p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0A%5Chat%7B%5Cgamma%7D_%7By,%201%7D%20&amp;=%20%5Cfrac%7BCov(X,%20y)%7D%7BVar(X)%7D%20%5C%5C%0A%5Chat%7B%5Cgamma%7D_%7By,%200%7D%20&amp;=%20%5Cbar%7By%7D%20-%20%5Chat%7B%5Cgamma%7D_%7By,%201%7D%20%5Cbar%7BX%7D%20%5C%5C%0A%5Ctilde%7By%7D%20&amp;=%20y%20-%20(%5Chat%7B%5Cgamma%7D_%7By,%200%7D%20+%20X%20%5Chat%7B%5Cgamma%7D_%7By,%201%7D)%0A%5Cend%7Balign%7D"></p>
 </section>
 <section id="step-2" class="level2">
 <h2 class="anchored" data-anchor-id="step-2">Step 2</h2>

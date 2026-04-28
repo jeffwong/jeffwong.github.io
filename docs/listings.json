@@ -2,6 +2,7 @@
   {
     "listing": "/index.html",
     "items": [
+      "/posts/robust_cuped/index.html",
       "/posts/relative_effects/index.html",
       "/posts/zero_inflated_inference/index.html",
       "/posts/anytime_valid_inference_ols/index.html",

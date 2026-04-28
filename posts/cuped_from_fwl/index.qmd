@@ -59,7 +59,7 @@ The regression $y$ on $[1, X]$ is a simple least squares regression with an inte
 \begin{align}
 \hat{\gamma}_{y, 1} &= \frac{Cov(X, y)}{Var(X)} \\
 \hat{\gamma}_{y, 0} &= \bar{y} - \hat{\gamma}_{y, 1} \bar{X} \\
-\tilde{T} &= y - (\hat{\gamma}_{y, 0} + X \hat{\gamma}_{y, 1})
+\tilde{y} &= y - (\hat{\gamma}_{y, 0} + X \hat{\gamma}_{y, 1})
 \end{align}
 
 ## Step 2

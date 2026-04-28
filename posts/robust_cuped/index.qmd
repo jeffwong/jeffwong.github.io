@@ -1,0 +1,215 @@
+---
+title: "A Better, Robust CUPED"
+author: "Jeffrey Wong"
+date: "2026-04-21"
+categories: [experimentation, statistics]
+format:
+  html:
+    toc: true
+    toc-location: left
+    toc-depth: 3
+    toc-title: Contents
+---
+
+We previously discussed the similarities and differences between CUPED and OLS.
+While CUPED is a computationally efficient implementation of a linear model,
+it has some unexpected properties. It has a strict assumption of perfect randomization.
+By using OLS, we can relax that assumption to the textbook assumption of
+conditional exogeneity. Using OLS, we can also formulate a group robust standard
+error.
+
+While OLS has some of these advantages, the form of the model still makes
+the ATE vulnerable. The model
+
+$$y = \beta_0 + T \beta_1 + X \beta_2 + \varepsilon$$
+relies on a critical assumption: that the treatment effect $\tau(X) = \beta_1$ is constant across all units. In reality, treatment effects are often heterogeneous.
+In these environments, the effect can be biased, or the regression adjustment
+can actually increase the variance of the effect over a regular t-test.
+This was Freedman's major criticism of regression for experiments.
+
+[Lin 2013](https://arxiv.org/pdf/1208.2301) argued that changing the form
+of the model can make it robust. By including the interaction term,
+the regression adjustment will be at least as efficient as the unadjusted difference in means, even if the model is misspecified.
+
+## The Model: Centering and Interaction
+
+To guard against these edge cases, Lin proposes a fully interacted model. Crucially, we center our covariate $X$ around the global population mean $\bar{X}$.
+
+The model form is:
+$$y = \beta_0 + \beta_1 T + \beta_2 (X - \bar{X}) + \beta_3 T \cdot (X - \bar{X}) + \varepsilon$$
+
+Where:
+
+1. $\beta_0$: The expected baseline (the counterfactual mean of the population under control).
+2. $\beta_1$: The Average Treatment Effect (ATE).
+3. $\beta_2$: The relationship between $X$ and $Y$ in the control group.
+4. $\beta_3$: The Heterogeneous Treatment Effect (HTE)—how the effect changes as $X$ varies.
+
+## Derivation from Second-Order Aggregates
+
+Just as before we derive a solution using only second-order aggregates.
+The OLS normal equation is
+
+\begin{align}
+M^T M &= \begin{bmatrix}
+n & \sum T_i & \sum (X_i - \bar{X}) & \sum T_i(X_i - \bar{X}) \\
+\sum T_i & \sum T_i & \sum T_i(X_i - \bar{X}) & \sum T_i(X_i - \bar{X}) \\
+\sum (X_i - \bar{X}) & \sum T_i(X_i - \bar{X}) & \sum (X_i - \bar{X})^2 & \sum T_i(X_i - \bar{X})^2 \\
+\sum T_i(X_i - \bar{X}) & \sum T_i(X_i - \bar{X}) & \sum T_i(X_i - \bar{X})^2 & \sum T_i(X_i - \bar{X})^2
+\end{bmatrix} \\
+M^T y &= \begin{bmatrix} 
+\sum Y_i \\
+\sum T_i Y_i \\
+\sum (X_i - \bar{X}) Y_i \\
+\sum T_i(X_i - \bar{X}) Y_i 
+\end{bmatrix} \\
+M^T M \beta &= M^T y
+\end{align}
+
+## R Implementation
+
+The following function computes the aggregates using `dplyr`, solves for the Lin estimator, and applies the Delta Method to find the standard error for the Relative Effect ($\beta_1 / \beta_0$).
+
+```{r}
+library(dplyr)
+
+#' Calculate Group-Specific Residual Sum of Squares (RSS)
+#'
+#' @param g_idx Integer. The group index (0 for Control, 1 for Treatment).
+#' @param b Numeric vector. The 4x1 vector of model coefficients (alpha, tau, beta, gamma).
+#' @param stats Dataframe. The summary table of 2nd-order aggregates.
+#'
+#' @return A numeric value representing the estimated RSS for the specified group.
+calc_group_rss <- function(g_idx, b, stats) {
+  g_data <- stats %>% filter(treated == g_idx)
+  
+  n_g     <- g_data %>% pull(n)
+  s_y     <- g_data %>% pull(s_y)
+  s_y2    <- g_data %>% pull(s_y2)
+  s_xc    <- g_data %>% pull(s_xc)
+  s_xc2   <- g_data %>% pull(s_xc2)
+  s_xcy   <- g_data %>% pull(s_xcy)
+  
+  if(g_idx == 1) {
+    # For Treatment, all terms in [1, T, xc, T*xc] are active
+    z_sum_y <- c(s_y, s_y, s_xcy, s_xcy)
+    z_z_sum <- matrix(c(
+      n_g, n_g, s_xc, s_xc,
+      n_g, n_g, s_xc, s_xc,
+      s_xc, s_xc, s_xc2, s_xc2,
+      s_xc, s_xc, s_xc2, s_xc2
+    ), 4)
+  } else {
+    # For Control, T and T*xc terms are 0
+    z_sum_y <- c(s_y, 0, s_xcy, 0)
+    z_z_sum <- matrix(c(
+      n_g, 0, s_xc, 0,
+      0,   0, 0,    0,
+      s_xc, 0, s_xc2, 0,
+      0,   0, 0,    0
+    ), 4)
+  }
+  
+  rss <- s_y2 - 2 * as.numeric(t(b) %*% z_sum_y) + as.numeric(t(b) %*% z_z_sum %*% b)
+  return(rss)
+}
+
+#' Compute Lin's Agnostic Estimator with Delta Method SEs
+#'
+#' @param df Dataframe. Must contain 'x', 'y', and 'treated' (binary 0/1).
+#'
+#' @return A list containing ATE, HTE, Expected Baseline, Relative Effect, and their Standard Errors.
+compute_lin_robust <- function(df) {
+  x_bar <- mean(df$x) # Global mean for population-level ATE
+  
+  # Step 1: Compute Aggregates
+  stats <- df %>%
+    mutate(xc = x - x_bar) %>%
+    group_by(treated) %>%
+    summarise(
+      n = n(),
+      s_xc = sum(xc),
+      s_y  = sum(y),
+      s_y2 = sum(y^2),
+      s_xc2 = sum(xc^2),
+      s_xcy = sum(xc * y),
+      .groups = "drop"
+    )
+
+  t_stats <- stats %>% filter(treated == 1)
+  c_stats <- stats %>% filter(treated == 0)
+  n_tot <- sum(stats$n)
+  
+  # Step 2: Build Matrix M and Vector V
+  M <- matrix(c(
+    n_tot, t_stats$n, (t_stats$s_xc + c_stats$s_xc), t_stats$s_xc,
+    t_stats$n, t_stats$n, t_stats$s_xc, t_stats$s_xc,
+    (t_stats$s_xc + c_stats$s_xc), t_stats$s_xc, (t_stats$s_xc2 + c_stats$s_xc2), t_stats$s_xc2,
+    t_stats$s_xc, t_stats$s_xc, t_stats$s_xc2, t_stats$s_xc2
+  ), nrow = 4, byrow = TRUE)
+
+  V <- c(sum(stats$s_y), t_stats$s_y, sum(stats$s_xcy), t_stats$s_xcy)
+
+  # Step 3: Solve for coefficients
+  beta <- solve(M, V)
+  
+  # Step 4: Robust Variance Estimation (Sandwich)
+  sig0 <- calc_group_rss(0, beta, stats) / (c_stats$n - 2)
+  sig1 <- calc_group_rss(1, beta, stats) / (t_stats$n - 2)
+  
+  Meat <- (sig0 * matrix(c(c_stats$n, 0, c_stats$s_xc, 0, 0, 0, 0, 0, 
+                           c_stats$s_xc, 0, c_stats$s_xc2, 0, 0, 0, 0, 0), 4)) +
+          (sig1 * matrix(c(t_stats$n, t_stats$n, t_stats$s_xc, t_stats$s_xc, 
+                           t_stats$n, t_stats$n, t_stats$s_xc, t_stats$s_xc, 
+                           t_stats$s_xc, t_stats$s_xc, t_stats$s_xc2, t_stats$s_xc2, 
+                           t_stats$s_xc, t_stats$s_xc, t_stats$s_xc2, t_stats$s_xc2), 4))
+  
+  M_inv <- solve(M)
+  V_cov <- M_inv %*% Meat %*% M_inv
+  
+  # Step 5: Relative Effect & Delta Method
+  alpha_hat <- beta[1]
+  tau_hat <- beta[2]
+  rel_effect <- tau_hat / alpha_hat
+  
+  # Gradient of g(alpha, tau) = tau / alpha is [-tau/alpha^2, 1/alpha]
+  grad_g <- c(-tau_hat / (alpha_hat^2), 1 / alpha_hat)
+  rel_var <- t(grad_g) %*% V_cov[1:2, 1:2] %*% grad_g
+  
+  return(list(
+    expected_baseline = alpha_hat,
+    ate = tau_hat,
+    ate_se = sqrt(V_cov[2,2]),
+    hte_slope = beta[4],
+    relative_effect = rel_effect,
+    relative_se = sqrt(as.numeric(rel_var))
+  ))
+}
+
+# Execute
+set.seed(100)
+n <- 100000
+baseline_effect <- 1
+hte_factor <- 1
+
+# Generate X with whales
+x <- rlnorm(n, meanlog = 2, sdlog = 1)
+
+# Simulate imbalance
+data <- data.frame(x = x) %>%
+  arrange(desc(x)) %>%
+  mutate(
+    # Create a propensity vector where the first half has high propensity
+    # but the second half has low propensity. Since the data is sorted this
+    # corresponds to a correlation with X.
+    prob_t = c(rep(0.6, n/2), rep(0.4, n/2)),
+    treated = rbinom(n, 1, prob_t),
+    noise = rnorm(n, 0, 15)
+   ) %>%
+  mutate(
+    effect_if_treated = rnorm(n, baseline_effect, 1) + hte_factor * x,
+    y = noise + rnorm(n, 1, 1)*x + effect_if_treated * treated
+  )
+results <- compute_lin_robust(data)
+print(results)
+```

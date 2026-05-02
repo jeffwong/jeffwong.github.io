@@ -1,0 +1,167 @@
+---
+title: "Does your AB have controlled randomization?"
+author: "Jeffrey Wong"
+date: "2026-01-30"
+categories: [experimentation, statistics]
+format:
+  html:
+    toc: true
+    toc-location: left
+    toc-depth: 3
+    toc-title: Contents
+---
+
+The SRM is a popular test to tell if your AB test is healthy. But it's not enough.
+The SRM is powered by a chi square test underneath the hood, which compares observed
+count data with an expected distribution. For example, if we run an AB test and
+observe 10100 users in the treatment, and 9990 in the control, we can compare
+that to an expected 50/50 split among the users. In this case, the observed
+counts show a 50.3\% allocation into the treatment and 49.7\% in the control.
+While this looks imbalanced, it's actually within tolerance, and the AB data
+would not fail the SRM.
+
+```{r}
+chisq.test(c(10100, 9990), p = c(.5, .5))
+```
+
+The SRM is not enough. Even if the count data was 60\% in the treatment, and 40\%
+in the control, and the SRM rejected, it is not enough to tell if the AB test
+is healthy. It is certainly a red flag, but it is not enough.
+
+# Pretreatment Imbalance is the Real Concern
+
+The SRM only matters if there is a pretreatment covariate imbalance.
+Let's build up that conclusion from first principles. We'll also examine other
+possible dangerous scenarios, such as when there are heterogeneous effects.
+
+1. Let's start with the base case. Say the treatment effect is actually a constant
+$\tau(\cdot) = k$, and there is no pretreatment imbalance. Say there is an SRM.
+The difference in means would be
+
+\begin{align}
+E[y | T = 1] - E[y | T = 0] &= \frac{1}{n_T} \sum_{i \in T} \beta_0 + k - \frac{1}{n_C} \sum_{i \in C} \beta_0 \\
+  &= \frac{1}{n_T} (n_T \beta_0 + n_T k) - \frac{1}{n_C} (n_C \beta_0) \\
+  &= k
+\end{align}
+
+What's interesting here is that we can derive the treatment effect, $k$, without
+relying on what the values of $n_T$ and $n_C$ are. It did not matter what the distribution
+was, or if an SRM was triggered.
+
+2. Now say that the treatment effect is heterogeneous along variable $x$, so
+$\tau(x)$ is not a constant. Let $f(x)$ be the pdf of $x$.
+At the same time, say that $x$ is perfectly balanced between treatment and control,
+so $f(x | T = 1) = f(x | T = 0)$. The treatment effect is
+
+\begin{align}
+E[y | T = 1] - E[y | T = 0] &= \frac{1}{n_T} \sum_{i \in T} \beta_0 + \tau(x_i) - \frac{1}{n_C} \sum_{i \in C} \beta_0 \\
+  &= \frac{1}{n_T} \sum_{i \in T} \tau(x_i)
+\end{align}
+
+The ground truth for the average treatment effect is $ATE = \int \tau(x) f(x) dx$, which
+is the weighted average of $\tau(x)$ weighted by the pdf of $x$.
+$\frac{1}{n_T} \sum_{i \in T} \tau(x_i)$
+is the average value of $\tau(x_i)$ evaluated among the treatment users. When
+$f(x | T = 1) = f(x | T = 0) = f(x)$, the average among the treatment users
+will still be the same as the ATE. So even when SRM is violated, and when there
+is a heterogeneous effect, there is still no issue.
+
+3. The problem occurs when there is an imbalance along $x$. 
+This means $f(x | T = 1) \neq f(x | T = 0)$. But it can also mean
+the baseline, $\beta_0$, can be different in the treatment and the control. A simple
+subtraction of the treatment group and the control group does not necessarily cancel
+out the baseline terms and does not necessarily isolate the treatment effect term.
+
+\begin{align}
+ATE  &= \int \tau(x) f(x) dx \\
+E[y | T = 1] - E[y | T = 0] &= \frac{1}{n_T} \sum_{i \in T} \beta_0(x_i) + \tau(x_i) - \frac{1}{n_C} \sum_{i \in C} \beta_0(x_i) \\
+  &= \frac{1}{n_T} \sum_{i \in T} \tau(x_i) + \left[ \frac{1}{n_T} \sum_{i \in T} \beta_0(x_i) - \frac{1}{n_C} \sum_{i \in C} \beta_0(x_i) \right] \\
+  &= \underbrace{\int \tau(x) f(x | T = 1) dx}_{\text{looks like an ATE}} + \underbrace{\left[  \int \beta_0(x) \left( f(x | T = 1) - f(x | T = 0) \right) dx \right]}_{\text{bias in the baseline}}
+\end{align}
+
+The difference in means is flawed in 2 ways:
+weighted average of $\tau(x)$ weighted by the pdf of $x$ only among the treated users
+is biased for the ATE, and there is a nonzero bias in the baseline. Unless
+we control for $x$, we cannot untangle which part is the treatment effect and which
+part is just baseline.
+
+# A Better Test than SRM
+
+What we have shown is that the danger doesn't come from the SRM, the danger comes
+from covariate imbalance.
+Ultimately, we need to know if the randomization in our test is controlled
+randomization.
+
+One way to test this is to examine the correlation between $x$ and $T$.
+Ideally the correlation is 0, which would imply $f(x | T = 1) = f(x | T = 0) = f(x)$.
+We can do this by regressing
+
+$$T = \alpha_0 + X \alpha_1 + \varepsilon$$
+If the t-test for $H_0: \alpha_1 = 0$ is rejected, then there is nonzero correlation.
+
+In practice though, we want to check for covariate imbalance along multiple $x$
+variables. So the regression extends to
+
+$$T = \alpha_0 + X_1 \alpha_1 + X_2 \alpha_2 + ... + \varepsilon$$
+
+Ideally the entire set $\alpha_1, \alpha_2, ...$ are jointly all zero.
+Another way to frame this is to say that the $R^2$ of the regression is ideally 0.
+This can be tested using the F test.
+
+An interesting note on the side is that the test for $H_0: \alpha_0 = 0.5$ is
+akin to the SRM test, but formulated from regression (assuming the intended
+traffic split was 0.5).
+
+# Power for the F test
+
+An important duty in AB testing is determining whether the test is healthy.
+We do not want the F test to reject, as that would indicate $T$ is not
+actually random. If the F test is well powered, and fails to reject,
+we could conclude that the test is healthy.
+
+Power for the F test requires
+
+1. $F_{\text{crit}} = qf(1 - \alpha, p, N - p - 1)$ where $\alpha$ is typically
+0.05 as usual, $p$ is the number of covariates, and $N$ is the total sample size.
+2. $\lambda = N \frac{R^2}{1-R^2}$.
+
+$$\boxed{\text{Power} = P(F > F_{\text{crit}} | p, N - p - 1, \lambda)}$$
+
+We can use a root finder algorithm to invert this equation and find the
+necessary sample size to achieve 80\% power. If we have this much data,
+power is 80\%, and we fail to reject, then we can conclude the test is healthy.
+If we want to scan across 20 covariates, and want to make sure the $R^2$
+of the regression is weaker than 0.0001, we only need $N = 200000$. This is
+a very interesting result, as large companies with small effect sizes tend to need
+$N > 1e6$ to detect an effect, but we only need $N = 200000$ to tell if the
+test is healthy.
+
+```{r}
+#' Calculate required sample size for F-test power
+#'
+#' @param r_squared The R-squared value to detect
+#' @param p Number of covariates
+#' @param target_power Desired power (e.g., 0.80)
+#' @param alpha Significance level (default 0.05)
+#' 
+#' @return The required sample size N (rounded up)
+required_sample_size <- function(r_squared, p, target_power = 0.8, alpha = 0.05) {
+  
+  power_root_finder <- function(n) {
+    df1 <- p
+    df2 <- n - p - 1
+    ncp <- n * (r_squared / (1 - r_squared))
+    f_crit <- qf(1 - alpha, df1, df2)
+    current_power <- pf(f_crit, df1, df2, ncp = ncp, lower.tail = FALSE)
+    return(current_power - target_power)
+  }
+  solution <- uniroot(power_root_finder, interval = c(p + 2, 1e9))
+  return(ceiling(solution$root))
+}
+
+p <- 20
+target_r2 <- 0.0001
+needed_n <- required_sample_size(target_r2, p)
+
+cat(sprintf("Required Sample Size: %s\n", format(needed_n, big.mark=",")))
+```

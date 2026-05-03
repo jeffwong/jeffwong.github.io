@@ -1,0 +1,101 @@
+---
+title: "Multivariate Binning"
+editor: visual
+---
+
+```{r}
+library(dplyr)
+library(tidyr)
+
+# 1. Simulate Raw Data
+set.seed(42)
+n_raw <- 1000000
+df_raw <- data.frame(
+  x1 = rlnorm(n_raw, 2, 1), # Past Spend
+  x2 = runif(n_raw, 18, 70)  # User Age
+) %>%
+  mutate(
+    # Y depends on both: A jump for high spenders AND a jump for older users
+    y = ifelse(x1 > 25, 200, 50) + ifelse(x2 > 50, 100, 0) + rnorm(n_raw, sd = 15)
+  )
+
+# 2. Produce 2nd-Order Aggregates per Feature
+# We create separate histograms for each covariate.
+get_hists <- function(df, col_name, n_buckets = 100) {
+  df %>%
+    mutate(bucket = ntile(!!sym(col_name), n_buckets)) %>%
+    group_by(bucket) %>%
+    summarise(
+      feature = col_name,
+      n       = n(),
+      min_v   = min(!!sym(col_name)),
+      max_v   = max(!!sym(col_name)),
+      sum_y   = sum(y),
+      sum_y2  = sum(y^2),
+      .groups = "drop"
+    )
+}
+
+hist_x1 <- get_hists(df_raw, "x1")
+hist_x2 <- get_hists(df_raw, "x2")
+
+# This 'combined_hists' is all we need to build the first node of the tree
+all_hists <- bind_rows(hist_x1, hist_x2)
+```
+
+```{r}
+#' Find Best Split across Multiple Feature Histograms
+#' @param all_hists Combined histogram dataframe
+find_multi_feature_split <- function(all_hists) {
+  
+  features <- unique(all_hists$feature)
+  best_overall <- list(gain = -Inf)
+  
+  # Total dataset stats (same across all features)
+  # We use the first feature to get global totals
+  first_feat  <- all_hists %>% filter(feature == features[1])
+  total_n     <- sum(first_feat$n)
+  total_sum_y <- sum(first_feat$sum_y)
+  total_v     <- (total_sum_y^2 / total_n)
+  
+  for (f in features) {
+    hist <- all_hists %>% filter(feature == f) %>% arrange(min_v)
+    
+    left_n     <- 0
+    left_sum_y <- 0
+    
+    for (i in 1:(nrow(hist) - 1)) {
+      left_n     <- left_n + hist$n[i]
+      left_sum_y <- left_sum_y + hist$sum_y[i]
+      
+      right_n     <- total_n - left_n
+      right_sum_y <- total_sum_y - left_sum_y
+      
+      # Gain = (SS_Between) = [SumL^2/nL + SumR^2/nR] - [SumTotal^2/nTotal]
+      gain <- (left_sum_y^2 / left_n) + (right_sum_y^2 / right_n) - total_v
+      
+      if (gain > best_overall$gain) {
+        best_overall <- list(
+          feature    = f,
+          split_val  = hist$max_v[i],
+          gain       = gain,
+          left_mean  = left_sum_y / left_n,
+          right_mean = right_sum_y / right_n
+        )
+      }
+    }
+  }
+  return(best_overall)
+}
+```
+
+```{r}
+best_split <- find_multi_feature_split(all_hists)
+
+cat("--- Multi-Covariate Histogram Result ---\n")
+cat("Best Feature to Split:", best_split$feature, "\n")
+cat("Split Point Value:    ", round(best_split$split_val, 2), "\n")
+cat("Expected Gain:        ", round(best_split$gain, 0), "\n")
+cat("Left Node Mean Y:     ", round(best_split$left_mean, 2), "\n")
+cat("Right Node Mean Y:    ", round(best_split$right_mean, 2), "\n")
+```

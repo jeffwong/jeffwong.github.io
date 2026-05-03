@@ -5,6 +5,7 @@ project:
     - "*.qmd"
     - "posts/*/index.qmd"
     - "!posts/sparse_model_matrix/index.qmd"  # ⛔️ this skips rendering the draft
+    - "!posts/multivariate_binning/index.qmd"  # ⛔️ this skips rendering the draft
 
 website:
   description: "Data science innovation from first principles."

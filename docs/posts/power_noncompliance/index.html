@@ -200,7 +200,7 @@ p_0 &amp;= P(X = 0 | Z = 0)
 <p><span class="math display">\[\begin{align}
 \mu_1 | Z = 1 &amp;= p_1 \mu_1 + (1 - p_1) \mu_0 \\
 \mu_0 | Z = 0 &amp;= p_0 \mu_0 + (1 - p_0) \mu_1 \\
-\mu_1 | Z = 1 - \mu_0 | Z = 0 &amp;= (p_1 + p_0 - 1) \Delta
+(\mu_1 | Z = 1) - (\mu_0 | Z = 0) &amp;= (p_1 + p_0 - 1) \Delta
 \end{align}\]</span></p>
 </section>
 <section id="variance" class="level1">
@@ -208,23 +208,23 @@ p_0 &amp;= P(X = 0 | Z = 0)
 <p>The variance of <span class="math inline">\(y\)</span> is broken down using the <a href="https://en.wikipedia.org/wiki/Law_of_total_variance">law of total variance</a></p>
 <p><span class="math display">\[Var(y) = E[var(y  | X)] + Var(E[y | X])\]</span></p>
 <p>The first term can be simplified and reduced to just <span class="math inline">\(\sigma^2\)</span>. We can argue that the variance of <span class="math inline">\(y\)</span> is not a function of the artificially generated assignment variable, <span class="math inline">\(Z\)</span>. It is only a function of whether or not the unit actually received the treatment. This is a homoskedasticity assumption.</p>
-<p>The second term is the variance of a random variable that has two parts, which is a scalled bernoulli. The inner part is<br>
-<span class="math inline">\(E[y | X = 0] =\mu_0\)</span> and <span class="math inline">\(E[y | X = 1] = \mu_1 = \mu_0 + \Delta\)</span>. We leverage the property of scalled bernoullis that can take value <span class="math inline">\(\mu_0\)</span> and <span class="math inline">\(\mu_1\)</span> with probabilities <span class="math inline">\((1-p_1)\)</span> and <span class="math inline">\(p_1\)</span>.</p>
+<p>The second term is the variance of a random variable that has two parts, which is a scaled bernoulli. The inner part is<br>
+<span class="math inline">\(E[y | X = 0] =\mu_0\)</span> and <span class="math inline">\(E[y | X = 1] = \mu_1 = \mu_0 + \Delta\)</span>. We leverage the property of scaled bernoullis that can take value <span class="math inline">\(\mu_0\)</span> and <span class="math inline">\(\mu_1\)</span> with probabilities <span class="math inline">\((1-p_1)\)</span> and <span class="math inline">\(p_1\)</span>.</p>
 <p><span class="math display">\[Var(E[y | X]) = p_1 (1 - p_1) \Delta^2.\]</span></p>
 <p>We have the key pieces we need to express statistical power in terms of variables that we can plan for, namely the assignment <span class="math inline">\(Z\)</span> and approximations for the compliance rate.</p>
 <p><span class="math display">\[\begin{align}
 \mu_1 | Z = 1 &amp;= p_1 \mu_1 + (1 - p_1) \mu_0 \\
 \mu_0 | Z = 0 &amp;= p_0 \mu_0 + (1 - p_0) \mu_1 \\
-\mu_1 | Z = 1 - \mu_0 | Z = 0 &amp;= (p_1 + p_0 - 1) \Delta \\
+(\mu_1 | Z = 1) - (\mu_0 | Z = 0) &amp;= (p_1 + p_0 - 1) \Delta \\
 Var(y | Z = 1) &amp;= \sigma^2 + p_1 (1 - p_1) \Delta^2 \approx \sigma^2 \\
 Var(y | Z = 0) &amp;= \sigma^2 + p_0 (1 - p_0) \Delta^2 \approx \sigma^2
 \end{align}\]</span></p>
-<p>The approximation in <span class="math inline">\(Var(y | Z = 1) \approx \sigma^2\)</span> comes from the pattern that variance (not normalized by <span class="math inline">\(n\)</span>) tends to be large while effect size tends to be small. Thus variance under noncompliance is not much different than variance under full compliance. The change in power will largely come from the dilution in the treatment effect.</p>
+<p>The approximation in <span class="math inline">\(Var(y | Z = 1) \approx \sigma^2\)</span> comes from the pattern that variance (not normalized by <span class="math inline">\(n\)</span>) tends to be large while effect size tends to be small. Thus <strong>variance under noncompliance is not much different than variance under full compliance</strong>. The change in power will largely come from the dilution in the treatment effect.</p>
 <p><span class="math display">\[
 \boxed{\text{Power} = \Phi(\delta' - z_{1-\alpha/2}) + \Phi(-\delta' - z_{1-\alpha/2})}
 \]</span></p>
 <p>where <span class="math inline">\(\delta' = \delta (p_1 + p_0 - 1)\)</span> is a dilution on the treatment effect.</p>
-<p>Using some simple numbers, if <span class="math inline">\(p_1 = p_0 = 0.9\)</span>, then <span class="math inline">\(\delta' = 0.8 \delta\)</span>. By changing the effect size by 0.8, we change the sample size necessary by <span class="math inline">\(\frac{1}{.8^2} = 56\%\)</span>!</p>
+<p>Using some simple numbers, if <span class="math inline">\(p_1 = p_0 = 0.9\)</span>, then <span class="math inline">\(\delta' = 0.8 \delta\)</span>. Referring back to our MDE calculator, by changing the effect size by 0.8, we change the sample size necessary by <span class="math inline">\(\frac{1}{.8^2} = 56\%\)</span>!</p>
 
 
 </section>

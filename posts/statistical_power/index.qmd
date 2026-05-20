@@ -136,7 +136,7 @@ power.t.test(
 # How Power Changes
 
 A lot of research in experimentation goes into methods to increase statistical power.
-Using the formula, the variables that drive variance are:
+Using the formula, the variables that drive power are:
 
 1. The treatment effect, $\mu_1 - \mu_0$.
 2. The critical value, determined by $\alpha$.

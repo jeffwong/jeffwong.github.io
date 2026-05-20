@@ -45,7 +45,7 @@ and will subsequently decrease the power.
 \begin{align}
 \mu_1 | Z = 1 &= p_1 \mu_1 + (1 - p_1) \mu_0 \\
 \mu_0 | Z = 0 &= p_0 \mu_0 + (1 - p_0) \mu_1 \\
-\mu_1 | Z = 1 - \mu_0 | Z = 0 &= (p_1 + p_0 - 1) \Delta
+(\mu_1 | Z = 1) - (\mu_0 | Z = 0) &= (p_1 + p_0 - 1) \Delta
 \end{align}
 
 # Variance
@@ -60,9 +60,9 @@ We can argue that the variance of $y$ is not a function of the artificially gene
 of whether or not the unit actually received the treatment. This is a homoskedasticity assumption.
 
 The second term is the variance of a random variable that has two parts, which is
-a scalled bernoulli. The inner part is  
+a scaled bernoulli. The inner part is  
 $E[y | X = 0] =\mu_0$ and $E[y | X = 1] = \mu_1 = \mu_0 + \Delta$.
-We leverage the property of scalled bernoullis that can take value $\mu_0$ and $\mu_1$
+We leverage the property of scaled bernoullis that can take value $\mu_0$ and $\mu_1$
 with probabilities $(1-p_1)$ and $p_1$.
 
 $$Var(E[y | X]) = p_1 (1 - p_1) \Delta^2.$$
@@ -73,15 +73,15 @@ that we can plan for, namely the assignment $Z$ and approximations for the compl
 \begin{align}
 \mu_1 | Z = 1 &= p_1 \mu_1 + (1 - p_1) \mu_0 \\
 \mu_0 | Z = 0 &= p_0 \mu_0 + (1 - p_0) \mu_1 \\
-\mu_1 | Z = 1 - \mu_0 | Z = 0 &= (p_1 + p_0 - 1) \Delta \\
+(\mu_1 | Z = 1) - (\mu_0 | Z = 0) &= (p_1 + p_0 - 1) \Delta \\
 Var(y | Z = 1) &= \sigma^2 + p_1 (1 - p_1) \Delta^2 \approx \sigma^2 \\
 Var(y | Z = 0) &= \sigma^2 + p_0 (1 - p_0) \Delta^2 \approx \sigma^2
 \end{align}
 
 The approximation in $Var(y | Z = 1) \approx \sigma^2$ comes from the
 pattern that variance (not normalized by $n$) tends to be large while effect size tends to be
-small. Thus variance under noncompliance is not much different
-than variance under full compliance. The change in power will largely
+small. Thus **variance under noncompliance is not much different
+than variance under full compliance**. The change in power will largely
 come from the dilution in the treatment effect.
 
 $$
@@ -90,5 +90,6 @@ $$
 
 where $\delta' = \delta (p_1 + p_0 - 1)$ is a dilution on the treatment effect.
 
-Using some simple numbers, if $p_1 = p_0 = 0.9$, then $\delta' = 0.8 \delta$. By changing the effect size by 0.8, we change the sample size
-necessary by $\frac{1}{.8^2} = 56\%$!
+Using some simple numbers, if $p_1 = p_0 = 0.9$, then $\delta' = 0.8 \delta$. 
+Referring back to our MDE calculator, by changing the effect size by 0.8,
+we change the sample size necessary by $\frac{1}{.8^2} = 56\%$!

@@ -10,7 +10,55 @@
 <atom:link href="https://jeffwong.github.io/index.xml" rel="self" type="application/rss+xml"/>
 <description>Data science innovation from first principles.</description>
 <generator>quarto-1.8.27</generator>
-<lastBuildDate>Tue, 21 Apr 2026 00:00:00 GMT</lastBuildDate>
+<lastBuildDate>Sat, 20 Jun 2026 00:00:00 GMT</lastBuildDate>
+<item>
+  <title>The Variance of your Composite Metric</title>
+  <dc:creator>Jeffrey Wong</dc:creator>
+  <link>https://jeffwong.github.io/posts/composite_metric/</link>
+  <description><![CDATA[ 
+
+
+
+
+
+<p>This post will describe the analysis strategy for analyzing a composite metric, especially how to derive its variance. A composite metric is a new metric that is made by transforming 2 or more other metrics. In the past, we have described the ratio of 2 variables as an example of a composite metric, and how to use the delta method to define its variance. This post generalizes that and helps us to understand when do we need the delta method and when do we not need it?</p>
+<section id="remember" class="level1">
+<h1>Remember</h1>
+<p>In a previous post on <a href="https://jeffwong.github.io/posts/relative_effects/">relative treatment effects</a>, we described the importance of what steps lead up to the metric aggregation. When asking for a relative effect, or a percent effect, we could evaluate a counterfactual per user <img src="https://latex.codecogs.com/png.latex?i">, <img src="https://latex.codecogs.com/png.latex?R_i%20=%20%5Cfrac%7BE%5By_i%20%7C%20T%20=%201%5D%7D%7BE%5By_i%20%7C%20T%20=%200%5D%7D">. After defining this quantity per user, we could then average the <img src="https://latex.codecogs.com/png.latex?R_i">’s. In this order of operations, we apply a function to 2 inputs: the treatment score, and the control score. That function is simply division, <img src="https://latex.codecogs.com/png.latex?f(x_i,%20y_i)%20=%20x_i/y_i">. Finally we do an aggregation.</p>
+<p>As described in that previous post, this created some strange properties. Power users that had a 1% loss on a huge base were outweighted by normal users that had a 10% gain on a tiny base. Instead, we can change the order of operations, which will lead to a more “natural” metric. First we aggregate the scores <img src="https://latex.codecogs.com/png.latex?%5Cfrac%7B1%7D%7Bn_T%7D%20%5Csum_%7Bi%20%5Cin%20T%7D%20y_i">, <img src="https://latex.codecogs.com/png.latex?%5Cfrac%7B1%7D%7Bn_C%7D%20%5Csum_%7Bi%20%5Cin%20C%7D%20y_i">, and then we apply our function on these aggregates</p>
+<p><img src="https://latex.codecogs.com/png.latex?f(x,%20y)%20=%20%5Cfrac%7B%5Cfrac%7B1%7D%7Bn_T%7D%20%5Csum_%7Bi%20%5Cin%20T%7D%20y_i%7D%7B%5Cfrac%7B1%7D%7Bn_C%7D%20%5Csum_%7Bi%20%5Cin%20C%7D%20y_i%7D"></p>
+<p>This leads us to a more natural definition of the average relative effect. Testing this ratio requires us to use the delta method as described in our previous post.</p>
+</section>
+<section id="the-generalization" class="level1">
+<h1>The Generalization</h1>
+<p>The two strategies demonstrated in this example are:</p>
+<ol type="1">
+<li>Testing <img src="https://latex.codecogs.com/png.latex?%5Cfrac%7B1%7D%7Bn%7D%20%5Csum%20f(y_%7Bi,C%7D,%20y_%7Bi,%20T%7D)">.</li>
+<li>Testing <img src="https://latex.codecogs.com/png.latex?f(%5Cbar%7By%7D_C,%20%5Cbar%7By%7D_T)">.</li>
+</ol>
+<p>In scenario (1), the variance we need in our t test is simply <img src="https://latex.codecogs.com/png.latex?var(f(y_C,%20y_T))">. It’s just the sampling variance.</p>
+<p>In scenario (2) we have to ask for the more complicated delta method. This is such a subtle nuance!</p>
+<p>Why does one order of operations need the delta method, and the other does not? It depends on when is the Central Limit Theorem being invoked.</p>
+<ul>
+<li>In scenario (1), we define a user level transformation <img src="https://latex.codecogs.com/png.latex?f(y_%7Bi,C%7D,%20y_%7Bi,%20T%7D)">. Then we compute the sample average of the transformation. Then we invoke the CLT to justify the difference in means test. The CLT is being invoked on the post transformed data, so the variance that we need is simply the variance post transformation.</li>
+<li>In scenario (2), we compute averages first. Then we apply the transformation. To proceed to a statistical test, we need the CLT to operate on the transformation of the aggregate, which asks us to derive the more complex variance.</li>
+</ul>
+</section>
+<section id="the-composite-metric" class="level1">
+<h1>The Composite Metric</h1>
+<p>Now say we have a composite metric which summarizes multiple metrics into a single score. The composite metric could be <img src="https://latex.codecogs.com/png.latex?S%20=%20g(y_1,%20y_2,%20...)">. What is the right analysis strategy for getting the variance of <img src="https://latex.codecogs.com/png.latex?S">? Does it need a multivariate delta method?</p>
+<p>It simply boils down to the order of operations. If we transform user level metrics first, then ask for an average, the CLT can operate immediately from the transformed data. No multivariate delta method is needed.</p>
+<p>If we compute averages <img src="https://latex.codecogs.com/png.latex?%5Cbar%7By%7D_1,%20%5Cbar%7By%7D_2,%20...">, and then apply the function <img src="https://latex.codecogs.com/png.latex?g">, then we need to invoke multivariate delta method.</p>
+
+
+</section>
+
+ ]]></description>
+  <category>experimentation</category>
+  <category>statistics</category>
+  <guid>https://jeffwong.github.io/posts/composite_metric/</guid>
+  <pubDate>Sat, 20 Jun 2026 00:00:00 GMT</pubDate>
+</item>
 <item>
   <title>A Better, Robust CUPED</title>
   <dc:creator>Jeffrey Wong</dc:creator>

@@ -1,0 +1,81 @@
+---
+title: "The Variance of your Composite Metric"
+author: "Jeffrey Wong"
+date: "2026-06-20"
+categories: [experimentation, statistics]
+---
+
+```{r setup, include=FALSE}
+require(dplyr)
+require(purrr)
+require(ggplot2)
+require(gridExtra)
+```
+
+This post will describe the analysis strategy for analyzing a composite metric,
+especially how to derive its variance. A composite metric is a new metric that is
+made by transforming 2 or more other metrics. In the past, we have described
+the ratio of 2 variables as an example of a composite metric, and how to use the delta method
+to define its variance. This post generalizes that and helps us to understand
+when do we need the delta method and when do we not need it?
+
+# Remember
+
+In a previous post on [relative treatment effects](https://jeffwong.github.io/posts/relative_effects/),
+we described the importance of what steps lead up to the metric aggregation.
+When asking for a relative effect, or a percent effect, we could evaluate a
+counterfactual per user $i$, $R_i = \frac{E[y_i | T = 1]}{E[y_i | T = 0]}$.
+After defining this quantity per user, we could then average the $R_i$'s.
+In this order of operations, we apply a function to 2 inputs: the treatment score, and the
+control score. That function is simply division, $f(x_i, y_i) = x_i/y_i$.
+Finally we do an aggregation.
+
+As described in that previous post, this created some strange properties.
+Power users that had a 1% loss on a huge base were outweighted by 
+normal users that had a 10% gain on a tiny base.
+Instead, we can change the order of operations, which will lead to a more "natural"
+metric. First we aggregate the scores
+$\frac{1}{n_T} \sum_{i \in T} y_i$, $\frac{1}{n_C} \sum_{i \in C} y_i$,
+and then we apply our function on these aggregates
+
+$$f(x, y) = \frac{\frac{1}{n_T} \sum_{i \in T} y_i}{\frac{1}{n_C} \sum_{i \in C} y_i}$$
+
+This leads us to a more natural definition of the average relative effect. Testing
+this ratio requires us to use the delta method as described in our previous post.
+
+# The Generalization
+
+The two strategies demonstrated in this example are:
+
+1. Testing $\frac{1}{n} \sum f(y_{i,C}, y_{i, T})$.
+2. Testing $f(\bar{y}_C, \bar{y}_T)$.
+
+In scenario (1), the variance we need in our t test is simply $var(f(y_C, y_T))$.
+It's just the sampling variance.
+
+In scenario (2) we have to ask for the more complicated delta method.
+This is such a subtle nuance!
+
+Why does one order of operations need the delta method, and the other does not?
+It depends on when is the Central Limit Theorem being invoked. 
+
+* In scenario (1), we define a user level transformation $f(y_{i,C}, y_{i, T})$. Then we compute
+the sample average of the transformation. Then we invoke the CLT to justify the 
+difference in means test. The CLT is being invoked on the post transformed data,
+so the variance that we need is simply the variance post transformation.
+* In scenario (2), we compute averages first. Then we apply the transformation.
+To proceed to a statistical test, we need the CLT to operate on the transformation
+of the aggregate, which asks us to derive the more complex variance.
+
+# The Composite Metric
+
+Now say we have a composite metric which summarizes multiple metrics into a single score.
+The composite metric could be $S = g(y_1, y_2, ...)$. What is the right analysis 
+strategy for getting the variance of $S$? Does it need a multivariate delta method?
+
+It simply boils down to the order of operations. If we transform user level metrics first,
+then ask for an average, the CLT can operate immediately from the transformed data.
+No multivariate delta method is needed.
+
+If we compute averages $\bar{y}_1, \bar{y}_2, ...$, and then apply the function $g$,
+then we need to invoke multivariate delta method.

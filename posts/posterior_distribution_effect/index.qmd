@@ -1,0 +1,253 @@
+---
+title: "You want the posterior distribution, not the confidence interval"
+author: "Jeffrey Wong"
+date: 2026-07-09
+categories: [bayesian statistics, AB testing, regression]
+format:
+  html:
+    toc: true
+    code-fold: show
+---
+
+In this post we cover the misconception between
+a confidence interval and a posterior distribution.
+Despite the confusion though, the frequentist methods are entrenched in the AB testing industry,
+and have made many advancements in variance reduction.
+We'll describe analogies for Bayesian methods to perform the same, so that it becomes practical to pivot to them.
+
+# Two schools of thought.
+
+Run an AB test in a frequentist framework and you get a confidence interval. Run the same test in a Bayesian framework and you get a credible interval. Both are a range of numbers around a point estimate. But it's a mistake to say they both represent the distribution of the treatment effect. Only the latter is.
+
+# Is the confidence interval meaningful?
+
+In the frequentist setup, the treatment effect $\tau$ is a population parameter. It is an unknown and fixed constant. It has no distribution. Using data, we want to estimate this popular parameter. And it is the variance in the sample that induces randomness. A 95% confidence interval is constructed so that, across hypothetical repeated experiments, 95% of the intervals we'd build would contain the true $\tau$. The interval reflects how much the estimator would vary from sample to sample, and is formally called the sampling distribution. However, this sampling distribution does not describe the distribution of the effect, it simply describes a distribution around random draws of data.
+
+# The posterior is more natural.
+
+In a Bayesian setup, $\tau$ is treated as a random variable and hence has a distribution. The posterior is computed by starting with a prior and a likelihood of the data, then using observed data we make Bayesian updates to get the posterior distribution for $\tau$.
+When we describe this distribution, we can legitimately say "there's a 95% probability $\tau$ lies in this range". The variability of $\tau$ here refers to the range that $\tau$ can take, not variability that is induced by the randomness of the sample. This is what most people want. It allows us to describe the risk and reward of the treatment.
+
+# Much of the AB literature is built on frequentist analysis. What are the analogies in Bayesian?
+
+The bayesian posterior is a great way for business leaders to think about risk and reward.
+Unfortunately, a lot of AB testing has been built on top of frequentist methods.
+For example, CUPED and linear modeling in general form the basis for variance reduction, which is
+still a relevant issue in bayesian AB testing. Furthermore, much work has been put into making
+these types of models highly scalable. So how do we create the analogous bayesian models?
+
+We formulate a Bayesian linear regression which accomodates pretreatment covariates for variance reduction.
+We will also pursue a model that has a closed form solution for the posterior, so that it can be
+highly scalable. We write
+
+$$
+Y = \alpha + \tau T + \beta X + \varepsilon, \qquad \varepsilon \sim N(0, \sigma^2)
+$$
+
+where $T$ is the treatment indicator and $X$ is a vector of pretreatment covariates. Let $Z = [1, T, X]$ be the design matrix stacking the intercept, treatment, and covariates, and $\theta = (\alpha, \tau, \beta)^\top$.
+
+We put a **Normal-Inverse-Gamma (NIG)** prior on $(\theta, \sigma^2)$. This is a conjugate prior for a linear-Gaussian likelihood, and allows the posterior to have a closed form. The prior takes the form:
+
+$$
+\sigma^2 \sim \mathrm{IG}(a_0, b_0), \qquad \theta \mid \sigma^2 \sim N(\theta_0, \sigma^2 V_0)
+$$
+
+Notice the coefficient prior's variance is itself scaled by $\sigma^2$. That coupling is what makes the pair conjugate: it lets the noise variance and the coefficient uncertainty update together in closed form, rather than as two separate, generally non-conjugate, updates.
+
+Conjugacy means the posterior is again NIG: $(\theta, \sigma^2) \mid \text{data} \sim \mathrm{NIG}(\theta_n, V_n, a_n, b_n)$, i.e. $\sigma^2 \mid \text{data} \sim \mathrm{IG}(a_n, b_n)$ and $\theta \mid \sigma^2, \text{data} \sim N(\theta_n, \sigma^2 V_n)$, with
+
+\begin{align}
+V_n &= \left(V_0^{-1} + Z^\top Z\right)^{-1} \\
+\theta_n &= V_n\left(V_0^{-1}\theta_0 + Z^\top Y\right) \\
+a_n &= a_0 + \frac{n}{2} \\
+b_n &= b_0 + \frac{1}{2}\left(Y^\top Y + \theta_0^\top V_0^{-1}\theta_0 - \theta_n^\top V_n^{-1}\theta_n\right)
+\end{align}
+
+Let's examine the structure. $V_n$ and $\theta_n$ look like ridge regression. $a_n$ looks like how degrees of freedom accumulate. $b_n$ is like RSS: the total sum of squares $Y^\top Y$, plus a penalty for how far the prior mean $\theta_0$ sits from zero, minus the portion of that variation the fitted posterior mean $\theta_n$ already explains.
+As the prior becomes flat, $V_0^{-1} \to 0$, the prior's contribution $V_0^{-1}\theta_0$ vanishes along with $V_0^{-1}$ itself, regardless of what $\theta_0$ is. At the same time $\theta_n \to (Z^\top Z)^{-1}Z^\top Y$, which is OLS estimate. So in many ways, the Bayesian model encapsulates an OLS model, while still having the more natural interpretation. This is a great property.
+
+As the prior becomes more confident instead, $V_0 \to 0$, $\theta_n$ collapses to $\theta_0$.
+
+Because the posterior is available in closed form, we can simply run a 2 step sampling process: draw $\sigma^2 \sim \mathrm{IG}(a_n, b_n)$, then draw $\theta \mid \sigma^2 \sim N(\theta_n, \sigma^2 V_n)$. We show this below.
+
+```r
+bayes_lm_treatment_effect <- function(data,
+                                       y,
+                                       treatment,
+                                       covariates = NULL,
+                                       prior_mean = NULL,
+                                       prior_var = 100,      # weakly informative
+                                       prior_a0 = 0.001,     # near-flat prior on sigma^2
+                                       prior_b0 = 0.001,
+                                       n_samples = 10000,
+                                       seed = 42) {
+
+  set.seed(seed)
+
+  treatment_name <- rlang::as_name(rlang::ensym(treatment))
+  treatment_vec  <- dplyr::pull(data, {{ treatment }})
+  covariate_df   <- dplyr::select(data, {{ covariates }})
+
+  if (ncol(covariate_df) == 0) {
+    Z <- cbind(Intercept = 1, treatment = treatment_vec)
+  } else {
+    Z <- cbind(Intercept = 1, treatment = treatment_vec, as.matrix(covariate_df))
+  }
+  colnames(Z)[2] <- treatment_name
+
+  y <- as.numeric(dplyr::pull(data, {{ y }}))
+  n <- nrow(Z)
+  p <- ncol(Z)
+
+  if (is.null(prior_mean)) prior_mean <- rep(0, p)
+  V0 <- diag(prior_var, p)
+  V0_inv <- solve(V0)
+
+  ZtZ     <- t(Z) %*% Z
+  Vn      <- solve(V0_inv + ZtZ)
+  theta_n <- Vn %*% (V0_inv %*% prior_mean + t(Z) %*% y)
+
+  a_n <- prior_a0 + n / 2
+  b_n <- prior_b0 + 0.5 * (
+    as.numeric(t(y) %*% y) +
+      as.numeric(t(prior_mean) %*% V0_inv %*% prior_mean) -
+      as.numeric(t(theta_n) %*% solve(Vn) %*% theta_n)
+  )
+
+  sigma2_samples <- 1 / rgamma(n_samples, shape = a_n, rate = b_n)
+
+  theta_draws <- matrix(NA_real_, nrow = n_samples, ncol = p)
+  colnames(theta_draws) <- colnames(Z)
+  L <- chol(Vn)
+
+  for (s in seq_len(n_samples)) {
+    u <- rnorm(p)
+    theta_draws[s, ] <- theta_n + sqrt(sigma2_samples[s]) * as.numeric(t(L) %*% u)
+  }
+
+  tau_samples <- theta_draws[, treatment_name]
+
+  list(
+    tau_samples = tau_samples,
+    summary = list(
+      mean = mean(tau_samples),
+      sd   = sd(tau_samples),
+      ci_95 = quantile(tau_samples, c(0.025, 0.975)),
+      prob_positive = mean(tau_samples > 0)
+    )
+  )
+}
+```
+
+# Extensions for the Linear Probability Model
+
+Other than finding an analogy for OLS, we need to find an analogy for the linear probability model (LPM). The LPM is like OLS, but it is modeling a probability. Despite OLS's ability to output values outside of 0-1, it is still useful in causal inference, so long as we model the treatment effect with robust standard errors. We wrote about this in a [previous post on the linear probability model](lpm-robust-se.qmd) 
+
+Heteroskedasticity comes into play with a 0-1 outcome variable because $\text{Var}(Y \mid X) = P(X)(1-P(X))$. In the frequentist world, we model this using robust standard errors where the variance of the error term is allowed to be a function of $X$. The Bayesian fix is similar: we will replace the naive Gaussian posterior covariance with a robust sandwich covariance derived from the residuals.
+
+```r
+bayes_lpm_treatment_effect <- function(data,
+                                        y,
+                                        treatment,
+                                        covariates = NULL,
+                                        prior_mean = NULL,
+                                        prior_var = 100,
+                                        n_samples = 10000,
+                                        seed = 42) {
+
+  set.seed(seed)
+
+  y <- as.numeric(dplyr::pull(data, {{ y }}))
+  stopifnot(all(y %in% c(0, 1)))
+
+  treatment_name <- rlang::as_name(rlang::ensym(treatment))
+  treatment_vec  <- dplyr::pull(data, {{ treatment }})
+  covariate_df   <- dplyr::select(data, {{ covariates }})
+
+  if (ncol(covariate_df) == 0) {
+    Z <- cbind(Intercept = 1, treatment = treatment_vec)
+  } else {
+    Z <- cbind(Intercept = 1, treatment = treatment_vec, as.matrix(covariate_df))
+  }
+  colnames(Z)[2] <- treatment_name
+
+  n <- nrow(Z); p <- ncol(Z)
+  if (is.null(prior_mean)) prior_mean <- rep(0, p)
+  V0 <- diag(prior_var, p)
+  V0_inv <- solve(V0)
+
+  ZtZ     <- t(Z) %*% Z
+  Vn      <- solve(V0_inv + ZtZ)
+  theta_n <- as.numeric(Vn %*% (V0_inv %*% prior_mean + t(Z) %*% y))
+  names(theta_n) <- colnames(Z)
+
+  # Sandwich covariance around theta_n, in place of the naive sigma^2 * (Z'Z)^-1
+  fitted_vals <- as.numeric(Z %*% theta_n)
+  resid <- y - fitted_vals
+  bread <- solve(ZtZ)
+  meat  <- matrix(0, p, p)
+  for (i in seq_len(n)) {
+    z_i <- Z[i, ]
+    meat <- meat + (resid[i]^2) * (z_i %*% t(z_i))
+  }
+  meat <- meat * (n / (n - p))
+  sandwich_cov <- bread %*% meat %*% bread
+
+  L <- chol(sandwich_cov)
+  theta_draws <- matrix(NA_real_, nrow = n_samples, ncol = p)
+  colnames(theta_draws) <- colnames(Z)
+  for (s in seq_len(n_samples)) {
+    u <- rnorm(p)
+    theta_draws[s, ] <- theta_n + as.numeric(t(L) %*% u)
+  }
+
+  tau_samples <- theta_draws[, treatment_name]
+
+  list(
+    tau_samples = tau_samples,
+    summary = list(
+      mean = mean(tau_samples),
+      sd   = sd(tau_samples),
+      ci_95 = quantile(tau_samples, c(0.025, 0.975)),
+      prob_positive = mean(tau_samples > 0)
+    )
+  )
+}
+```
+
+## Is this a legitimate Bayesian model?
+
+We used a Gaussian likelihood on a 0-1 outcome. Going in, we knew this was wrong.
+Deriving a posterior requires us to be specific about a prior and a likelihood. We already know the likelihood is wrong before fitting the data, and we even throw away the covariance in favor of a frequentist sandwich estimator. There is no legitimate probability model that produces the posterior above.
+
+All models are wrong. Some are useful.
+
+In this case, this model is a reasonable **quasi-Bayesian** model. To see why, let $P_0$ denote the true, unknown data-generating distribution for $(Y, Z)$, $p_\theta \sim N(Z^T \theta, \sigma^2)$, and define the *pseudo-true* parameter $\theta^*$ as the value minimizing the KL divergence between $P_0$ and our wrong-but-useful Gaussian family:
+
+\begin{align}
+\theta^* &= \arg\min_\theta \; \mathrm{KL}\!\left(P_0(Y \mid Z) \,\|\, N(Z^\top\theta, \sigma^2)\right) \\
+&= \arg\max_\theta \; E_{P_0}\!\left[\log p_\theta(Y \mid Z)\right] \\
+&= \arg\min_\theta \; E_{P_0}\!\left[(Y - Z^\top\theta)^2\right]
+\end{align}
+
+The first equality is general, and has nothing to do with Gaussians yet. Splitting the KL divergence apart, 
+$$\mathrm{KL}(P_0 \,\|\, p_\theta) = E_{P_0}[\log p_0(Y\mid Z)] - E_{P_0}[\log p_\theta(Y\mid Z)]$$
+the first term is the entropy of the *true* distribution $P_0$. It is fixed and not a function of $\theta$. So minimizing the KL divergence is akin to maximizing the log likelihood $E_{P_0}[\log p_\theta(Y\mid Z)]$, for *any* assumed family $p_\theta$. So if we assume a model where $Y$ is normal, instead of bernoulli, we can pivot the problem to just maximizing a gaussian likelihood, which is exactly OLS.
+$\theta^*$ still reduces to the OLS coefficient for Y on Z, regardless of the true conditional distribution of $Y$!
+
+As $n \to \infty$, the log-likelihood still concentrates sharply around its maximizer $\hat\theta_n \to \theta^*$. This is what Kleijn & van der Vaart formalize as a Bernstein–von Mises theorem *under misspecification*: the posterior is still asymptotically normal and centered at $\theta^*$, but its correct covariance is not the naive $A(\theta^*)^{-1}$ — it is the sandwich $A(\theta^*)^{-1} B(\theta^*) A(\theta^*)^{-1}$. This takes the classic form of `bread` * `meat` * `bread`, where
+
+\begin{align}
+A(\theta^*) &= -E_{P_0}\!\left[\nabla^2_\theta \log p_\theta(Y_i\mid Z_i)\right]_{\theta^*} = \sigma^{-2} Z^\top Z \\
+B(\theta^*) &= \mathrm{Var}_{P_0}\!\left[\nabla_\theta \log p_\theta(Y_i\mid Z_i)\right]_{\theta^*} = \sigma^{-4} \sum_i Z_iZ_i^\top e_i^2 \\
+A(\theta^*)^{-1} B(\theta^*) A(\theta^*)^{-1} &= \left(Z^\top Z\right)^{-1}\left(\textstyle\sum_i Z_iZ_i^\top e_i^2\right)\left(Z^\top Z\right)^{-1}
+\end{align}
+
+with $e_i = Y_i - Z_i^\top\theta^*$ the true residual for observation $i$. $A(\theta^*)$ is the curvature the *assumed* Gaussian likelihood thinks it has. $B(\theta^*)$ is the *true* variance of the score under $P_0$. The two cancel each other and reduce to A(\theta^*)^{-1} only under correct specification, otherwise just like in the frequentist case we must use robust standard errors.
+
+For a binary outcome with covariates, you can pick at most two of three properties: a **correct likelihood**, a **closed-form solution**, and **covariate-adjusted variance reduction**. Beta-Binomial conjugacy gives you the first two but drops covariates. Bayesian logistic regression gives you the first and third but loses closed form, needing MCMC or a Laplace approximation. What's above gives you the second and third, but is an approximation rather than a full posterior.
+
+# Conclusion
+
+Consumers of experiments are really looking for posterior distributions of the effect, which requires a bayesian school of thought. However, the bayesian way of thinking is still not very popular. We claim this is due to misconceptions around scalability, and "being behind" in advanced techniques like variance reduction.
+In this post, we described how to create efficient and scalable bayesian models that match the performance of frequentist variance reduction. We also showed how to cover both the cases where the response is bernoulli, and when it is normal. We argue that these are the major use cases for AB testing, so the bayesian model can be described in both a correct and practical way.

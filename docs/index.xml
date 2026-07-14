@@ -9,8 +9,814 @@
 <link>https://jeffwong.github.io/</link>
 <atom:link href="https://jeffwong.github.io/index.xml" rel="self" type="application/rss+xml"/>
 <description>Data science innovation from first principles.</description>
-<generator>quarto-1.8.27</generator>
-<lastBuildDate>Sat, 20 Jun 2026 00:00:00 GMT</lastBuildDate>
+<generator>quarto-1.9.38</generator>
+<lastBuildDate>Thu, 09 Jul 2026 07:00:00 GMT</lastBuildDate>
+<item>
+  <title>You want the posterior distribution, not the confidence interval</title>
+  <dc:creator>Jeffrey Wong</dc:creator>
+  <link>https://jeffwong.github.io/posts/posterior_distribution_effect/</link>
+  <description><![CDATA[ 
+
+
+
+
+
+<p>In this post we cover the misconception between a confidence interval and a posterior distribution. Despite the confusion though, the frequentist methods are entrenched in the AB testing industry, and have made many advancements in variance reduction. We’ll describe analogies for Bayesian methods to perform the same, so that it becomes practical to pivot to them.</p>
+<section id="two-schools-of-thought." class="level1">
+<h1>Two schools of thought.</h1>
+<p>Run an AB test in a frequentist framework and you get a confidence interval. Run the same test in a Bayesian framework and you get a credible interval. Both are a range of numbers around a point estimate. But it’s a mistake to say they both represent the distribution of the treatment effect. Only the latter is.</p>
+</section>
+<section id="is-the-confidence-interval-meaningful" class="level1">
+<h1>Is the confidence interval meaningful?</h1>
+<p>In the frequentist setup, the treatment effect <img src="https://latex.codecogs.com/png.latex?%5Ctau"> is a population parameter. It is an unknown and fixed constant. It has no distribution. Using data, we want to estimate this popular parameter. And it is the variance in the sample that induces randomness. A 95% confidence interval is constructed so that, across hypothetical repeated experiments, 95% of the intervals we’d build would contain the true <img src="https://latex.codecogs.com/png.latex?%5Ctau">. The interval reflects how much the estimator would vary from sample to sample, and is formally called the sampling distribution. However, this sampling distribution does not describe the distribution of the effect, it simply describes a distribution around random draws of data.</p>
+</section>
+<section id="the-posterior-is-more-natural." class="level1">
+<h1>The posterior is more natural.</h1>
+<p>In a Bayesian setup, <img src="https://latex.codecogs.com/png.latex?%5Ctau"> is treated as a random variable and hence has a distribution. The posterior is computed by starting with a prior and a likelihood of the data, then using observed data we make Bayesian updates to get the posterior distribution for <img src="https://latex.codecogs.com/png.latex?%5Ctau">. When we describe this distribution, we can legitimately say “there’s a 95% probability <img src="https://latex.codecogs.com/png.latex?%5Ctau"> lies in this range”. The variability of <img src="https://latex.codecogs.com/png.latex?%5Ctau"> here refers to the range that <img src="https://latex.codecogs.com/png.latex?%5Ctau"> can take, not variability that is induced by the randomness of the sample. This is what most people want. It allows us to describe the risk and reward of the treatment.</p>
+</section>
+<section id="much-of-the-ab-literature-is-built-on-frequentist-analysis.-what-are-the-analogies-in-bayesian" class="level1">
+<h1>Much of the AB literature is built on frequentist analysis. What are the analogies in Bayesian?</h1>
+<p>The bayesian posterior is a great way for business leaders to think about risk and reward. Unfortunately, a lot of AB testing has been built on top of frequentist methods. For example, CUPED and linear modeling in general form the basis for variance reduction, which is still a relevant issue in bayesian AB testing. Furthermore, much work has been put into making these types of models highly scalable. So how do we create the analogous bayesian models?</p>
+<p>We formulate a Bayesian linear regression which accomodates pretreatment covariates for variance reduction. We will also pursue a model that has a closed form solution for the posterior, so that it can be highly scalable. We write</p>
+<p><img src="https://latex.codecogs.com/png.latex?%0AY%20=%20%5Calpha%20+%20%5Ctau%20T%20+%20%5Cbeta%20X%20+%20%5Cvarepsilon,%20%5Cqquad%20%5Cvarepsilon%20%5Csim%20N(0,%20%5Csigma%5E2)%0A"></p>
+<p>where <img src="https://latex.codecogs.com/png.latex?T"> is the treatment indicator and <img src="https://latex.codecogs.com/png.latex?X"> is a vector of pretreatment covariates. Let <img src="https://latex.codecogs.com/png.latex?Z%20=%20%5B1,%20T,%20X%5D"> be the design matrix stacking the intercept, treatment, and covariates, and <img src="https://latex.codecogs.com/png.latex?%5Ctheta%20=%20(%5Calpha,%20%5Ctau,%20%5Cbeta)%5E%5Ctop">.</p>
+<p>We put a <strong>Normal-Inverse-Gamma (NIG)</strong> prior on <img src="https://latex.codecogs.com/png.latex?(%5Ctheta,%20%5Csigma%5E2)">. This is a conjugate prior for a linear-Gaussian likelihood, and allows the posterior to have a closed form. The prior takes the form:</p>
+<p><img src="https://latex.codecogs.com/png.latex?%0A%5Csigma%5E2%20%5Csim%20%5Cmathrm%7BIG%7D(a_0,%20b_0),%20%5Cqquad%20%5Ctheta%20%5Cmid%20%5Csigma%5E2%20%5Csim%20N(%5Ctheta_0,%20%5Csigma%5E2%20V_0)%0A"></p>
+<p>Notice the coefficient prior’s variance is itself scaled by <img src="https://latex.codecogs.com/png.latex?%5Csigma%5E2">. That coupling is what makes the pair conjugate: it lets the noise variance and the coefficient uncertainty update together in closed form, rather than as two separate, generally non-conjugate, updates.</p>
+<p>Conjugacy means the posterior is again NIG: <img src="https://latex.codecogs.com/png.latex?(%5Ctheta,%20%5Csigma%5E2)%20%5Cmid%20%5Ctext%7Bdata%7D%20%5Csim%20%5Cmathrm%7BNIG%7D(%5Ctheta_n,%20V_n,%20a_n,%20b_n)">, i.e.&nbsp;<img src="https://latex.codecogs.com/png.latex?%5Csigma%5E2%20%5Cmid%20%5Ctext%7Bdata%7D%20%5Csim%20%5Cmathrm%7BIG%7D(a_n,%20b_n)"> and <img src="https://latex.codecogs.com/png.latex?%5Ctheta%20%5Cmid%20%5Csigma%5E2,%20%5Ctext%7Bdata%7D%20%5Csim%20N(%5Ctheta_n,%20%5Csigma%5E2%20V_n)">, with</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0AV_n%20&amp;=%20%5Cleft(V_0%5E%7B-1%7D%20+%20Z%5E%5Ctop%20Z%5Cright)%5E%7B-1%7D%20%5C%5C%0A%5Ctheta_n%20&amp;=%20V_n%5Cleft(V_0%5E%7B-1%7D%5Ctheta_0%20+%20Z%5E%5Ctop%20Y%5Cright)%20%5C%5C%0Aa_n%20&amp;=%20a_0%20+%20%5Cfrac%7Bn%7D%7B2%7D%20%5C%5C%0Ab_n%20&amp;=%20b_0%20+%20%5Cfrac%7B1%7D%7B2%7D%5Cleft(Y%5E%5Ctop%20Y%20+%20%5Ctheta_0%5E%5Ctop%20V_0%5E%7B-1%7D%5Ctheta_0%20-%20%5Ctheta_n%5E%5Ctop%20V_n%5E%7B-1%7D%5Ctheta_n%5Cright)%0A%5Cend%7Balign%7D"></p>
+<p>Let’s examine the structure. <img src="https://latex.codecogs.com/png.latex?V_n"> and <img src="https://latex.codecogs.com/png.latex?%5Ctheta_n"> look like ridge regression. <img src="https://latex.codecogs.com/png.latex?a_n"> looks like how degrees of freedom accumulate. <img src="https://latex.codecogs.com/png.latex?b_n"> is like RSS: the total sum of squares <img src="https://latex.codecogs.com/png.latex?Y%5E%5Ctop%20Y">, plus a penalty for how far the prior mean <img src="https://latex.codecogs.com/png.latex?%5Ctheta_0"> sits from zero, minus the portion of that variation the fitted posterior mean <img src="https://latex.codecogs.com/png.latex?%5Ctheta_n"> already explains. As the prior becomes flat, <img src="https://latex.codecogs.com/png.latex?V_0%5E%7B-1%7D%20%5Cto%200">, the prior’s contribution <img src="https://latex.codecogs.com/png.latex?V_0%5E%7B-1%7D%5Ctheta_0"> vanishes along with <img src="https://latex.codecogs.com/png.latex?V_0%5E%7B-1%7D"> itself, regardless of what <img src="https://latex.codecogs.com/png.latex?%5Ctheta_0"> is. At the same time <img src="https://latex.codecogs.com/png.latex?%5Ctheta_n%20%5Cto%20(Z%5E%5Ctop%20Z)%5E%7B-1%7DZ%5E%5Ctop%20Y">, which is OLS estimate. So in many ways, the Bayesian model encapsulates an OLS model, while still having the more natural interpretation. This is a great property.</p>
+<p>As the prior becomes more confident instead, <img src="https://latex.codecogs.com/png.latex?V_0%20%5Cto%200">, <img src="https://latex.codecogs.com/png.latex?%5Ctheta_n"> collapses to <img src="https://latex.codecogs.com/png.latex?%5Ctheta_0">.</p>
+<p>Because the posterior is available in closed form, we can simply run a 2 step sampling process: draw <img src="https://latex.codecogs.com/png.latex?%5Csigma%5E2%20%5Csim%20%5Cmathrm%7BIG%7D(a_n,%20b_n)">, then draw <img src="https://latex.codecogs.com/png.latex?%5Ctheta%20%5Cmid%20%5Csigma%5E2%20%5Csim%20N(%5Ctheta_n,%20%5Csigma%5E2%20V_n)">. We show this below.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1">bayes_lm_treatment_effect <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">function</span>(data,</span>
+<span id="cb1-2">                                       y,</span>
+<span id="cb1-3">                                       treatment,</span>
+<span id="cb1-4">                                       <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">covariates =</span> <span class="cn" style="color: #8f5902;
+background-color: null;
+font-style: inherit;">NULL</span>,</span>
+<span id="cb1-5">                                       <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">prior_mean =</span> <span class="cn" style="color: #8f5902;
+background-color: null;
+font-style: inherit;">NULL</span>,</span>
+<span id="cb1-6">                                       <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">prior_var =</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">100</span>,      <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># weakly informative</span></span>
+<span id="cb1-7">                                       <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">prior_a0 =</span> <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.001</span>,     <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># near-flat prior on sigma^2</span></span>
+<span id="cb1-8">                                       <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">prior_b0 =</span> <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.001</span>,</span>
+<span id="cb1-9">                                       <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">n_samples =</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">10000</span>,</span>
+<span id="cb1-10">                                       <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">seed =</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">42</span>) {</span>
+<span id="cb1-11"></span>
+<span id="cb1-12">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">set.seed</span>(seed)</span>
+<span id="cb1-13"></span>
+<span id="cb1-14">  treatment_name <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> rlang<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">::</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">as_name</span>(rlang<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">::</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ensym</span>(treatment))</span>
+<span id="cb1-15">  treatment_vec  <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> dplyr<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">::</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">pull</span>(data, {{ treatment }})</span>
+<span id="cb1-16">  covariate_df   <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> dplyr<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">::</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">select</span>(data, {{ covariates }})</span>
+<span id="cb1-17"></span>
+<span id="cb1-18">  <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">if</span> (<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ncol</span>(covariate_df) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">==</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>) {</span>
+<span id="cb1-19">    Z <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">cbind</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">Intercept =</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">treatment =</span> treatment_vec)</span>
+<span id="cb1-20">  } <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">else</span> {</span>
+<span id="cb1-21">    Z <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">cbind</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">Intercept =</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">treatment =</span> treatment_vec, <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">as.matrix</span>(covariate_df))</span>
+<span id="cb1-22">  }</span>
+<span id="cb1-23">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">colnames</span>(Z)[<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>] <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> treatment_name</span>
+<span id="cb1-24"></span>
+<span id="cb1-25">  y <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">as.numeric</span>(dplyr<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">::</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">pull</span>(data, {{ y }}))</span>
+<span id="cb1-26">  n <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">nrow</span>(Z)</span>
+<span id="cb1-27">  p <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ncol</span>(Z)</span>
+<span id="cb1-28"></span>
+<span id="cb1-29">  <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">if</span> (<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">is.null</span>(prior_mean)) prior_mean <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rep</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, p)</span>
+<span id="cb1-30">  V0 <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">diag</span>(prior_var, p)</span>
+<span id="cb1-31">  V0_inv <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">solve</span>(V0)</span>
+<span id="cb1-32"></span>
+<span id="cb1-33">  ZtZ     <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">t</span>(Z) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> Z</span>
+<span id="cb1-34">  Vn      <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">solve</span>(V0_inv <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> ZtZ)</span>
+<span id="cb1-35">  theta_n <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> Vn <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> (V0_inv <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> prior_mean <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">t</span>(Z) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> y)</span>
+<span id="cb1-36"></span>
+<span id="cb1-37">  a_n <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> prior_a0 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> n <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span></span>
+<span id="cb1-38">  b_n <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> prior_b0 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.5</span> <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> (</span>
+<span id="cb1-39">    <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">as.numeric</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">t</span>(y) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> y) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span></span>
+<span id="cb1-40">      <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">as.numeric</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">t</span>(prior_mean) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> V0_inv <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> prior_mean) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span></span>
+<span id="cb1-41">      <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">as.numeric</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">t</span>(theta_n) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">solve</span>(Vn) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> theta_n)</span>
+<span id="cb1-42">  )</span>
+<span id="cb1-43"></span>
+<span id="cb1-44">  sigma2_samples <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span> <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rgamma</span>(n_samples, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">shape =</span> a_n, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">rate =</span> b_n)</span>
+<span id="cb1-45"></span>
+<span id="cb1-46">  theta_draws <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">matrix</span>(<span class="cn" style="color: #8f5902;
+background-color: null;
+font-style: inherit;">NA_real_</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">nrow =</span> n_samples, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">ncol =</span> p)</span>
+<span id="cb1-47">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">colnames</span>(theta_draws) <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">colnames</span>(Z)</span>
+<span id="cb1-48">  L <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">chol</span>(Vn)</span>
+<span id="cb1-49"></span>
+<span id="cb1-50">  <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">for</span> (s <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">in</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">seq_len</span>(n_samples)) {</span>
+<span id="cb1-51">    u <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rnorm</span>(p)</span>
+<span id="cb1-52">    theta_draws[s, ] <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> theta_n <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sqrt</span>(sigma2_samples[s]) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">as.numeric</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">t</span>(L) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> u)</span>
+<span id="cb1-53">  }</span>
+<span id="cb1-54"></span>
+<span id="cb1-55">  tau_samples <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> theta_draws[, treatment_name]</span>
+<span id="cb1-56"></span>
+<span id="cb1-57">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">list</span>(</span>
+<span id="cb1-58">    <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">tau_samples =</span> tau_samples,</span>
+<span id="cb1-59">    <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">summary =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">list</span>(</span>
+<span id="cb1-60">      <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">mean =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mean</span>(tau_samples),</span>
+<span id="cb1-61">      <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">sd   =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sd</span>(tau_samples),</span>
+<span id="cb1-62">      <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">ci_95 =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">quantile</span>(tau_samples, <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.025</span>, <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.975</span>)),</span>
+<span id="cb1-63">      <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">prob_positive =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mean</span>(tau_samples <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">&gt;</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>)</span>
+<span id="cb1-64">    )</span>
+<span id="cb1-65">  )</span>
+<span id="cb1-66">}</span></code></pre></div></div>
+</section>
+<section id="extensions-for-the-linear-probability-model" class="level1">
+<h1>Extensions for the Linear Probability Model</h1>
+<p>Other than finding an analogy for OLS, we need to find an analogy for the linear probability model (LPM). The LPM is like OLS, but it is modeling a probability. Despite OLS’s ability to output values outside of 0-1, it is still useful in causal inference, so long as we model the treatment effect with robust standard errors. We wrote about this in a <a href="lpm-robust-se.qmd">previous post on the linear probability model</a></p>
+<p>Heteroskedasticity comes into play with a 0-1 outcome variable because <img src="https://latex.codecogs.com/png.latex?%5Ctext%7BVar%7D(Y%20%5Cmid%20X)%20=%20P(X)(1-P(X))">. In the frequentist world, we model this using robust standard errors where the variance of the error term is allowed to be a function of <img src="https://latex.codecogs.com/png.latex?X">. The Bayesian fix is similar: we will replace the naive Gaussian posterior covariance with a robust sandwich covariance derived from the residuals.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1">bayes_lpm_treatment_effect <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">function</span>(data,</span>
+<span id="cb2-2">                                        y,</span>
+<span id="cb2-3">                                        treatment,</span>
+<span id="cb2-4">                                        <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">covariates =</span> <span class="cn" style="color: #8f5902;
+background-color: null;
+font-style: inherit;">NULL</span>,</span>
+<span id="cb2-5">                                        <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">prior_mean =</span> <span class="cn" style="color: #8f5902;
+background-color: null;
+font-style: inherit;">NULL</span>,</span>
+<span id="cb2-6">                                        <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">prior_var =</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">100</span>,</span>
+<span id="cb2-7">                                        <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">n_samples =</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">10000</span>,</span>
+<span id="cb2-8">                                        <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">seed =</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">42</span>) {</span>
+<span id="cb2-9"></span>
+<span id="cb2-10">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">set.seed</span>(seed)</span>
+<span id="cb2-11"></span>
+<span id="cb2-12">  y <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">as.numeric</span>(dplyr<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">::</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">pull</span>(data, {{ y }}))</span>
+<span id="cb2-13">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">stopifnot</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">all</span>(y <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%in%</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>)))</span>
+<span id="cb2-14"></span>
+<span id="cb2-15">  treatment_name <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> rlang<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">::</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">as_name</span>(rlang<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">::</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ensym</span>(treatment))</span>
+<span id="cb2-16">  treatment_vec  <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> dplyr<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">::</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">pull</span>(data, {{ treatment }})</span>
+<span id="cb2-17">  covariate_df   <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> dplyr<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">::</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">select</span>(data, {{ covariates }})</span>
+<span id="cb2-18"></span>
+<span id="cb2-19">  <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">if</span> (<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ncol</span>(covariate_df) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">==</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>) {</span>
+<span id="cb2-20">    Z <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">cbind</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">Intercept =</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">treatment =</span> treatment_vec)</span>
+<span id="cb2-21">  } <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">else</span> {</span>
+<span id="cb2-22">    Z <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">cbind</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">Intercept =</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">treatment =</span> treatment_vec, <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">as.matrix</span>(covariate_df))</span>
+<span id="cb2-23">  }</span>
+<span id="cb2-24">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">colnames</span>(Z)[<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>] <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> treatment_name</span>
+<span id="cb2-25"></span>
+<span id="cb2-26">  n <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">nrow</span>(Z); p <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ncol</span>(Z)</span>
+<span id="cb2-27">  <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">if</span> (<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">is.null</span>(prior_mean)) prior_mean <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rep</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, p)</span>
+<span id="cb2-28">  V0 <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">diag</span>(prior_var, p)</span>
+<span id="cb2-29">  V0_inv <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">solve</span>(V0)</span>
+<span id="cb2-30"></span>
+<span id="cb2-31">  ZtZ     <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">t</span>(Z) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> Z</span>
+<span id="cb2-32">  Vn      <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">solve</span>(V0_inv <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> ZtZ)</span>
+<span id="cb2-33">  theta_n <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">as.numeric</span>(Vn <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> (V0_inv <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> prior_mean <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">t</span>(Z) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> y))</span>
+<span id="cb2-34">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">names</span>(theta_n) <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">colnames</span>(Z)</span>
+<span id="cb2-35"></span>
+<span id="cb2-36">  <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># Sandwich covariance around theta_n, in place of the naive sigma^2 * (Z'Z)^-1</span></span>
+<span id="cb2-37">  fitted_vals <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">as.numeric</span>(Z <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> theta_n)</span>
+<span id="cb2-38">  resid <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> y <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> fitted_vals</span>
+<span id="cb2-39">  bread <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">solve</span>(ZtZ)</span>
+<span id="cb2-40">  meat  <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">matrix</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, p, p)</span>
+<span id="cb2-41">  <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">for</span> (i <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">in</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">seq_len</span>(n)) {</span>
+<span id="cb2-42">    z_i <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> Z[i, ]</span>
+<span id="cb2-43">    meat <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> meat <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> (resid[i]<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">^</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> (z_i <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">t</span>(z_i))</span>
+<span id="cb2-44">  }</span>
+<span id="cb2-45">  meat <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> meat <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> (n <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> (n <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> p))</span>
+<span id="cb2-46">  sandwich_cov <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> bread <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> meat <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> bread</span>
+<span id="cb2-47"></span>
+<span id="cb2-48">  L <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">chol</span>(sandwich_cov)</span>
+<span id="cb2-49">  theta_draws <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">matrix</span>(<span class="cn" style="color: #8f5902;
+background-color: null;
+font-style: inherit;">NA_real_</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">nrow =</span> n_samples, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">ncol =</span> p)</span>
+<span id="cb2-50">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">colnames</span>(theta_draws) <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">colnames</span>(Z)</span>
+<span id="cb2-51">  <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">for</span> (s <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">in</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">seq_len</span>(n_samples)) {</span>
+<span id="cb2-52">    u <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rnorm</span>(p)</span>
+<span id="cb2-53">    theta_draws[s, ] <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> theta_n <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">as.numeric</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">t</span>(L) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> u)</span>
+<span id="cb2-54">  }</span>
+<span id="cb2-55"></span>
+<span id="cb2-56">  tau_samples <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> theta_draws[, treatment_name]</span>
+<span id="cb2-57"></span>
+<span id="cb2-58">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">list</span>(</span>
+<span id="cb2-59">    <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">tau_samples =</span> tau_samples,</span>
+<span id="cb2-60">    <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">summary =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">list</span>(</span>
+<span id="cb2-61">      <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">mean =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mean</span>(tau_samples),</span>
+<span id="cb2-62">      <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">sd   =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sd</span>(tau_samples),</span>
+<span id="cb2-63">      <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">ci_95 =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">quantile</span>(tau_samples, <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.025</span>, <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.975</span>)),</span>
+<span id="cb2-64">      <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">prob_positive =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mean</span>(tau_samples <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">&gt;</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>)</span>
+<span id="cb2-65">    )</span>
+<span id="cb2-66">  )</span>
+<span id="cb2-67">}</span></code></pre></div></div>
+<section id="is-this-a-legitimate-bayesian-model" class="level2">
+<h2 class="anchored" data-anchor-id="is-this-a-legitimate-bayesian-model">Is this a legitimate Bayesian model?</h2>
+<p>We used a Gaussian likelihood on a 0-1 outcome. Going in, we knew this was wrong. Deriving a posterior requires us to be specific about a prior and a likelihood. We already know the likelihood is wrong before fitting the data, and we even throw away the covariance in favor of a frequentist sandwich estimator. There is no legitimate probability model that produces the posterior above.</p>
+<p>All models are wrong. Some are useful.</p>
+<p>In this case, this model is a reasonable <strong>quasi-Bayesian</strong> model. To see why, let <img src="https://latex.codecogs.com/png.latex?P_0"> denote the true, unknown data-generating distribution for <img src="https://latex.codecogs.com/png.latex?(Y,%20Z)">, <img src="https://latex.codecogs.com/png.latex?p_%5Ctheta%20%5Csim%20N(Z%5ET%20%5Ctheta,%20%5Csigma%5E2)">, and define the <em>pseudo-true</em> parameter <img src="https://latex.codecogs.com/png.latex?%5Ctheta%5E*"> as the value minimizing the KL divergence between <img src="https://latex.codecogs.com/png.latex?P_0"> and our wrong-but-useful Gaussian family:</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0A%5Ctheta%5E*%20&amp;=%20%5Carg%5Cmin_%5Ctheta%20%5C;%20%5Cmathrm%7BKL%7D%5C!%5Cleft(P_0(Y%20%5Cmid%20Z)%20%5C,%5C%7C%5C,%20N(Z%5E%5Ctop%5Ctheta,%20%5Csigma%5E2)%5Cright)%20%5C%5C%0A&amp;=%20%5Carg%5Cmax_%5Ctheta%20%5C;%20E_%7BP_0%7D%5C!%5Cleft%5B%5Clog%20p_%5Ctheta(Y%20%5Cmid%20Z)%5Cright%5D%20%5C%5C%0A&amp;=%20%5Carg%5Cmin_%5Ctheta%20%5C;%20E_%7BP_0%7D%5C!%5Cleft%5B(Y%20-%20Z%5E%5Ctop%5Ctheta)%5E2%5Cright%5D%0A%5Cend%7Balign%7D"></p>
+<p>The first equality is general, and has nothing to do with Gaussians yet. Splitting the KL divergence apart, <img src="https://latex.codecogs.com/png.latex?%5Cmathrm%7BKL%7D(P_0%20%5C,%5C%7C%5C,%20p_%5Ctheta)%20=%20E_%7BP_0%7D%5B%5Clog%20p_0(Y%5Cmid%20Z)%5D%20-%20E_%7BP_0%7D%5B%5Clog%20p_%5Ctheta(Y%5Cmid%20Z)%5D"> the first term is the entropy of the <em>true</em> distribution <img src="https://latex.codecogs.com/png.latex?P_0">. It is fixed and not a function of <img src="https://latex.codecogs.com/png.latex?%5Ctheta">. So minimizing the KL divergence is akin to maximizing the log likelihood <img src="https://latex.codecogs.com/png.latex?E_%7BP_0%7D%5B%5Clog%20p_%5Ctheta(Y%5Cmid%20Z)%5D">, for <em>any</em> assumed family <img src="https://latex.codecogs.com/png.latex?p_%5Ctheta">. So if we assume a model where <img src="https://latex.codecogs.com/png.latex?Y"> is normal, instead of bernoulli, we can pivot the problem to just maximizing a gaussian likelihood, which is exactly OLS. <img src="https://latex.codecogs.com/png.latex?%5Ctheta%5E*"> still reduces to the OLS coefficient for Y on Z, regardless of the true conditional distribution of <img src="https://latex.codecogs.com/png.latex?Y">!</p>
+<p>As <img src="https://latex.codecogs.com/png.latex?n%20%5Cto%20%5Cinfty">, the log-likelihood still concentrates sharply around its maximizer <img src="https://latex.codecogs.com/png.latex?%5Chat%5Ctheta_n%20%5Cto%20%5Ctheta%5E*">. This is what Kleijn &amp; van der Vaart formalize as a Bernstein–von Mises theorem <em>under misspecification</em>: the posterior is still asymptotically normal and centered at <img src="https://latex.codecogs.com/png.latex?%5Ctheta%5E*">, but its correct covariance is not the naive <img src="https://latex.codecogs.com/png.latex?A(%5Ctheta%5E*)%5E%7B-1%7D"> — it is the sandwich <img src="https://latex.codecogs.com/png.latex?A(%5Ctheta%5E*)%5E%7B-1%7D%20B(%5Ctheta%5E*)%20A(%5Ctheta%5E*)%5E%7B-1%7D">. This takes the classic form of <code>bread</code> * <code>meat</code> * <code>bread</code>, where</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0AA(%5Ctheta%5E*)%20&amp;=%20-E_%7BP_0%7D%5C!%5Cleft%5B%5Cnabla%5E2_%5Ctheta%20%5Clog%20p_%5Ctheta(Y_i%5Cmid%20Z_i)%5Cright%5D_%7B%5Ctheta%5E*%7D%20=%20%5Csigma%5E%7B-2%7D%20Z%5E%5Ctop%20Z%20%5C%5C%0AB(%5Ctheta%5E*)%20&amp;=%20%5Cmathrm%7BVar%7D_%7BP_0%7D%5C!%5Cleft%5B%5Cnabla_%5Ctheta%20%5Clog%20p_%5Ctheta(Y_i%5Cmid%20Z_i)%5Cright%5D_%7B%5Ctheta%5E*%7D%20=%20%5Csigma%5E%7B-4%7D%20%5Csum_i%20Z_iZ_i%5E%5Ctop%20e_i%5E2%20%5C%5C%0AA(%5Ctheta%5E*)%5E%7B-1%7D%20B(%5Ctheta%5E*)%20A(%5Ctheta%5E*)%5E%7B-1%7D%20&amp;=%20%5Cleft(Z%5E%5Ctop%20Z%5Cright)%5E%7B-1%7D%5Cleft(%5Ctextstyle%5Csum_i%20Z_iZ_i%5E%5Ctop%20e_i%5E2%5Cright)%5Cleft(Z%5E%5Ctop%20Z%5Cright)%5E%7B-1%7D%0A%5Cend%7Balign%7D"></p>
+<p>with <img src="https://latex.codecogs.com/png.latex?e_i%20=%20Y_i%20-%20Z_i%5E%5Ctop%5Ctheta%5E*"> the true residual for observation <img src="https://latex.codecogs.com/png.latex?i">. <img src="https://latex.codecogs.com/png.latex?A(%5Ctheta%5E*)"> is the curvature the <em>assumed</em> Gaussian likelihood thinks it has. <img src="https://latex.codecogs.com/png.latex?B(%5Ctheta%5E*)"> is the <em>true</em> variance of the score under <img src="https://latex.codecogs.com/png.latex?P_0">. The two cancel each other and reduce to A(<sup>*)</sup>{-1} only under correct specification, otherwise just like in the frequentist case we must use robust standard errors.</p>
+<p>For a binary outcome with covariates, you can pick at most two of three properties: a <strong>correct likelihood</strong>, a <strong>closed-form solution</strong>, and <strong>covariate-adjusted variance reduction</strong>. Beta-Binomial conjugacy gives you the first two but drops covariates. Bayesian logistic regression gives you the first and third but loses closed form, needing MCMC or a Laplace approximation. What’s above gives you the second and third, but is an approximation rather than a full posterior.</p>
+</section>
+</section>
+<section id="conclusion" class="level1">
+<h1>Conclusion</h1>
+<p>Consumers of experiments are really looking for posterior distributions of the effect, which requires a bayesian school of thought. However, the bayesian way of thinking is still not very popular. We claim this is due to misconceptions around scalability, and “being behind” in advanced techniques like variance reduction. In this post, we described how to create efficient and scalable bayesian models that match the performance of frequentist variance reduction. We also showed how to cover both the cases where the response is bernoulli, and when it is normal. We argue that these are the major use cases for AB testing, so the bayesian model can be described in both a correct and practical way.</p>
+
+
+</section>
+
+ ]]></description>
+  <category>bayesian statistics</category>
+  <category>AB testing</category>
+  <category>regression</category>
+  <guid>https://jeffwong.github.io/posts/posterior_distribution_effect/</guid>
+  <pubDate>Thu, 09 Jul 2026 07:00:00 GMT</pubDate>
+</item>
 <item>
   <title>The Variance of your Composite Metric</title>
   <dc:creator>Jeffrey Wong</dc:creator>
@@ -57,7 +863,7 @@
   <category>experimentation</category>
   <category>statistics</category>
   <guid>https://jeffwong.github.io/posts/composite_metric/</guid>
-  <pubDate>Sat, 20 Jun 2026 00:00:00 GMT</pubDate>
+  <pubDate>Sat, 20 Jun 2026 07:00:00 GMT</pubDate>
 </item>
 <item>
   <title>A Better, Robust CUPED</title>
@@ -1874,7 +2680,7 @@ font-style: inherit;">NULL</span>)</span>
   <category>experimentation</category>
   <category>statistics</category>
   <guid>https://jeffwong.github.io/posts/robust_cuped/</guid>
-  <pubDate>Tue, 21 Apr 2026 00:00:00 GMT</pubDate>
+  <pubDate>Tue, 21 Apr 2026 07:00:00 GMT</pubDate>
 </item>
 <item>
   <title>Relative Treatment Effects, the Delta Method, and Fieller’s Method</title>
@@ -1923,7 +2729,8 @@ font-style: inherit;">NULL</span>)</span>
 <p>If we go straight to a confidence interval, we can ground our thought in the following: a confidence interval for the relative effect, <img src="https://latex.codecogs.com/png.latex?R">, is the set of all values, <img src="https://latex.codecogs.com/png.latex?%5Ctheta">, where we would fail to reject the null hypothesis <img src="https://latex.codecogs.com/png.latex?H_0:%20%5Cmu_T%20-%20%5Ctheta%20%5Cmu_C%20=%200."></p>
 <p>The relevant estimator is <img src="https://latex.codecogs.com/png.latex?%5Cbar%7BY%7D_T%20-%20%5Ctheta%20%5Cbar%7BY%7D_C"> which has variance <img src="https://latex.codecogs.com/png.latex?%5Ctext%7BVar%7D(%5Cbar%7BY%7D_T%20-%20%5Ctheta%20%5Cbar%7BY%7D_C)%20=%20v_T%20+%20%5Ctheta%5E2%20v_C"> with <img src="https://latex.codecogs.com/png.latex?v_k%20=%20s_k%5E2%20/%20n_k">. The test statistic is <img src="https://latex.codecogs.com/png.latex?t(%5Ctheta)%20=%20%5Cfrac%7B%5Cbar%7BY%7D_T%20-%20%5Ctheta%20%5Cbar%7BY%7D_C%7D%7B%5Csqrt%7Bv_T%20+%20%5Ctheta%5E2%20v_C%7D%7D%20%5Csim%20N(0,1)"></p>
 <p>The confidence interval is now the set of all <img src="https://latex.codecogs.com/png.latex?%5Ctheta"> where <img src="https://latex.codecogs.com/png.latex?%7Ct(%5Ctheta)%7C%20%5Cleq%20z_%7B%5Calpha/2%7D">. This can be turned into a quadratic equation in <img src="https://latex.codecogs.com/png.latex?%5Ctheta">: <img src="https://latex.codecogs.com/png.latex?(%5Cbar%7BY%7D_T%20-%20%5Ctheta%20%5Cbar%7BY%7D_C)%5E2%20%5Cleq%20z%5E2%20(v_T%20+%20%5Ctheta%5E2%20v_C)">. Expanding yields</p>
-<p><img src="https://latex.codecogs.com/png.latex?%5Cunderbrace%7B(%5Cbar%7BY%7D_C%5E2%20-%20z%5E2%20v_C)%7D_%7Ba%7D%20%5Ctheta%5E2%20-%20%5Cunderbrace%7B2%5Cbar%7BY%7D_T%20%5Cbar%7BY%7D_C%7D_%7B2b%7D%20%5Ctheta%20+%20%5Cunderbrace%7B(%5Cbar%7BY%7D_T%5E2%20-%20z%5E2%20v_T)%7D_%7Bc%7D%20%5Cleq%200"> with <img src="https://latex.codecogs.com/png.latex?a%20=%20%5Cbar%7BY%7D_C%5E2%20-%20z%5E2%20v_C">, <img src="https://latex.codecogs.com/png.latex?b%20=%20%5Cbar%7BY%7D_T%20%5Cbar%7BY%7D_C">, <img src="https://latex.codecogs.com/png.latex?c%20=%20%5Cbar%7BY%7D_T%5E2%20-%20z%5E2%20v_T">, the quadratic takes the form <img src="https://latex.codecogs.com/png.latex?a%20%5Ctheta%5E2%20-%202b%5Ctheta%20+%20c%20%5Cleq%200">. The 2 solutions to the quadratic form the lower and upper bounds of the confidence interval <img src="https://latex.codecogs.com/png.latex?%5Ctheta_%7BL,%20U%7D%20=%20%5Cfrac%7Bb%20%5Cpm%20%5Csqrt%7Bb%5E2%20-%20ac%7D%7D%7Ba%7D."></p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cunderbrace%7B(%5Cbar%7BY%7D_C%5E2%20-%20z%5E2%20v_C)%7D_%7Ba%7D%20%5Ctheta%5E2%20-%20%5Cunderbrace%7B2%5Cbar%7BY%7D_T%20%5Cbar%7BY%7D_C%7D_%7B2b%7D%20%5Ctheta%20+%20%5Cunderbrace%7B(%5Cbar%7BY%7D_T%5E2%20-%20z%5E2%20v_T)%7D_%7Bc%7D%20%5Cleq%200"> with</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0Aa%20&amp;=%20%5Cbar%7BY%7D_C%5E2%20-%20z%5E2%20v_C%20%5C%5C%0Ab%20&amp;=%20%5Cbar%7BY%7D_T%20%5Cbar%7BY%7D_C%20%5C%5C%0Ac%20&amp;=%20%5Cbar%7BY%7D_T%5E2%20-%20z%5E2%20v_T%0A%5Cend%7Balign%7D"> The quadratic takes the form <img src="https://latex.codecogs.com/png.latex?a%20%5Ctheta%5E2%20-%202b%5Ctheta%20+%20c%20%5Cleq%200">. The 2 solutions to the quadratic form the lower and upper bounds of the confidence interval <img src="https://latex.codecogs.com/png.latex?%5Ctheta_%7BL,%20U%7D%20=%20%5Cfrac%7Bb%20%5Cpm%20%5Csqrt%7Bb%5E2%20-%20ac%7D%7D%7Ba%7D."></p>
 
 
 </section>
@@ -1932,7 +2739,7 @@ font-style: inherit;">NULL</span>)</span>
   <category>experimentation</category>
   <category>statistics</category>
   <guid>https://jeffwong.github.io/posts/relative_effects/</guid>
-  <pubDate>Mon, 30 Mar 2026 00:00:00 GMT</pubDate>
+  <pubDate>Mon, 30 Mar 2026 07:00:00 GMT</pubDate>
 </item>
 <item>
   <title>Zero Inflated Causal Inference</title>
@@ -1960,8 +2767,8 @@ font-style: inherit;">NULL</span>)</span>
 <section id="variance-of-the-ate" class="level1">
 <h1>Variance of the ATE</h1>
 <p>The variance of this estimated treatment effect is <img src="https://latex.codecogs.com/png.latex?%5Cfrac%7B2%7D%7BN%7D%20%5Ccdot%20(Var(y_%7BT,%20%5Ctext%7Bobserved%7D%7D)%20+%20Var(y_%7BC,%20%5Ctext%7Bobserved%7D%7D))"></p>
-<p>The variance of the control group overall is derived from the <a href="law of total variance">Law of Total Variance</a>. Say <img src="https://latex.codecogs.com/png.latex?Z"> is a binary variable for whether the user is a zero user. Then <img src="https://latex.codecogs.com/png.latex?Var(y)%20=%20E%5BVar(y%7CZ)%5D%20+%20Var(E%5By%20%7C%20Z%5D)">. For <img src="https://latex.codecogs.com/png.latex?Z%20=%201">, which happens with probability <img src="https://latex.codecogs.com/png.latex?p">, the first term is <img src="https://latex.codecogs.com/png.latex?E%5BVar(y%7CZ)%5D%20=%20%5Csigma%5E2_z">. For <img src="https://latex.codecogs.com/png.latex?Z%20=%200">, it is <img src="https://latex.codecogs.com/png.latex?%5Csigma%5E2_C"> with probability <img src="https://latex.codecogs.com/png.latex?(1-p)">.</p>
-<p>To unpack the second term, <img src="https://latex.codecogs.com/png.latex?E%5By%20%7C%20Z%5D%20=%20%5Cmu_z"> when <img src="https://latex.codecogs.com/png.latex?Z%20=%201">, and is <img src="https://latex.codecogs.com/png.latex?%5Cmu_C"> when <img src="https://latex.codecogs.com/png.latex?Z%20=%200">. The variance of these terms can be thought of as the variance of a scaled bernoulli random variable, so the variance of the control group is <img src="https://latex.codecogs.com/png.latex?Var(E%5By%20%7C%20Z%5D)%20=%20p%20(1-p)%20(%5Cmu_z%20-%20%5Cmu_C)%5E2">.</p>
+<p>The variance of the control group overall is derived from the <a href="law of total variance">Law of Total Variance</a>. Say <img src="https://latex.codecogs.com/png.latex?Z"> is a binary variable for whether the user is a zero user. Then <img src="https://latex.codecogs.com/png.latex?Var(y)%20=%20E%5BVar(y%7CZ)%5D%20+%20Var(E%5By%20%7C%20Z%5D)."> For <img src="https://latex.codecogs.com/png.latex?Z%20=%201">, which happens with probability <img src="https://latex.codecogs.com/png.latex?p">, the first term is <img src="https://latex.codecogs.com/png.latex?E%5BVar(y%7CZ)%5D%20=%20%5Csigma%5E2_z">. For <img src="https://latex.codecogs.com/png.latex?Z%20=%200">, it is <img src="https://latex.codecogs.com/png.latex?%5Csigma%5E2_C"> with probability <img src="https://latex.codecogs.com/png.latex?(1-p)">.</p>
+<p>To unpack the second term, <img src="https://latex.codecogs.com/png.latex?E%5By%20%7C%20Z%5D%20=%20%5Cmu_z"> when <img src="https://latex.codecogs.com/png.latex?Z%20=%201">, and is <img src="https://latex.codecogs.com/png.latex?%5Cmu_C"> when <img src="https://latex.codecogs.com/png.latex?Z%20=%200">. The variance of these terms can be thought of as the variance of a scaled bernoulli random variable, so the variance of the control group is <img src="https://latex.codecogs.com/png.latex?Var(E%5By%20%7C%20Z%5D)%20=%20p%20(1-p)%20(%5Cmu_z%20-%20%5Cmu_C)%5E2."></p>
 <p>Finally, the variance of the estimated treatment effect is <img src="https://latex.codecogs.com/png.latex?%5Cboxed%7BVar(%5Chat%7B%5Ctau%7D)%20=%20%5Cfrac%7B2%7D%7BN%7D%20%5Cbiggl((1-p)(%5Csigma%5E2_T%20+%20%5Csigma%5E2_C)%20+%202p%5Csigma%5E2_z%20+%20p(1-p)((%5Cmu_T%20-%20%5Cmu_Z)%5E2%20+%20(%5Cmu_C%20-%20%5Cmu_z)%5E2)%20%5Cbiggr)%7D"></p>
 <p>This formula has interesting properties. In general, we cannot guarantee that the variance of the effect is increasing or decreasing when zero-users are added.</p>
 <ol type="1">
@@ -2749,7 +3556,7 @@ font-style: inherit;">print</span>(results)</span></code></pre></div></div>
   <category>experimentation</category>
   <category>statistics</category>
   <guid>https://jeffwong.github.io/posts/zero_inflated_inference/</guid>
-  <pubDate>Sun, 22 Mar 2026 00:00:00 GMT</pubDate>
+  <pubDate>Sun, 22 Mar 2026 07:00:00 GMT</pubDate>
 </item>
 <item>
   <title>Make Experimentation Planning Simple Again</title>
@@ -2847,7 +3654,7 @@ font-style: inherit;">print</span>(results)</span></code></pre></div></div>
   <category>experimentation</category>
   <category>statistics</category>
   <guid>https://jeffwong.github.io/posts/anytime_valid_inference_ols/</guid>
-  <pubDate>Sun, 08 Feb 2026 00:00:00 GMT</pubDate>
+  <pubDate>Sun, 08 Feb 2026 08:00:00 GMT</pubDate>
 </item>
 <item>
   <title>Creating CUPED from FWL</title>
@@ -4844,7 +5651,7 @@ font-style: inherit;">data.frame</span>()</span>
   <category>experimentation</category>
   <category>statistics</category>
   <guid>https://jeffwong.github.io/posts/cuped_from_fwl/</guid>
-  <pubDate>Mon, 02 Feb 2026 00:00:00 GMT</pubDate>
+  <pubDate>Mon, 02 Feb 2026 08:00:00 GMT</pubDate>
 </item>
 <item>
   <title>Does your AB have controlled randomization?</title>
@@ -5087,7 +5894,7 @@ font-style: inherit;">","</span>)))</span></code></pre></div></div>
   <category>experimentation</category>
   <category>statistics</category>
   <guid>https://jeffwong.github.io/posts/controlled_randomization/</guid>
-  <pubDate>Fri, 30 Jan 2026 00:00:00 GMT</pubDate>
+  <pubDate>Fri, 30 Jan 2026 08:00:00 GMT</pubDate>
 </item>
 <item>
   <title>Aggregations and Arrival Times Affect Convergence</title>
@@ -5163,7 +5970,7 @@ font-style: inherit;">","</span>)))</span></code></pre></div></div>
   <category>experimentation</category>
   <category>statistics</category>
   <guid>https://jeffwong.github.io/posts/aggregation_arrival_convergence/</guid>
-  <pubDate>Mon, 15 Sep 2025 00:00:00 GMT</pubDate>
+  <pubDate>Mon, 15 Sep 2025 07:00:00 GMT</pubDate>
 </item>
 <item>
   <title>Errors in Experiments</title>
@@ -5742,23 +6549,23 @@ font-style: inherit;">0.5</span>)</span></code></pre></div></div>
 <p>The standard practice of <img src="https://latex.codecogs.com/png.latex?%5Calpha%20=%200.05">, and power = 80%, is a good practice. Many others actually even advocate for more data. However, it is important to understand how we arrived here, and whether there is flexibility when designing your own experiment. Understanding the first principles is crucial.</p>
 <div class="cell">
 <div class="cell-output-display">
-<div id="ishjwoznvo" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#ishjwoznvo table {
+<div id="satwtlrpsh" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#satwtlrpsh table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#ishjwoznvo thead, #ishjwoznvo tbody, #ishjwoznvo tfoot, #ishjwoznvo tr, #ishjwoznvo td, #ishjwoznvo th {
+#satwtlrpsh thead, #satwtlrpsh tbody, #satwtlrpsh tfoot, #satwtlrpsh tr, #satwtlrpsh td, #satwtlrpsh th {
   border-style: none;
 }
 
-#ishjwoznvo p {
+#satwtlrpsh p {
   margin: 0;
   padding: 0;
 }
 
-#ishjwoznvo .gt_table {
+#satwtlrpsh .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -5784,12 +6591,12 @@ font-style: inherit;">0.5</span>)</span></code></pre></div></div>
   border-left-color: #D3D3D3;
 }
 
-#ishjwoznvo .gt_caption {
+#satwtlrpsh .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#ishjwoznvo .gt_title {
+#satwtlrpsh .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -5801,7 +6608,7 @@ font-style: inherit;">0.5</span>)</span></code></pre></div></div>
   border-bottom-width: 0;
 }
 
-#ishjwoznvo .gt_subtitle {
+#satwtlrpsh .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -5813,7 +6620,7 @@ font-style: inherit;">0.5</span>)</span></code></pre></div></div>
   border-top-width: 0;
 }
 
-#ishjwoznvo .gt_heading {
+#satwtlrpsh .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -5825,13 +6632,13 @@ font-style: inherit;">0.5</span>)</span></code></pre></div></div>
   border-right-color: #D3D3D3;
 }
 
-#ishjwoznvo .gt_bottom_border {
+#satwtlrpsh .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#ishjwoznvo .gt_col_headings {
+#satwtlrpsh .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -5846,7 +6653,7 @@ font-style: inherit;">0.5</span>)</span></code></pre></div></div>
   border-right-color: #D3D3D3;
 }
 
-#ishjwoznvo .gt_col_heading {
+#satwtlrpsh .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -5866,7 +6673,7 @@ font-style: inherit;">0.5</span>)</span></code></pre></div></div>
   overflow-x: hidden;
 }
 
-#ishjwoznvo .gt_column_spanner_outer {
+#satwtlrpsh .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -5878,15 +6685,15 @@ font-style: inherit;">0.5</span>)</span></code></pre></div></div>
   padding-right: 4px;
 }
 
-#ishjwoznvo .gt_column_spanner_outer:first-child {
+#satwtlrpsh .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#ishjwoznvo .gt_column_spanner_outer:last-child {
+#satwtlrpsh .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#ishjwoznvo .gt_column_spanner {
+#satwtlrpsh .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -5898,11 +6705,11 @@ font-style: inherit;">0.5</span>)</span></code></pre></div></div>
   width: 100%;
 }
 
-#ishjwoznvo .gt_spanner_row {
+#satwtlrpsh .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#ishjwoznvo .gt_group_heading {
+#satwtlrpsh .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -5928,7 +6735,7 @@ font-style: inherit;">0.5</span>)</span></code></pre></div></div>
   text-align: left;
 }
 
-#ishjwoznvo .gt_empty_group_heading {
+#satwtlrpsh .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -5943,15 +6750,15 @@ font-style: inherit;">0.5</span>)</span></code></pre></div></div>
   vertical-align: middle;
 }
 
-#ishjwoznvo .gt_from_md > :first-child {
+#satwtlrpsh .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#ishjwoznvo .gt_from_md > :last-child {
+#satwtlrpsh .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#ishjwoznvo .gt_row {
+#satwtlrpsh .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -5970,7 +6777,7 @@ font-style: inherit;">0.5</span>)</span></code></pre></div></div>
   overflow-x: hidden;
 }
 
-#ishjwoznvo .gt_stub {
+#satwtlrpsh .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -5983,7 +6790,7 @@ font-style: inherit;">0.5</span>)</span></code></pre></div></div>
   padding-right: 5px;
 }
 
-#ishjwoznvo .gt_stub_row_group {
+#satwtlrpsh .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -5997,15 +6804,15 @@ font-style: inherit;">0.5</span>)</span></code></pre></div></div>
   vertical-align: top;
 }
 
-#ishjwoznvo .gt_row_group_first td {
+#satwtlrpsh .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#ishjwoznvo .gt_row_group_first th {
+#satwtlrpsh .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#ishjwoznvo .gt_summary_row {
+#satwtlrpsh .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -6015,16 +6822,16 @@ font-style: inherit;">0.5</span>)</span></code></pre></div></div>
   padding-right: 5px;
 }
 
-#ishjwoznvo .gt_first_summary_row {
+#satwtlrpsh .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#ishjwoznvo .gt_first_summary_row.thick {
+#satwtlrpsh .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#ishjwoznvo .gt_last_summary_row {
+#satwtlrpsh .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -6034,7 +6841,7 @@ font-style: inherit;">0.5</span>)</span></code></pre></div></div>
   border-bottom-color: #D3D3D3;
 }
 
-#ishjwoznvo .gt_grand_summary_row {
+#satwtlrpsh .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -6044,7 +6851,7 @@ font-style: inherit;">0.5</span>)</span></code></pre></div></div>
   padding-right: 5px;
 }
 
-#ishjwoznvo .gt_first_grand_summary_row {
+#satwtlrpsh .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -6054,7 +6861,7 @@ font-style: inherit;">0.5</span>)</span></code></pre></div></div>
   border-top-color: #D3D3D3;
 }
 
-#ishjwoznvo .gt_last_grand_summary_row_top {
+#satwtlrpsh .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -6064,11 +6871,11 @@ font-style: inherit;">0.5</span>)</span></code></pre></div></div>
   border-bottom-color: #D3D3D3;
 }
 
-#ishjwoznvo .gt_striped {
+#satwtlrpsh .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#ishjwoznvo .gt_table_body {
+#satwtlrpsh .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -6077,7 +6884,7 @@ font-style: inherit;">0.5</span>)</span></code></pre></div></div>
   border-bottom-color: #D3D3D3;
 }
 
-#ishjwoznvo .gt_footnotes {
+#satwtlrpsh .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -6091,7 +6898,7 @@ font-style: inherit;">0.5</span>)</span></code></pre></div></div>
   border-right-color: #D3D3D3;
 }
 
-#ishjwoznvo .gt_footnote {
+#satwtlrpsh .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -6100,7 +6907,7 @@ font-style: inherit;">0.5</span>)</span></code></pre></div></div>
   padding-right: 5px;
 }
 
-#ishjwoznvo .gt_sourcenotes {
+#satwtlrpsh .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -6114,7 +6921,7 @@ font-style: inherit;">0.5</span>)</span></code></pre></div></div>
   border-right-color: #D3D3D3;
 }
 
-#ishjwoznvo .gt_sourcenote {
+#satwtlrpsh .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -6122,72 +6929,72 @@ font-style: inherit;">0.5</span>)</span></code></pre></div></div>
   padding-right: 5px;
 }
 
-#ishjwoznvo .gt_left {
+#satwtlrpsh .gt_left {
   text-align: left;
 }
 
-#ishjwoznvo .gt_center {
+#satwtlrpsh .gt_center {
   text-align: center;
 }
 
-#ishjwoznvo .gt_right {
+#satwtlrpsh .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#ishjwoznvo .gt_font_normal {
+#satwtlrpsh .gt_font_normal {
   font-weight: normal;
 }
 
-#ishjwoznvo .gt_font_bold {
+#satwtlrpsh .gt_font_bold {
   font-weight: bold;
 }
 
-#ishjwoznvo .gt_font_italic {
+#satwtlrpsh .gt_font_italic {
   font-style: italic;
 }
 
-#ishjwoznvo .gt_super {
+#satwtlrpsh .gt_super {
   font-size: 65%;
 }
 
-#ishjwoznvo .gt_footnote_marks {
+#satwtlrpsh .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#ishjwoznvo .gt_asterisk {
+#satwtlrpsh .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#ishjwoznvo .gt_indent_1 {
+#satwtlrpsh .gt_indent_1 {
   text-indent: 5px;
 }
 
-#ishjwoznvo .gt_indent_2 {
+#satwtlrpsh .gt_indent_2 {
   text-indent: 10px;
 }
 
-#ishjwoznvo .gt_indent_3 {
+#satwtlrpsh .gt_indent_3 {
   text-indent: 15px;
 }
 
-#ishjwoznvo .gt_indent_4 {
+#satwtlrpsh .gt_indent_4 {
   text-indent: 20px;
 }
 
-#ishjwoznvo .gt_indent_5 {
+#satwtlrpsh .gt_indent_5 {
   text-indent: 25px;
 }
 
-#ishjwoznvo .katex-display {
+#satwtlrpsh .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#ishjwoznvo div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#satwtlrpsh div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -6338,7 +7145,7 @@ Design Statistics
   <category>experimentation</category>
   <category>statistics</category>
   <guid>https://jeffwong.github.io/posts/errors_in_experiments/</guid>
-  <pubDate>Mon, 15 Sep 2025 00:00:00 GMT</pubDate>
+  <pubDate>Mon, 15 Sep 2025 07:00:00 GMT</pubDate>
 </item>
 <item>
   <title>Posthoc MDE</title>
@@ -6376,7 +7183,7 @@ Design Statistics
   <category>experimentation</category>
   <category>statistics</category>
   <guid>https://jeffwong.github.io/posts/posthoc_mde/</guid>
-  <pubDate>Mon, 15 Sep 2025 00:00:00 GMT</pubDate>
+  <pubDate>Mon, 15 Sep 2025 07:00:00 GMT</pubDate>
 </item>
 <item>
   <title>Statistical Power under Noncompliance</title>
@@ -6425,7 +7232,7 @@ Design Statistics
   <category>experimentation</category>
   <category>statistics</category>
   <guid>https://jeffwong.github.io/posts/power_noncompliance/</guid>
-  <pubDate>Mon, 15 Sep 2025 00:00:00 GMT</pubDate>
+  <pubDate>Mon, 15 Sep 2025 07:00:00 GMT</pubDate>
 </item>
 <item>
   <title>Foundations in Statistical Power</title>
@@ -6693,7 +7500,7 @@ font-style: inherit;">+</span> pooled_ncp))</span>
   <category>experimentation</category>
   <category>statistics</category>
   <guid>https://jeffwong.github.io/posts/statistical_power/</guid>
-  <pubDate>Mon, 15 Sep 2025 00:00:00 GMT</pubDate>
+  <pubDate>Mon, 15 Sep 2025 07:00:00 GMT</pubDate>
 </item>
 <item>
   <title>The Mathematics of the Elastic Net</title>
@@ -6821,7 +7628,7 @@ for cycle in 1:max_cycles
  ]]></description>
   <category>mathematical statistics</category>
   <guid>https://jeffwong.github.io/posts/elastic_net/</guid>
-  <pubDate>Wed, 07 Apr 2021 00:00:00 GMT</pubDate>
+  <pubDate>Wed, 07 Apr 2021 07:00:00 GMT</pubDate>
 </item>
 <item>
   <title>Tikhonov Regularization and Gaussian Priors</title>
@@ -6865,7 +7672,7 @@ for cycle in 1:max_cycles
  ]]></description>
   <category>mathematical statistics</category>
   <guid>https://jeffwong.github.io/posts/l2_gaussian_prior/</guid>
-  <pubDate>Sun, 27 Dec 2020 00:00:00 GMT</pubDate>
+  <pubDate>Sun, 27 Dec 2020 08:00:00 GMT</pubDate>
 </item>
 </channel>
 </rss>

@@ -14,71 +14,35 @@ require(gridExtra)
 
 # Log Linear
 
-In AB testing, the classic average treatment effect refers to the absolute difference
-in means. Sometimes, we want to compute the treatment effect in terms of percentages
-from the baseline. The classic way to measure a relative effect is through the model
+In AB testing, the classic average treatment effect refers to the absolute difference in means. Sometimes, we want to compute the treatment effect in terms of percentages from the baseline. The classic way to measure a relative effect is through the model
 
-$$log(y) = \beta_0 + T \beta_1 + \varepsilon$$
-When $log(y)$ is computed as a sum, it means the expected value of $y$ is
-composed of a baseline and a multiplicative treatment effect 
-$E[y] = e^{ \beta_0 + T \beta_1} = e^{\beta_0} e^{\beta_1}$. The relative effect,
-$R = \frac{E[y | T = 1]}{E[y | T = 0]} - 1$ becomes $e^{\beta_1} - 1$.
+$$log(y) = \beta_0 + T \beta_1 + \varepsilon$$ When $log(y)$ is computed as a sum, it means the expected value of $y$ is composed of a baseline and a multiplicative treatment effect $E[y] = e^{ \beta_0 + T \beta_1} = e^{\beta_0} e^{\beta_1}$. The relative effect, $R = \frac{E[y | T = 1]}{E[y | T = 0]} - 1$ becomes $e^{\beta_1} - 1$.
 
-The log linear model also has a nice property: it stabilizes variance when the data
-is long tailed. This is due to the delta method: if $y \sim N(\mu, \sigma^2)$ then
-$log(y) \sim N(log(\mu), \sigma^2 / \mu^2)$, where $\sigma^2 / \mu^2$ compresses
-variance for $\mu > 1$. 
-[Note: log linear models might not compress variance when the metric is very sparse.
-Rate metrics with $\mu \in [0, 1]$ are an example]
+The log linear model also has a nice property: it stabilizes variance when the data is long tailed. This is due to the delta method: if $y \sim N(\mu, \sigma^2)$ then $log(y) \sim N(log(\mu), \sigma^2 / \mu^2)$, where $\sigma^2 / \mu^2$ compresses variance for $\mu > 1$. \[Note: log linear models might not compress variance when the metric is very sparse. Rate metrics with $\mu \in [0, 1]$ are an example\]
 
-However, the interpretation is not a simple business interpretation. The form
-of $y$ induces a treatment effect that corresponds to a geometric mean.
-Per user, it measures the relative effect, then it averages
-these individual relative effects. 
-This is different than taking the average effect first, then computing the relative
-effect. Readers can be confused by this subtlety.
+However, the interpretation is not a simple business interpretation. The form of $y$ induces a treatment effect that corresponds to a geometric mean. Per user, it measures the relative effect, then it averages these individual relative effects. This is different than taking the average effect first, then computing the relative effect. Readers can be confused by this subtlety.
 
-To illustrate, say that there are 2 power users in the AB test, and 100 casual users. 
-Metrics on the power users are down by 1%, whereas they are up 10% on the casual users.
-We have to first ask: do we interpret this scenario as good, or as bad? Losing 1%
-of a large volume can be very bad, and we might not be able to make up for it
-from a 10% gain on small volume. On the other hand, it may be good to redistribute
-the metric so that 10% of users, regardless of their volume, are benefitting.
+To illustrate, say that there are 2 power users in the AB test, and 100 casual users. Metrics on the power users are down by 1%, whereas they are up 10% on the casual users. We have to first ask: do we interpret this scenario as good, or as bad? Losing 1% of a large volume can be very bad, and we might not be able to make up for it from a 10% gain on small volume. On the other hand, it may be good to redistribute the metric so that 10% of users, regardless of their volume, are benefitting.
 
-According to the log linear model, we first compute percent gains. Then we disregard
-the baseline volume and compute an average on these percent gains.
-When 100 users are benefiting by 10%, this will outweigh the 2 users that 
-are losing 1%. Therefore we will perceive this situation as a good thing.
+According to the log linear model, we first compute percent gains. Then we disregard the baseline volume and compute an average on these percent gains. When 100 users are benefiting by 10%, this will outweigh the 2 users that are losing 1%. Therefore we will perceive this situation as a good thing.
 
-A different model can reverse the operations. First we could aggregate
-the users into two means: the control mean and the treatment mean, then compute
-the relative effect. When reporting this as a percent, this would be a negative
-outcome. This is the more intuitive definition of a percent effect.
+A different model can reverse the operations. First we could aggregate the users into two means: the control mean and the treatment mean, then compute the relative effect. When reporting this as a percent, this would be a negative outcome. This is the more intuitive definition of a percent effect.
 
 # Delta Method
 
-To achieve the more intuitive relative effect, we reverse the order of operations. 
-First, we should start with a linear model
+To achieve the more intuitive relative effect, we reverse the order of operations. First, we should start with a linear model
 
 $$y = \beta_0 + T \beta_1 + \varepsilon$$
 
-Then we use this form of $y$ to compute the average relative effect like before,
-$R=\frac{E[y | T = 1]}{E[y | T = 0]} - 1$. Unlike the average treatment effect,
-we cannot simply read the coefficient for $\beta_1$ from a regression report.
-To do inference on the average relative effect and gets its confidence interval
-and p value, we need to derive its distribution from a ratio of random variables.
+Then we use this form of $y$ to compute the average relative effect like before, $R=\frac{E[y | T = 1]}{E[y | T = 0]} - 1$. Unlike the average treatment effect, we cannot simply read the coefficient for $\beta_1$ from a regression report. To do inference on the average relative effect and gets its confidence interval and p value, we need to derive its distribution from a ratio of random variables.
 
 ## Mathematical Derivation for the Delta Method [reference](https://onlinelibrary.wiley.com/doi/epdf/10.1002/%28SICI%291097-0320%2820000401%2939%3A4%3C300%3A%3AAID-CYTO8%3E3.0.CO%3B2-O)
 
-We are going to operate off of 2 inputs: $\mu_T = E[y | T = 1]$ and 
-$\mu_C = E[y | T = 0]$. The relative effect is a function, $g$ of these 2 inputs,
-with $R = g(\mu_T, \mu_C) = \frac{\mu_T}{\mu_C}$. When a function is applied to a 
-vector of random variables, the *first order approximation* for the variance of that function is
+We are going to operate off of 2 inputs: $\mu_T = E[y | T = 1]$ and $\mu_C = E[y | T = 0]$. The relative effect is a function, $g$ of these 2 inputs, with $R = g(\mu_T, \mu_C) = \frac{\mu_T}{\mu_C}$. When a function is applied to a vector of random variables, the *first order approximation* for the variance of that function is
 
 $$\text{Var}(g(\mu_T, \mu_C)) \approx \nabla g^T \Sigma \nabla g$$
 
-where $\nabla g$ is the gradient of $g$ and $\Sigma$ is the covariance matrix
-of the random variables.
+where $\nabla g$ is the gradient of $g$ and $\Sigma$ is the covariance matrix of the random variables.
 
 We have
 
@@ -88,52 +52,31 @@ We have
 \text{Var}(\hat{R}) &\approx R^2 \left(\frac{\sigma_T^2}{n_T \mu_T^2} + \frac{\sigma_C^2}{n_C \mu_C^2}\right)
 \end{align}
 
-The first order approximation for the standard error of the relative effect is
-$$\boxed{\text{SE}(\hat{R}) \approx R \sqrt{\frac{\sigma_T^2}{n_T \mu_T^2} + \frac{\sigma_C^2}{n_C \mu_C^2}}}$$
-We can also push R into the square root so that all denominators are expressed in terms of $\mu_C$
-$$\boxed{\text{SE}(\hat{R}) \approx \sqrt{\frac{\sigma_T^2}{n_T \mu_C^2} + \frac{\mu_T^2 \sigma_C^2}{n_C \mu_C^4}}}$$
+The first order approximation for the standard error of the relative effect is $$\boxed{\text{SE}(\hat{R}) \approx R \sqrt{\frac{\sigma_T^2}{n_T \mu_T^2} + \frac{\sigma_C^2}{n_C \mu_C^2}}}$$ We can also push R into the square root so that all denominators are expressed in terms of $\mu_C$ $$\boxed{\text{SE}(\hat{R}) \approx \sqrt{\frac{\sigma_T^2}{n_T \mu_C^2} + \frac{\mu_T^2 \sigma_C^2}{n_C \mu_C^4}}}$$
 
 ## Problems with rare events ($\mu_C \approx 0)$
 
-When $\mu_C \to 0$, the standard error blows up. Note that this doesn't happen
-for $\mu_T \to 0$.
+When $\mu_C \to 0$, the standard error blows up. Note that this doesn't happen for $\mu_T \to 0$.
 
-In addition, $\mu_C \to 0$ isn't just a numerical stability problem. The ratio
-distribution becomes more cauchy-like, with heavy tails indicating infinite variance.
-In general, we would like $\mu_C$ to be far from 0. A simple rule of thumb is
-to normalize $t = \bar{Y}_C / \text{SE}(\bar{Y}_C)$, like in a t-test. If $t < 4$ then
-there is some probability mass around zero.
+In addition, $\mu_C \to 0$ isn't just a numerical stability problem. The ratio distribution becomes more cauchy-like, with heavy tails indicating infinite variance. In general, we would like $\mu_C$ to be far from 0. A simple rule of thumb is to normalize $t = \bar{Y}_C / \text{SE}(\bar{Y}_C)$, like in a t-test. If $t < 4$ then there is some probability mass around zero.
 
-There is a special case to pay attention to.
-If $y$ is a bernoulli 0-1 outcome, with probability $p_c$, then $\bar{Y}_C$ is
-approximately normal with mean $p$ and variance $p_c(1-p_c)n_c$. If $p_c$
-is small then clearly it has nontrivial probability mass around 0.
+There is a special case to pay attention to. If $y$ is a bernoulli 0-1 outcome, with probability $p_c$, then $\bar{Y}_C$ is approximately normal with mean $p$ and variance $p_c(1-p_c)n_c$. If $p_c$ is small then clearly it has nontrivial probability mass around 0.
 
 # Fieller's Method as an Alternative
 
-Fieller's method completely bypasses the question: what is the variance of the
-effect? As a result, it also bypasses a confidence interval of the effect that is
-in the form $\hat{R} \pm 1.96 \cdot SE(\hat{R})$. Instead, it derives the confidence
-interval through a different path. Fieller's confidence interval will not be
-vulnerable to a denominator close to zero, but at the same time it has other
-odd properties, for example not being centered at $\frac{\bar{Y}_T}{\bar{Y}_C}$.
+Fieller's method completely bypasses the question: what is the variance of the effect? As a result, it also bypasses a confidence interval of the effect that is in the form $\hat{R} \pm 1.96 \cdot SE(\hat{R})$. Instead, it derives the confidence interval through a different path. Fieller's confidence interval will not be vulnerable to a denominator close to zero, but at the same time it has other odd properties, for example not being centered at $\frac{\bar{Y}_T}{\bar{Y}_C}$.
 
-If we go straight to a confidence interval, we can ground our thought in the following:
-a confidence interval for the relative effect, $R$, is the set of all values,
-$\theta$, where we would fail to reject the null hypothesis $$H_0: \mu_T - \theta \mu_C = 0.$$
+If we go straight to a confidence interval, we can ground our thought in the following: a confidence interval for the relative effect, $R$, is the set of all values, $\theta$, where we would fail to reject the null hypothesis $$H_0: \mu_T - \theta \mu_C = 0.$$
 
-The relevant estimator is $\bar{Y}_T - \theta \bar{Y}_C$ which has variance
-$\text{Var}(\bar{Y}_T - \theta \bar{Y}_C) = v_T + \theta^2 v_C$ with $v_k = s_k^2 / n_k$.
-The test statistic is
-$$t(\theta) = \frac{\bar{Y}_T - \theta \bar{Y}_C}{\sqrt{v_T + \theta^2 v_C}} \sim N(0,1)$$
+The relevant estimator is $\bar{Y}_T - \theta \bar{Y}_C$ which has variance $\text{Var}(\bar{Y}_T - \theta \bar{Y}_C) = v_T + \theta^2 v_C$ with $v_k = s_k^2 / n_k$. The test statistic is $$t(\theta) = \frac{\bar{Y}_T - \theta \bar{Y}_C}{\sqrt{v_T + \theta^2 v_C}} \sim N(0,1)$$
 
-The confidence interval is now the set of all $\theta$ where $|t(\theta)| \leq z_{\alpha/2}$.
-This can be turned into a quadratic equation in $\theta$: $(\bar{Y}_T - \theta \bar{Y}_C)^2 \leq z^2 (v_T + \theta^2 v_C)$.
-Expanding yields
+The confidence interval is now the set of all $\theta$ where $|t(\theta)| \leq z_{\alpha/2}$. This can be turned into a quadratic equation in $\theta$: $(\bar{Y}_T - \theta \bar{Y}_C)^2 \leq z^2 (v_T + \theta^2 v_C)$. Expanding yields
 
-$$\underbrace{(\bar{Y}_C^2 - z^2 v_C)}_{a} \theta^2 - \underbrace{2\bar{Y}_T \bar{Y}_C}_{2b} \theta + \underbrace{(\bar{Y}_T^2 - z^2 v_T)}_{c} \leq 0$$
-with $a = \bar{Y}_C^2 - z^2 v_C$, $b = \bar{Y}_T \bar{Y}_C$, $c = \bar{Y}_T^2 - z^2 v_T$, the quadratic
-takes the form $a \theta^2 - 2b\theta + c \leq 0$.
-The 2 solutions to the quadratic form the lower and upper bounds of the confidence interval
-$$\theta_{L, U} = \frac{b \pm \sqrt{b^2 - ac}}{a}.$$
+$$\underbrace{(\bar{Y}_C^2 - z^2 v_C)}_{a} \theta^2 - \underbrace{2\bar{Y}_T \bar{Y}_C}_{2b} \theta + \underbrace{(\bar{Y}_T^2 - z^2 v_T)}_{c} \leq 0$$ with
 
+\begin{align}
+a &= \bar{Y}_C^2 - z^2 v_C \\
+b &= \bar{Y}_T \bar{Y}_C \\
+c &= \bar{Y}_T^2 - z^2 v_T
+\end{align}
+The quadratic takes the form $a \theta^2 - 2b\theta + c \leq 0$. The 2 solutions to the quadratic form the lower and upper bounds of the confidence interval $$\theta_{L, U} = \frac{b \pm \sqrt{b^2 - ac}}{a}.$$

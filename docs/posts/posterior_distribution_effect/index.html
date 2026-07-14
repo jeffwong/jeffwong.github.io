@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Jeffrey Wong">
+<meta name="dcterms.date" content="2026-07-09">
+
+<title>You want the posterior distribution, not the confidence interval – From First Principles</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<script src="../../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap-158031087360bce0ff56dc785ce39e06.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../../styles.css">
+</head>
+
+<body class="nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top quarto-banner">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../../index.html">
+    <span class="navbar-title">From First Principles</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../../about.html"> 
+<span class="menu-text">About Me</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="https://linkedin.com/jeffctwong"> <i class="bi bi-linkedin" role="img">
+</i> 
+<span class="menu-text">LinkedIn</span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<header id="title-block-header" class="quarto-title-block default page-columns page-full">
+  <div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-body">
+      <h1 class="title">You want the posterior distribution, not the confidence interval</h1>
+                                <div class="quarto-categories">
+                <div class="quarto-category">bayesian statistics</div>
+                <div class="quarto-category">AB testing</div>
+                <div class="quarto-category">regression</div>
+              </div>
+                  </div>
+  </div>
+    
+  
+  <div class="quarto-title-meta">
+
+      <div>
+      <div class="quarto-title-meta-heading">Author</div>
+      <div class="quarto-title-meta-contents">
+               <p>Jeffrey Wong </p>
+            </div>
+    </div>
+      
+      <div>
+      <div class="quarto-title-meta-heading">Published</div>
+      <div class="quarto-title-meta-contents">
+        <p class="date">July 9, 2026</p>
+      </div>
+    </div>
+    
+      
+    </div>
+    
+  
+  </header><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#two-schools-of-thought." id="toc-two-schools-of-thought." class="nav-link active" data-scroll-target="#two-schools-of-thought.">Two schools of thought.</a></li>
+  <li><a href="#is-the-confidence-interval-meaningful" id="toc-is-the-confidence-interval-meaningful" class="nav-link" data-scroll-target="#is-the-confidence-interval-meaningful">Is the confidence interval meaningful?</a></li>
+  <li><a href="#the-posterior-is-more-natural." id="toc-the-posterior-is-more-natural." class="nav-link" data-scroll-target="#the-posterior-is-more-natural.">The posterior is more natural.</a></li>
+  <li><a href="#much-of-the-ab-literature-is-built-on-frequentist-analysis.-what-are-the-analogies-in-bayesian" id="toc-much-of-the-ab-literature-is-built-on-frequentist-analysis.-what-are-the-analogies-in-bayesian" class="nav-link" data-scroll-target="#much-of-the-ab-literature-is-built-on-frequentist-analysis.-what-are-the-analogies-in-bayesian">Much of the AB literature is built on frequentist analysis. What are the analogies in Bayesian?</a></li>
+  <li><a href="#extensions-for-the-linear-probability-model" id="toc-extensions-for-the-linear-probability-model" class="nav-link" data-scroll-target="#extensions-for-the-linear-probability-model">Extensions for the Linear Probability Model</a>
+  <ul class="collapse">
+  <li><a href="#is-this-a-legitimate-bayesian-model" id="toc-is-this-a-legitimate-bayesian-model" class="nav-link" data-scroll-target="#is-this-a-legitimate-bayesian-model">Is this a legitimate Bayesian model?</a></li>
+  </ul></li>
+  <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion">Conclusion</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content quarto-banner-title-block" id="quarto-document-content">
+
+
+
+
+
+<p>In this post we cover the misconception between a confidence interval and a posterior distribution. Despite the confusion though, the frequentist methods are entrenched in the AB testing industry, and have made many advancements in variance reduction. We’ll describe analogies for Bayesian methods to perform the same, so that it becomes practical to pivot to them.</p>
+<section id="two-schools-of-thought." class="level1">
+<h1>Two schools of thought.</h1>
+<p>Run an AB test in a frequentist framework and you get a confidence interval. Run the same test in a Bayesian framework and you get a credible interval. Both are a range of numbers around a point estimate. But it’s a mistake to say they both represent the distribution of the treatment effect. Only the latter is.</p>
+</section>
+<section id="is-the-confidence-interval-meaningful" class="level1">
+<h1>Is the confidence interval meaningful?</h1>
+<p>In the frequentist setup, the treatment effect <span class="math inline">\(\tau\)</span> is a population parameter. It is an unknown and fixed constant. It has no distribution. Using data, we want to estimate this popular parameter. And it is the variance in the sample that induces randomness. A 95% confidence interval is constructed so that, across hypothetical repeated experiments, 95% of the intervals we’d build would contain the true <span class="math inline">\(\tau\)</span>. The interval reflects how much the estimator would vary from sample to sample, and is formally called the sampling distribution. However, this sampling distribution does not describe the distribution of the effect, it simply describes a distribution around random draws of data.</p>
+</section>
+<section id="the-posterior-is-more-natural." class="level1">
+<h1>The posterior is more natural.</h1>
+<p>In a Bayesian setup, <span class="math inline">\(\tau\)</span> is treated as a random variable and hence has a distribution. The posterior is computed by starting with a prior and a likelihood of the data, then using observed data we make Bayesian updates to get the posterior distribution for <span class="math inline">\(\tau\)</span>. When we describe this distribution, we can legitimately say “there’s a 95% probability <span class="math inline">\(\tau\)</span> lies in this range”. The variability of <span class="math inline">\(\tau\)</span> here refers to the range that <span class="math inline">\(\tau\)</span> can take, not variability that is induced by the randomness of the sample. This is what most people want. It allows us to describe the risk and reward of the treatment.</p>
+</section>
+<section id="much-of-the-ab-literature-is-built-on-frequentist-analysis.-what-are-the-analogies-in-bayesian" class="level1">
+<h1>Much of the AB literature is built on frequentist analysis. What are the analogies in Bayesian?</h1>
+<p>The bayesian posterior is a great way for business leaders to think about risk and reward. Unfortunately, a lot of AB testing has been built on top of frequentist methods. For example, CUPED and linear modeling in general form the basis for variance reduction, which is still a relevant issue in bayesian AB testing. Furthermore, much work has been put into making these types of models highly scalable. So how do we create the analogous bayesian models?</p>
+<p>We formulate a Bayesian linear regression which accomodates pretreatment covariates for variance reduction. We will also pursue a model that has a closed form solution for the posterior, so that it can be highly scalable. We write</p>
+<p><span class="math display">\[
+Y = \alpha + \tau T + \beta X + \varepsilon, \qquad \varepsilon \sim N(0, \sigma^2)
+\]</span></p>
+<p>where <span class="math inline">\(T\)</span> is the treatment indicator and <span class="math inline">\(X\)</span> is a vector of pretreatment covariates. Let <span class="math inline">\(Z = [1, T, X]\)</span> be the design matrix stacking the intercept, treatment, and covariates, and <span class="math inline">\(\theta = (\alpha, \tau, \beta)^\top\)</span>.</p>
+<p>We put a <strong>Normal-Inverse-Gamma (NIG)</strong> prior on <span class="math inline">\((\theta, \sigma^2)\)</span>. This is a conjugate prior for a linear-Gaussian likelihood, and allows the posterior to have a closed form. The prior takes the form:</p>
+<p><span class="math display">\[
+\sigma^2 \sim \mathrm{IG}(a_0, b_0), \qquad \theta \mid \sigma^2 \sim N(\theta_0, \sigma^2 V_0)
+\]</span></p>
+<p>Notice the coefficient prior’s variance is itself scaled by <span class="math inline">\(\sigma^2\)</span>. That coupling is what makes the pair conjugate: it lets the noise variance and the coefficient uncertainty update together in closed form, rather than as two separate, generally non-conjugate, updates.</p>
+<p>Conjugacy means the posterior is again NIG: <span class="math inline">\((\theta, \sigma^2) \mid \text{data} \sim \mathrm{NIG}(\theta_n, V_n, a_n, b_n)\)</span>, i.e.&nbsp;<span class="math inline">\(\sigma^2 \mid \text{data} \sim \mathrm{IG}(a_n, b_n)\)</span> and <span class="math inline">\(\theta \mid \sigma^2, \text{data} \sim N(\theta_n, \sigma^2 V_n)\)</span>, with</p>
+<p><span class="math display">\[\begin{align}
+V_n &amp;= \left(V_0^{-1} + Z^\top Z\right)^{-1} \\
+\theta_n &amp;= V_n\left(V_0^{-1}\theta_0 + Z^\top Y\right) \\
+a_n &amp;= a_0 + \frac{n}{2} \\
+b_n &amp;= b_0 + \frac{1}{2}\left(Y^\top Y + \theta_0^\top V_0^{-1}\theta_0 - \theta_n^\top V_n^{-1}\theta_n\right)
+\end{align}\]</span></p>
+<p>Let’s examine the structure. <span class="math inline">\(V_n\)</span> and <span class="math inline">\(\theta_n\)</span> look like ridge regression. <span class="math inline">\(a_n\)</span> looks like how degrees of freedom accumulate. <span class="math inline">\(b_n\)</span> is like RSS: the total sum of squares <span class="math inline">\(Y^\top Y\)</span>, plus a penalty for how far the prior mean <span class="math inline">\(\theta_0\)</span> sits from zero, minus the portion of that variation the fitted posterior mean <span class="math inline">\(\theta_n\)</span> already explains. As the prior becomes flat, <span class="math inline">\(V_0^{-1} \to 0\)</span>, the prior’s contribution <span class="math inline">\(V_0^{-1}\theta_0\)</span> vanishes along with <span class="math inline">\(V_0^{-1}\)</span> itself, regardless of what <span class="math inline">\(\theta_0\)</span> is. At the same time <span class="math inline">\(\theta_n \to (Z^\top Z)^{-1}Z^\top Y\)</span>, which is OLS estimate. So in many ways, the Bayesian model encapsulates an OLS model, while still having the more natural interpretation. This is a great property.</p>
+<p>As the prior becomes more confident instead, <span class="math inline">\(V_0 \to 0\)</span>, <span class="math inline">\(\theta_n\)</span> collapses to <span class="math inline">\(\theta_0\)</span>.</p>
+<p>Because the posterior is available in closed form, we can simply run a 2 step sampling process: draw <span class="math inline">\(\sigma^2 \sim \mathrm{IG}(a_n, b_n)\)</span>, then draw <span class="math inline">\(\theta \mid \sigma^2 \sim N(\theta_n, \sigma^2 V_n)\)</span>. We show this below.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>bayes_lm_treatment_effect <span class="ot">&lt;-</span> <span class="cf">function</span>(data,</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>                                       y,</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>                                       treatment,</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>                                       <span class="at">covariates =</span> <span class="cn">NULL</span>,</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>                                       <span class="at">prior_mean =</span> <span class="cn">NULL</span>,</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>                                       <span class="at">prior_var =</span> <span class="dv">100</span>,      <span class="co"># weakly informative</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>                                       <span class="at">prior_a0 =</span> <span class="fl">0.001</span>,     <span class="co"># near-flat prior on sigma^2</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>                                       <span class="at">prior_b0 =</span> <span class="fl">0.001</span>,</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>                                       <span class="at">n_samples =</span> <span class="dv">10000</span>,</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>                                       <span class="at">seed =</span> <span class="dv">42</span>) {</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set.seed</span>(seed)</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>  treatment_name <span class="ot">&lt;-</span> rlang<span class="sc">::</span><span class="fu">as_name</span>(rlang<span class="sc">::</span><span class="fu">ensym</span>(treatment))</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>  treatment_vec  <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">pull</span>(data, {{ treatment }})</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>  covariate_df   <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">select</span>(data, {{ covariates }})</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">ncol</span>(covariate_df) <span class="sc">==</span> <span class="dv">0</span>) {</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>    Z <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="at">Intercept =</span> <span class="dv">1</span>, <span class="at">treatment =</span> treatment_vec)</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>    Z <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="at">Intercept =</span> <span class="dv">1</span>, <span class="at">treatment =</span> treatment_vec, <span class="fu">as.matrix</span>(covariate_df))</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">colnames</span>(Z)[<span class="dv">2</span>] <span class="ot">&lt;-</span> treatment_name</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>  y <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(dplyr<span class="sc">::</span><span class="fu">pull</span>(data, {{ y }}))</span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>  n <span class="ot">&lt;-</span> <span class="fu">nrow</span>(Z)</span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>  p <span class="ot">&lt;-</span> <span class="fu">ncol</span>(Z)</span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">is.null</span>(prior_mean)) prior_mean <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="dv">0</span>, p)</span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>  V0 <span class="ot">&lt;-</span> <span class="fu">diag</span>(prior_var, p)</span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>  V0_inv <span class="ot">&lt;-</span> <span class="fu">solve</span>(V0)</span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>  ZtZ     <span class="ot">&lt;-</span> <span class="fu">t</span>(Z) <span class="sc">%*%</span> Z</span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>  Vn      <span class="ot">&lt;-</span> <span class="fu">solve</span>(V0_inv <span class="sc">+</span> ZtZ)</span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>  theta_n <span class="ot">&lt;-</span> Vn <span class="sc">%*%</span> (V0_inv <span class="sc">%*%</span> prior_mean <span class="sc">+</span> <span class="fu">t</span>(Z) <span class="sc">%*%</span> y)</span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a>  a_n <span class="ot">&lt;-</span> prior_a0 <span class="sc">+</span> n <span class="sc">/</span> <span class="dv">2</span></span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a>  b_n <span class="ot">&lt;-</span> prior_b0 <span class="sc">+</span> <span class="fl">0.5</span> <span class="sc">*</span> (</span>
+<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>    <span class="fu">as.numeric</span>(<span class="fu">t</span>(y) <span class="sc">%*%</span> y) <span class="sc">+</span></span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a>      <span class="fu">as.numeric</span>(<span class="fu">t</span>(prior_mean) <span class="sc">%*%</span> V0_inv <span class="sc">%*%</span> prior_mean) <span class="sc">-</span></span>
+<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a>      <span class="fu">as.numeric</span>(<span class="fu">t</span>(theta_n) <span class="sc">%*%</span> <span class="fu">solve</span>(Vn) <span class="sc">%*%</span> theta_n)</span>
+<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a>  sigma2_samples <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> <span class="fu">rgamma</span>(n_samples, <span class="at">shape =</span> a_n, <span class="at">rate =</span> b_n)</span>
+<span id="cb1-45"><a href="#cb1-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-46"><a href="#cb1-46" aria-hidden="true" tabindex="-1"></a>  theta_draws <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA_real_</span>, <span class="at">nrow =</span> n_samples, <span class="at">ncol =</span> p)</span>
+<span id="cb1-47"><a href="#cb1-47" aria-hidden="true" tabindex="-1"></a>  <span class="fu">colnames</span>(theta_draws) <span class="ot">&lt;-</span> <span class="fu">colnames</span>(Z)</span>
+<span id="cb1-48"><a href="#cb1-48" aria-hidden="true" tabindex="-1"></a>  L <span class="ot">&lt;-</span> <span class="fu">chol</span>(Vn)</span>
+<span id="cb1-49"><a href="#cb1-49" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-50"><a href="#cb1-50" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (s <span class="cf">in</span> <span class="fu">seq_len</span>(n_samples)) {</span>
+<span id="cb1-51"><a href="#cb1-51" aria-hidden="true" tabindex="-1"></a>    u <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(p)</span>
+<span id="cb1-52"><a href="#cb1-52" aria-hidden="true" tabindex="-1"></a>    theta_draws[s, ] <span class="ot">&lt;-</span> theta_n <span class="sc">+</span> <span class="fu">sqrt</span>(sigma2_samples[s]) <span class="sc">*</span> <span class="fu">as.numeric</span>(<span class="fu">t</span>(L) <span class="sc">%*%</span> u)</span>
+<span id="cb1-53"><a href="#cb1-53" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb1-54"><a href="#cb1-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-55"><a href="#cb1-55" aria-hidden="true" tabindex="-1"></a>  tau_samples <span class="ot">&lt;-</span> theta_draws[, treatment_name]</span>
+<span id="cb1-56"><a href="#cb1-56" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-57"><a href="#cb1-57" aria-hidden="true" tabindex="-1"></a>  <span class="fu">list</span>(</span>
+<span id="cb1-58"><a href="#cb1-58" aria-hidden="true" tabindex="-1"></a>    <span class="at">tau_samples =</span> tau_samples,</span>
+<span id="cb1-59"><a href="#cb1-59" aria-hidden="true" tabindex="-1"></a>    <span class="at">summary =</span> <span class="fu">list</span>(</span>
+<span id="cb1-60"><a href="#cb1-60" aria-hidden="true" tabindex="-1"></a>      <span class="at">mean =</span> <span class="fu">mean</span>(tau_samples),</span>
+<span id="cb1-61"><a href="#cb1-61" aria-hidden="true" tabindex="-1"></a>      <span class="at">sd   =</span> <span class="fu">sd</span>(tau_samples),</span>
+<span id="cb1-62"><a href="#cb1-62" aria-hidden="true" tabindex="-1"></a>      <span class="at">ci_95 =</span> <span class="fu">quantile</span>(tau_samples, <span class="fu">c</span>(<span class="fl">0.025</span>, <span class="fl">0.975</span>)),</span>
+<span id="cb1-63"><a href="#cb1-63" aria-hidden="true" tabindex="-1"></a>      <span class="at">prob_positive =</span> <span class="fu">mean</span>(tau_samples <span class="sc">&gt;</span> <span class="dv">0</span>)</span>
+<span id="cb1-64"><a href="#cb1-64" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb1-65"><a href="#cb1-65" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb1-66"><a href="#cb1-66" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="extensions-for-the-linear-probability-model" class="level1">
+<h1>Extensions for the Linear Probability Model</h1>
+<p>Other than finding an analogy for OLS, we need to find an analogy for the linear probability model (LPM). The LPM is like OLS, but it is modeling a probability. Despite OLS’s ability to output values outside of 0-1, it is still useful in causal inference, so long as we model the treatment effect with robust standard errors. We wrote about this in a <a href="lpm-robust-se.qmd">previous post on the linear probability model</a></p>
+<p>Heteroskedasticity comes into play with a 0-1 outcome variable because <span class="math inline">\(\text{Var}(Y \mid X) = P(X)(1-P(X))\)</span>. In the frequentist world, we model this using robust standard errors where the variance of the error term is allowed to be a function of <span class="math inline">\(X\)</span>. The Bayesian fix is similar: we will replace the naive Gaussian posterior covariance with a robust sandwich covariance derived from the residuals.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>bayes_lpm_treatment_effect <span class="ot">&lt;-</span> <span class="cf">function</span>(data,</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>                                        y,</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>                                        treatment,</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>                                        <span class="at">covariates =</span> <span class="cn">NULL</span>,</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>                                        <span class="at">prior_mean =</span> <span class="cn">NULL</span>,</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>                                        <span class="at">prior_var =</span> <span class="dv">100</span>,</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>                                        <span class="at">n_samples =</span> <span class="dv">10000</span>,</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>                                        <span class="at">seed =</span> <span class="dv">42</span>) {</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set.seed</span>(seed)</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>  y <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(dplyr<span class="sc">::</span><span class="fu">pull</span>(data, {{ y }}))</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">stopifnot</span>(<span class="fu">all</span>(y <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>)))</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>  treatment_name <span class="ot">&lt;-</span> rlang<span class="sc">::</span><span class="fu">as_name</span>(rlang<span class="sc">::</span><span class="fu">ensym</span>(treatment))</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>  treatment_vec  <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">pull</span>(data, {{ treatment }})</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>  covariate_df   <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">select</span>(data, {{ covariates }})</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">ncol</span>(covariate_df) <span class="sc">==</span> <span class="dv">0</span>) {</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>    Z <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="at">Intercept =</span> <span class="dv">1</span>, <span class="at">treatment =</span> treatment_vec)</span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>    Z <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="at">Intercept =</span> <span class="dv">1</span>, <span class="at">treatment =</span> treatment_vec, <span class="fu">as.matrix</span>(covariate_df))</span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">colnames</span>(Z)[<span class="dv">2</span>] <span class="ot">&lt;-</span> treatment_name</span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>  n <span class="ot">&lt;-</span> <span class="fu">nrow</span>(Z); p <span class="ot">&lt;-</span> <span class="fu">ncol</span>(Z)</span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">is.null</span>(prior_mean)) prior_mean <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="dv">0</span>, p)</span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>  V0 <span class="ot">&lt;-</span> <span class="fu">diag</span>(prior_var, p)</span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>  V0_inv <span class="ot">&lt;-</span> <span class="fu">solve</span>(V0)</span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>  ZtZ     <span class="ot">&lt;-</span> <span class="fu">t</span>(Z) <span class="sc">%*%</span> Z</span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>  Vn      <span class="ot">&lt;-</span> <span class="fu">solve</span>(V0_inv <span class="sc">+</span> ZtZ)</span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>  theta_n <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(Vn <span class="sc">%*%</span> (V0_inv <span class="sc">%*%</span> prior_mean <span class="sc">+</span> <span class="fu">t</span>(Z) <span class="sc">%*%</span> y))</span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>  <span class="fu">names</span>(theta_n) <span class="ot">&lt;-</span> <span class="fu">colnames</span>(Z)</span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Sandwich covariance around theta_n, in place of the naive sigma^2 * (Z'Z)^-1</span></span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>  fitted_vals <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(Z <span class="sc">%*%</span> theta_n)</span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>  resid <span class="ot">&lt;-</span> y <span class="sc">-</span> fitted_vals</span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>  bread <span class="ot">&lt;-</span> <span class="fu">solve</span>(ZtZ)</span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a>  meat  <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="dv">0</span>, p, p)</span>
+<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_len</span>(n)) {</span>
+<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a>    z_i <span class="ot">&lt;-</span> Z[i, ]</span>
+<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a>    meat <span class="ot">&lt;-</span> meat <span class="sc">+</span> (resid[i]<span class="sc">^</span><span class="dv">2</span>) <span class="sc">*</span> (z_i <span class="sc">%*%</span> <span class="fu">t</span>(z_i))</span>
+<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a>  meat <span class="ot">&lt;-</span> meat <span class="sc">*</span> (n <span class="sc">/</span> (n <span class="sc">-</span> p))</span>
+<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a>  sandwich_cov <span class="ot">&lt;-</span> bread <span class="sc">%*%</span> meat <span class="sc">%*%</span> bread</span>
+<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a>  L <span class="ot">&lt;-</span> <span class="fu">chol</span>(sandwich_cov)</span>
+<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a>  theta_draws <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA_real_</span>, <span class="at">nrow =</span> n_samples, <span class="at">ncol =</span> p)</span>
+<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a>  <span class="fu">colnames</span>(theta_draws) <span class="ot">&lt;-</span> <span class="fu">colnames</span>(Z)</span>
+<span id="cb2-51"><a href="#cb2-51" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (s <span class="cf">in</span> <span class="fu">seq_len</span>(n_samples)) {</span>
+<span id="cb2-52"><a href="#cb2-52" aria-hidden="true" tabindex="-1"></a>    u <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(p)</span>
+<span id="cb2-53"><a href="#cb2-53" aria-hidden="true" tabindex="-1"></a>    theta_draws[s, ] <span class="ot">&lt;-</span> theta_n <span class="sc">+</span> <span class="fu">as.numeric</span>(<span class="fu">t</span>(L) <span class="sc">%*%</span> u)</span>
+<span id="cb2-54"><a href="#cb2-54" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb2-55"><a href="#cb2-55" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-56"><a href="#cb2-56" aria-hidden="true" tabindex="-1"></a>  tau_samples <span class="ot">&lt;-</span> theta_draws[, treatment_name]</span>
+<span id="cb2-57"><a href="#cb2-57" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-58"><a href="#cb2-58" aria-hidden="true" tabindex="-1"></a>  <span class="fu">list</span>(</span>
+<span id="cb2-59"><a href="#cb2-59" aria-hidden="true" tabindex="-1"></a>    <span class="at">tau_samples =</span> tau_samples,</span>
+<span id="cb2-60"><a href="#cb2-60" aria-hidden="true" tabindex="-1"></a>    <span class="at">summary =</span> <span class="fu">list</span>(</span>
+<span id="cb2-61"><a href="#cb2-61" aria-hidden="true" tabindex="-1"></a>      <span class="at">mean =</span> <span class="fu">mean</span>(tau_samples),</span>
+<span id="cb2-62"><a href="#cb2-62" aria-hidden="true" tabindex="-1"></a>      <span class="at">sd   =</span> <span class="fu">sd</span>(tau_samples),</span>
+<span id="cb2-63"><a href="#cb2-63" aria-hidden="true" tabindex="-1"></a>      <span class="at">ci_95 =</span> <span class="fu">quantile</span>(tau_samples, <span class="fu">c</span>(<span class="fl">0.025</span>, <span class="fl">0.975</span>)),</span>
+<span id="cb2-64"><a href="#cb2-64" aria-hidden="true" tabindex="-1"></a>      <span class="at">prob_positive =</span> <span class="fu">mean</span>(tau_samples <span class="sc">&gt;</span> <span class="dv">0</span>)</span>
+<span id="cb2-65"><a href="#cb2-65" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb2-66"><a href="#cb2-66" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb2-67"><a href="#cb2-67" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="is-this-a-legitimate-bayesian-model" class="level2">
+<h2 class="anchored" data-anchor-id="is-this-a-legitimate-bayesian-model">Is this a legitimate Bayesian model?</h2>
+<p>We used a Gaussian likelihood on a 0-1 outcome. Going in, we knew this was wrong. Deriving a posterior requires us to be specific about a prior and a likelihood. We already know the likelihood is wrong before fitting the data, and we even throw away the covariance in favor of a frequentist sandwich estimator. There is no legitimate probability model that produces the posterior above.</p>
+<p>All models are wrong. Some are useful.</p>
+<p>In this case, this model is a reasonable <strong>quasi-Bayesian</strong> model. To see why, let <span class="math inline">\(P_0\)</span> denote the true, unknown data-generating distribution for <span class="math inline">\((Y, Z)\)</span>, <span class="math inline">\(p_\theta \sim N(Z^T \theta, \sigma^2)\)</span>, and define the <em>pseudo-true</em> parameter <span class="math inline">\(\theta^*\)</span> as the value minimizing the KL divergence between <span class="math inline">\(P_0\)</span> and our wrong-but-useful Gaussian family:</p>
+<p><span class="math display">\[\begin{align}
+\theta^* &amp;= \arg\min_\theta \; \mathrm{KL}\!\left(P_0(Y \mid Z) \,\|\, N(Z^\top\theta, \sigma^2)\right) \\
+&amp;= \arg\max_\theta \; E_{P_0}\!\left[\log p_\theta(Y \mid Z)\right] \\
+&amp;= \arg\min_\theta \; E_{P_0}\!\left[(Y - Z^\top\theta)^2\right]
+\end{align}\]</span></p>
+<p>The first equality is general, and has nothing to do with Gaussians yet. Splitting the KL divergence apart, <span class="math display">\[\mathrm{KL}(P_0 \,\|\, p_\theta) = E_{P_0}[\log p_0(Y\mid Z)] - E_{P_0}[\log p_\theta(Y\mid Z)]\]</span> the first term is the entropy of the <em>true</em> distribution <span class="math inline">\(P_0\)</span>. It is fixed and not a function of <span class="math inline">\(\theta\)</span>. So minimizing the KL divergence is akin to maximizing the log likelihood <span class="math inline">\(E_{P_0}[\log p_\theta(Y\mid Z)]\)</span>, for <em>any</em> assumed family <span class="math inline">\(p_\theta\)</span>. So if we assume a model where <span class="math inline">\(Y\)</span> is normal, instead of bernoulli, we can pivot the problem to just maximizing a gaussian likelihood, which is exactly OLS. <span class="math inline">\(\theta^*\)</span> still reduces to the OLS coefficient for Y on Z, regardless of the true conditional distribution of <span class="math inline">\(Y\)</span>!</p>
+<p>As <span class="math inline">\(n \to \infty\)</span>, the log-likelihood still concentrates sharply around its maximizer <span class="math inline">\(\hat\theta_n \to \theta^*\)</span>. This is what Kleijn &amp; van der Vaart formalize as a Bernstein–von Mises theorem <em>under misspecification</em>: the posterior is still asymptotically normal and centered at <span class="math inline">\(\theta^*\)</span>, but its correct covariance is not the naive <span class="math inline">\(A(\theta^*)^{-1}\)</span> — it is the sandwich <span class="math inline">\(A(\theta^*)^{-1} B(\theta^*) A(\theta^*)^{-1}\)</span>. This takes the classic form of <code>bread</code> * <code>meat</code> * <code>bread</code>, where</p>
+<p><span class="math display">\[\begin{align}
+A(\theta^*) &amp;= -E_{P_0}\!\left[\nabla^2_\theta \log p_\theta(Y_i\mid Z_i)\right]_{\theta^*} = \sigma^{-2} Z^\top Z \\
+B(\theta^*) &amp;= \mathrm{Var}_{P_0}\!\left[\nabla_\theta \log p_\theta(Y_i\mid Z_i)\right]_{\theta^*} = \sigma^{-4} \sum_i Z_iZ_i^\top e_i^2 \\
+A(\theta^*)^{-1} B(\theta^*) A(\theta^*)^{-1} &amp;= \left(Z^\top Z\right)^{-1}\left(\textstyle\sum_i Z_iZ_i^\top e_i^2\right)\left(Z^\top Z\right)^{-1}
+\end{align}\]</span></p>
+<p>with <span class="math inline">\(e_i = Y_i - Z_i^\top\theta^*\)</span> the true residual for observation <span class="math inline">\(i\)</span>. <span class="math inline">\(A(\theta^*)\)</span> is the curvature the <em>assumed</em> Gaussian likelihood thinks it has. <span class="math inline">\(B(\theta^*)\)</span> is the <em>true</em> variance of the score under <span class="math inline">\(P_0\)</span>. The two cancel each other and reduce to A(<sup>*)</sup>{-1} only under correct specification, otherwise just like in the frequentist case we must use robust standard errors.</p>
+<p>For a binary outcome with covariates, you can pick at most two of three properties: a <strong>correct likelihood</strong>, a <strong>closed-form solution</strong>, and <strong>covariate-adjusted variance reduction</strong>. Beta-Binomial conjugacy gives you the first two but drops covariates. Bayesian logistic regression gives you the first and third but loses closed form, needing MCMC or a Laplace approximation. What’s above gives you the second and third, but is an approximation rather than a full posterior.</p>
+</section>
+</section>
+<section id="conclusion" class="level1">
+<h1>Conclusion</h1>
+<p>Consumers of experiments are really looking for posterior distributions of the effect, which requires a bayesian school of thought. However, the bayesian way of thinking is still not very popular. We claim this is due to misconceptions around scalability, and “being behind” in advanced techniques like variance reduction. In this post, we described how to create efficient and scalable bayesian models that match the performance of frequentist variance reduction. We also showed how to cover both the cases where the response is bernoulli, and when it is normal. We argue that these are the major use cases for AB testing, so the bayesian model can be described in both a correct and practical way.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/jeffwong\.github\.io");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

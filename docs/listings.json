@@ -2,6 +2,7 @@
   {
     "listing": "/index.html",
     "items": [
+      "/posts/posterior_distribution_effect/index.html",
       "/posts/composite_metric/index.html",
       "/posts/robust_cuped/index.html",
       "/posts/relative_effects/index.html",

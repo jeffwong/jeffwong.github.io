@@ -2,70 +2,70 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://jeffwong.github.io/posts/zero_inflated_inference/index.html</loc>
-    <lastmod>2026-04-08T05:27:42.622Z</lastmod>
+    <lastmod>2026-07-12T05:21:21.907Z</lastmod>
   </url>
   <url>
     <loc>https://jeffwong.github.io/posts/robust_cuped/index.html</loc>
-    <lastmod>2026-05-20T16:38:28.666Z</lastmod>
+    <lastmod>2026-07-12T05:09:05.495Z</lastmod>
   </url>
   <url>
     <loc>https://jeffwong.github.io/posts/power_noncompliance/index.html</loc>
-    <lastmod>2026-05-20T16:58:22.883Z</lastmod>
+    <lastmod>2026-07-12T05:09:05.495Z</lastmod>
   </url>
   <url>
-    <loc>https://jeffwong.github.io/posts/l2_gaussian_prior/index.html</loc>
-    <lastmod>2025-10-08T04:56:28.596Z</lastmod>
-  </url>
-  <url>
-    <loc>https://jeffwong.github.io/posts/elastic_net/index.html</loc>
-    <lastmod>2025-10-08T04:56:28.596Z</lastmod>
-  </url>
-  <url>
-    <loc>https://jeffwong.github.io/posts/controlled_randomization/index.html</loc>
-    <lastmod>2026-05-01T06:05:49.531Z</lastmod>
-  </url>
-  <url>
-    <loc>https://jeffwong.github.io/posts/aggregation_arrival_convergence/index.html</loc>
-    <lastmod>2026-04-03T18:25:32.561Z</lastmod>
-  </url>
-  <url>
-    <loc>https://jeffwong.github.io/about.html</loc>
-    <lastmod>2025-10-08T04:56:28.588Z</lastmod>
-  </url>
-  <url>
-    <loc>https://jeffwong.github.io/index.html</loc>
-    <lastmod>2025-10-08T04:56:28.596Z</lastmod>
-  </url>
-  <url>
-    <loc>https://jeffwong.github.io/posts/anytime_valid_inference_ols/index.html</loc>
-    <lastmod>2026-04-04T01:20:58.556Z</lastmod>
-  </url>
-  <url>
-    <loc>https://jeffwong.github.io/posts/cuped_from_fwl/index.html</loc>
-    <lastmod>2026-04-28T06:13:26.130Z</lastmod>
+    <loc>https://jeffwong.github.io/posts/posterior_distribution_effect/index.html</loc>
+    <lastmod>2026-07-14T05:25:56.588Z</lastmod>
   </url>
   <url>
     <loc>https://jeffwong.github.io/posts/errors_in_experiments/index.html</loc>
-    <lastmod>2025-10-21T01:20:54.470Z</lastmod>
+    <lastmod>2026-07-12T05:20:48.689Z</lastmod>
   </url>
   <url>
-    <loc>https://jeffwong.github.io/posts/posthoc_mde/index.html</loc>
-    <lastmod>2026-03-26T05:59:34.711Z</lastmod>
-  </url>
-  <url>
-    <loc>https://jeffwong.github.io/posts/relative_effects/index.html</loc>
-    <lastmod>2026-06-24T05:13:03.570Z</lastmod>
-  </url>
-  <url>
-    <loc>https://jeffwong.github.io/posts/statistical_power/index.html</loc>
-    <lastmod>2026-05-20T16:58:25.583Z</lastmod>
-  </url>
-  <url>
-    <loc>https://jeffwong.github.io/posts/delta_method/index.html</loc>
-    <lastmod>2026-06-24T06:00:25.621Z</lastmod>
+    <loc>https://jeffwong.github.io/posts/cuped_from_fwl/index.html</loc>
+    <lastmod>2026-07-12T05:09:05.494Z</lastmod>
   </url>
   <url>
     <loc>https://jeffwong.github.io/posts/composite_metric/index.html</loc>
-    <lastmod>2026-06-24T06:03:18.982Z</lastmod>
+    <lastmod>2026-07-12T05:09:05.493Z</lastmod>
+  </url>
+  <url>
+    <loc>https://jeffwong.github.io/posts/aggregation_arrival_convergence/index.html</loc>
+    <lastmod>2026-07-12T05:09:05.492Z</lastmod>
+  </url>
+  <url>
+    <loc>https://jeffwong.github.io/about.html</loc>
+    <lastmod>2026-07-12T05:09:05.480Z</lastmod>
+  </url>
+  <url>
+    <loc>https://jeffwong.github.io/index.html</loc>
+    <lastmod>2026-07-12T05:09:05.492Z</lastmod>
+  </url>
+  <url>
+    <loc>https://jeffwong.github.io/posts/anytime_valid_inference_ols/index.html</loc>
+    <lastmod>2026-07-12T05:09:05.493Z</lastmod>
+  </url>
+  <url>
+    <loc>https://jeffwong.github.io/posts/controlled_randomization/index.html</loc>
+    <lastmod>2026-07-12T05:09:05.493Z</lastmod>
+  </url>
+  <url>
+    <loc>https://jeffwong.github.io/posts/elastic_net/index.html</loc>
+    <lastmod>2026-07-12T05:09:05.494Z</lastmod>
+  </url>
+  <url>
+    <loc>https://jeffwong.github.io/posts/l2_gaussian_prior/index.html</loc>
+    <lastmod>2026-07-12T05:09:05.494Z</lastmod>
+  </url>
+  <url>
+    <loc>https://jeffwong.github.io/posts/posthoc_mde/index.html</loc>
+    <lastmod>2026-07-12T05:09:05.494Z</lastmod>
+  </url>
+  <url>
+    <loc>https://jeffwong.github.io/posts/relative_effects/index.html</loc>
+    <lastmod>2026-07-12T05:21:43.824Z</lastmod>
+  </url>
+  <url>
+    <loc>https://jeffwong.github.io/posts/statistical_power/index.html</loc>
+    <lastmod>2026-07-12T05:09:05.495Z</lastmod>
   </url>
 </urlset>

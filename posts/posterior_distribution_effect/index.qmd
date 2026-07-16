@@ -141,7 +141,7 @@ bayes_lm_treatment_effect <- function(data,
 
 # Extensions for the Linear Probability Model
 
-Other than finding an analogy for OLS, we need to find an analogy for the linear probability model (LPM). The LPM is like OLS, but it is modeling a probability. Despite OLS's ability to output values outside of 0-1, it is still useful in causal inference, so long as we model the treatment effect with robust standard errors. We wrote about this in a [previous post on the linear probability model](lpm-robust-se.qmd) 
+Other than finding an analogy for OLS, we need to find an analogy for the linear probability model (LPM). The LPM is like OLS, but it is modeling a probability. Despite OLS's ability to output values outside of 0-1, it is still useful in causal inference, so long as we model the treatment effect with robust standard errors. We wrote about this in a [previous post on the linear probability model](../linear_probability_model/index.qmd).
 
 Heteroskedasticity comes into play with a 0-1 outcome variable because $\text{Var}(Y \mid X) = P(X)(1-P(X))$. In the frequentist world, we model this using robust standard errors where the variance of the error term is allowed to be a function of $X$. The Bayesian fix is similar: we will replace the naive Gaussian posterior covariance with a robust sandwich covariance derived from the residuals.
 

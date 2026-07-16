@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Jeffrey Wong">
+<meta name="dcterms.date" content="2026-07-08">
+
+<title>From OLS to Deep Learning – From First Principles</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<script src="../../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap-158031087360bce0ff56dc785ce39e06.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../../styles.css">
+</head>
+
+<body class="nav-fixed fullcontent quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top quarto-banner">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../../index.html">
+    <span class="navbar-title">From First Principles</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../../about.html"> 
+<span class="menu-text">About Me</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="https://linkedin.com/jeffctwong"> <i class="bi bi-linkedin" role="img">
+</i> 
+<span class="menu-text">LinkedIn</span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<header id="title-block-header" class="quarto-title-block default page-columns page-full">
+  <div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-body">
+      <h1 class="title">From OLS to Deep Learning</h1>
+                                <div class="quarto-categories">
+                <div class="quarto-category">mathematical statistics</div>
+              </div>
+                  </div>
+  </div>
+    
+  
+  <div class="quarto-title-meta">
+
+      <div>
+      <div class="quarto-title-meta-heading">Author</div>
+      <div class="quarto-title-meta-contents">
+               <p>Jeffrey Wong </p>
+            </div>
+    </div>
+      
+      <div>
+      <div class="quarto-title-meta-heading">Published</div>
+      <div class="quarto-title-meta-contents">
+        <p class="date">July 8, 2026</p>
+      </div>
+    </div>
+    
+      
+    </div>
+    
+  
+  </header><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content quarto-banner-title-block" id="quarto-document-content">
+
+
+
+
+
+<p>A linear model is a neural network with zero hidden layers. This is not an analogy, it is a special case. Write a network as a composition of linear maps and elementwise nonlinearities</p>
+<p>[f(x) = W_L (W_{L-1} ((W_1 x)))]</p>
+<p>and set <span class="math inline">\(L = 1\)</span> with <span class="math inline">\(\sigma = \text{id}\)</span>. This is exactly <span class="math inline">\(f(x) = Wx\)</span>. Every technique that shows up in deep learning is best understood as the answer to a question: what breaks, and what has to be invented to fix it, as depth and nonlinearity are turned on one at a time. This post works through that process literally, one knob at a time, starting from OLS and ending at a single hidden layer with a nonlinearity.</p>
+<section id="base-case-l-1-sigma-textid" class="level1">
+<h1>Base Case: <span class="math inline">\(L = 1\)</span>, <span class="math inline">\(\sigma = \text{id}\)</span></h1>
+<p>The closed form solution to least squares is well known, <span class="math inline">\(\hat{W} = (X^TX)^{-1}X^Ty\)</span>. But it is more useful here to derive it by gradient descent instead, since the gradient descent derivation is the one that generalizes to deep networks and the closed form is the one that does not.</p>
+<p>For a single example <span class="math inline">\((x, y)\)</span>, the squared error loss is</p>
+<p>[(W) = |Wx - y|^2]</p>
+<p>with gradient</p>
+<p>[ = (Wx - y)x^T]</p>
+<p>The structure of this gradient is worth naming, because it is the structure that persists at every depth: it is the <strong>error at the output</strong>, taken as an outer product with the <strong>input to that layer</strong>. This is backpropagation already, in miniature, before there is any chain rule to speak of.</p>
+<p>The gradient descent update is <span class="math inline">\(W \leftarrow W - \eta(Wx - y)x^T\)</span>. Iterating this converges to the same <span class="math inline">\(\hat{W}\)</span> as the normal equations, because <span class="math inline">\(\mathcal{L}\)</span> is convex in <span class="math inline">\(W\)</span>; the Hessian is <span class="math inline">\(xx^T \otimes I \succeq 0\)</span>. This convexity is a property of the <span class="math inline">\(L=1\)</span>, <span class="math inline">\(\sigma = \text{id}\)</span> case specifically. It will not survive past the next section, and its absence is responsible for a large fraction of what makes deep learning hard.</p>
+</section>
+<section id="turning-on-depth-leaving-sigma-off" class="level1">
+<h1>Turning on Depth, Leaving <span class="math inline">\(\sigma\)</span> Off</h1>
+<p>Consider <span class="math inline">\(L = 2\)</span> with no nonlinearity,</p>
+<p>[f(x) = W_2 W_1 x]</p>
+<p>Since <span class="math inline">\(W_2 W_1\)</span> is just some matrix <span class="math inline">\(M\)</span>, this model class is identical to the <span class="math inline">\(L=1\)</span> case. Depth without nonlinearity adds no expressivity. It is still useful to work out the gradient, because the mechanics here are exactly the mechanics of backpropagation at arbitrary depth, even though the model class does not change.</p>
+<p>Let <span class="math inline">\(h = W_1 x\)</span> be the hidden pre-activation and <span class="math inline">\(\hat{y} = W_2 h\)</span> be the output. By the chain rule,</p>
+<p>[<span class="math display">\[\begin{align}
+\frac{\partial \mathcal{L}}{\partial W_2} &amp;= (\hat{y} - y)h^T \\
+\frac{\partial \mathcal{L}}{\partial W_1} &amp;= \big(W_2^T (\hat{y} - y)\big) x^T
+\end{align}\]</span>]</p>
+<p>The gradient for <span class="math inline">\(W_1\)</span> has the same shape as before, error outer product input, except the error term <span class="math inline">\((\hat y - y)\)</span> is pulled back through <span class="math inline">\(W_2^T\)</span> before it reaches <span class="math inline">\(x^T\)</span>. That pullback is the entire mechanism of backpropagation: to compute the gradient at an earlier layer, take the error and multiply by the transpose of every weight matrix downstream of it. At greater depth this is done repeatedly, once per layer, in reverse order of the forward pass. There is no new linear algebra content here, only bookkeeping, since <span class="math inline">\(\partial (W_2 W_1 x)/\partial W_1\)</span> involving <span class="math inline">\(W_2^T\)</span> is not a surprising fact. Deep learning’s contribution at this stage is an algorithm that computes this bookkeeping once, reusing intermediate results, rather than once per parameter.</p>
+</section>
+<section id="turning-on-one-nonlinearity" class="level1">
+<h1>Turning on One Nonlinearity</h1>
+<p>Now consider <span class="math inline">\(L = 2\)</span> with <span class="math inline">\(\sigma\)</span> active on the hidden layer,</p>
+<p>[f(x) = W_2, (W_1 x)]</p>
+<p>This is the smallest model in the family that is not secretly linear, and it is where every qualitatively new phenomenon in deep learning originates. Let <span class="math inline">\(z = W_1 x\)</span> be the pre-activation, <span class="math inline">\(h = \sigma(z)\)</span> the post-activation, and <span class="math inline">\(\hat{y} = W_2 h\)</span> the output. Then</p>
+<p>[<span class="math display">\[\begin{align}
+\frac{\partial \mathcal{L}}{\partial W_2} &amp;= (\hat{y} - y)h^T \\
+\frac{\partial \mathcal{L}}{\partial W_1} &amp;= \Big[\big(W_2^T(\hat{y} - y)\big) \odot \sigma'(z)\Big]x^T
+\end{align}\]</span>]</p>
+<p>One new object appears, <span class="math inline">\(\sigma'(z)\)</span>, and it enters through an elementwise product <span class="math inline">\(\odot\)</span> rather than a matrix multiplication. This single fact is responsible for the rest of the subject.</p>
+<p>In the linear case, the backward pass was pure matrix multiplication, the same linear map regardless of <span class="math inline">\(x\)</span>. Now the effective linear map used to pull the error backward is <span class="math inline">\(W_2^T \,\text{diag}(\sigma'(z))\)</span>, and <span class="math inline">\(\sigma'(z)\)</span> depends on <span class="math inline">\(z = W_1 x\)</span>, which depends on the specific input. So the map is different at every point in input space.</p>
+<p>This gives a precise version of the analogy: <strong>a neural network is a linear model whose effective weight matrix is chosen per input by the nonlinearities.</strong> For a fixed <span class="math inline">\(x\)</span>,</p>
+<p>[f(x) = W_2,(’(z)),W_1,x]</p>
+<p>which holds exactly, not approximately, when <span class="math inline">\(\sigma\)</span> is piecewise linear, as with ReLU. A ReLU network is literally a linear model whose weight matrix is an <span class="math inline">\(x\)</span>-dependent selection among a finite number of linear regions. “Nonlinear” here is better read as <strong>piecewise linear, with the pieces chosen adaptively by the data.</strong> The linear algebra has not gone away; a combinatorial layer has been added on top of it, namely the question of which linear region a given <span class="math inline">\(x\)</span> falls into, and that question has no analogue in a model with <span class="math inline">\(\sigma = \text{id}\)</span>.</p>
+<section id="consequence-vanishing-gradients" class="level2">
+<h2 class="anchored" data-anchor-id="consequence-vanishing-gradients">Consequence: Vanishing Gradients</h2>
+<p>Every layer multiplies the backward error by <span class="math inline">\(\sigma'(z)\)</span>. For <span class="math inline">\(\sigma = \tanh\)</span> or sigmoid, <span class="math inline">\(\sigma'\)</span> is bounded well below <span class="math inline">\(1\)</span> over most of its domain, so each layer shrinks the error norm. Stacking <span class="math inline">\(L\)</span> such layers multiplicatively attenuates the gradient roughly geometrically in <span class="math inline">\(L\)</span>. There is no analogue in the <span class="math inline">\(\sigma = \text{id}\)</span> case, since the gradient there was just <span class="math inline">\(x^T\)</span>, with no per-layer attenuation term at all.</p>
+</section>
+<section id="consequence-dead-units" class="level2">
+<h2 class="anchored" data-anchor-id="consequence-dead-units">Consequence: Dead Units</h2>
+<p>For ReLU, <span class="math inline">\(\sigma'(z) \in \{0, 1\}\)</span>. If <span class="math inline">\(z &lt; 0\)</span> for a given unit and input, the gradient through that unit is exactly zero, and no update reaches <span class="math inline">\(W_1\)</span> for it on that example. This is a purely combinatorial failure mode, a unit can become permanently inactive across the whole data distribution, and it has no counterpart when <span class="math inline">\(\sigma = \text{id}\)</span>.</p>
+</section>
+</section>
+<section id="what-nonlinearity-forces-you-to-invent" class="level1">
+<h1>What Nonlinearity Forces You to Invent</h1>
+<p>Three things become necessary the moment <span class="math inline">\(\sigma\)</span> is turned on, each a direct response to something in the previous section.</p>
+<p><strong>No closed form, no convexity.</strong> <span class="math inline">\(\mathcal{L}(W_1, W_2)\)</span> is no longer a quadratic bowl in the parameters; <span class="math inline">\(\sigma\)</span> inside the composition destroys convexity in general. Iterative gradient descent stops being a convenient tool and becomes the only tool. It is worth noting the loss remains convex in <span class="math inline">\(W_2\)</span> alone for <span class="math inline">\(W_1\)</span> fixed, this kind of biconvexity recurs throughout the subject.</p>
+<p><strong>Initialization matters.</strong> In the OLS case, the starting value of <span class="math inline">\(W\)</span> does not affect where gradient descent converges, since the problem is convex with a unique minimizer. Here, the scale of <span class="math inline">\(W_1\)</span> at initialization determines whether <span class="math inline">\(z = W_1 x\)</span> lands in the saturating region of <span class="math inline">\(\sigma\)</span>, where gradients are small, or the near-linear region, where they are healthy, before any learning has occurred. This motivates initialization schemes that choose <span class="math inline">\(\text{Var}(W_{ij})\)</span> so that <span class="math inline">\(\text{Var}(z)\)</span> stays <span class="math inline">\(O(1)\)</span> across layers.</p>
+<p><strong>Depth composes attenuation multiplicatively.</strong> Adding layers to a purely linear map did nothing, as shown above; it collapsed to a single matrix. Once <span class="math inline">\(\sigma'\)</span> terms enter the chain rule multiplicatively, that same stacking becomes unstable whenever those terms are consistently below or above <span class="math inline">\(1\)</span> in magnitude. This single fact, that repeated multiplication of terms with norm not equal to <span class="math inline">\(1\)</span> is unstable, motivates most of the architectural machinery that follows in the subject, including normalization layers and residual connections.</p>
+<p>The arc here is short but complete. OLS gives the shape of every gradient in deep learning, error outer product input, for free. Adding depth without nonlinearity gives the mechanism, repeated transpose multiplication, with zero new expressivity. Adding a single <span class="math inline">\(\sigma'\)</span> term turns a global linear map into a per input, piecewise linear one, and vanishing gradients, dead units, non-convexity, and initialization sensitivity all follow mechanically from that one elementwise product.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/jeffwong\.github\.io");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

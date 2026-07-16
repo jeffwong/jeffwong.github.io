@@ -12,6 +12,251 @@
 <generator>quarto-1.9.38</generator>
 <lastBuildDate>Thu, 09 Jul 2026 07:00:00 GMT</lastBuildDate>
 <item>
+  <title>It’s OK to let least squares output a probability</title>
+  <dc:creator>Jeff Wong</dc:creator>
+  <link>https://jeffwong.github.io/posts/linear_probability_model/</link>
+  <description><![CDATA[ 
+
+
+
+
+
+<p>In AB testing we use linear regression all the time to model data. This is very appropriate when the outcome variable, <img src="https://latex.codecogs.com/png.latex?y">, is continuous. Many AB outcomes, however, are 0-1 outcome variables, and many would argue that we should use logistic regression instead of linear regression. While technically true, it’s actually OK to do inference while using linear regression, despite the fact that it can output an outcome that does not live in 0-1. As long as the linear model is fit with robust standard errors, inference on the treatment effect will be OK.</p>
+<section id="the-point-estimate-is-already-correct." class="level2">
+<h2 class="anchored" data-anchor-id="the-point-estimate-is-already-correct.">The point estimate is already correct.</h2>
+<p>Ordinary least squares doesn’t actually require the outcome to be continuous. Many think that it requires the data to be normally distributed, but even that is not a requirement. OLS requires that the conditional expectation of <img src="https://latex.codecogs.com/png.latex?y"> is linear in the parameters. If we model <img src="https://latex.codecogs.com/png.latex?y%20=%20%5Calpha%20+%20Treated%20%5Cbeta_1%20+%20X%20%5Cbeta_2%20+%20%5Cvarepsilon"> we are saying that the expectation of <img src="https://latex.codecogs.com/png.latex?y"> is linear in this form. When <img src="https://latex.codecogs.com/png.latex?y"> is a 0-1 outcome, its expectation is simply a probability. Hence this is known as the linear probability model.</p>
+<p>In an AB test with a 0-1 outcome, we want to describe the average treatment effect as a difference in probabilities. Just like other continuous outcomes, <img src="https://latex.codecogs.com/png.latex?%5Cbeta_1"> represents exactly that</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0A%5Cbeta_1%20&amp;=%20E%5By%20%7C%20Treated%20=%201,%20X%20=%20x%5D%20-%20E%5By%20%7C%20Treated%20=%200,%20X%20=%20x%5D%5C%5C%0A&amp;=%20Prob(y%20=%201%20%7C%20Treated%20=%201,%20X%20=%20x%5D%20-%20Prob(y%20=%200%20%7C%20Treated%20=%200,%20X%20=%20x).%0A%5Cend%7Balign%7D"> Under randomization, <img src="https://latex.codecogs.com/png.latex?%5Cbeta_1"> is still identified, regardless of <img src="https://latex.codecogs.com/png.latex?y">. Hence, OLS still outputs the correct point estimate on the average treatment effect, despite being used to model 0-1 data.</p>
+</section>
+<section id="the-standard-error-must-be-robust." class="level2">
+<h2 class="anchored" data-anchor-id="the-standard-error-must-be-robust.">The standard error must be robust.</h2>
+<p>Is there a free lunch here? Sidestepping logistic regression and still getting the correct treatment effect feels like cheating. In fact there is no free lunch. The standard errors from OLS will be wrong, by a lot, despite getting the point estimate right.</p>
+<p>Under OLS assumptions, <img src="https://latex.codecogs.com/png.latex?Var(%5Cvarepsilon%20%5Cmid%20X)%20=%20%5Csigma%5E2"> is fixed. There is no way for this to be possible under a bernoulli outcome. For a bernoulli outcome we would say <img src="https://latex.codecogs.com/png.latex?%5Ctext%7BVar%7D(y%20%5Cmid%20X)%20=%20P(X)%5Cbig(1%20-%20P(X)%5Cbig)">, which shows that the variance is a function of <img src="https://latex.codecogs.com/png.latex?X"> and is not fixed.</p>
+<p>Getting a correct standard error does not require us to pivot back to logistic regression. We just need to make a different structural assumption on <img src="https://latex.codecogs.com/png.latex?Var(%5Cvarepsilon%20%5Cmid%20X)">. In fact, it’s best to not make an assumption at all, and let the data dictate the variance. This is what the sandwich covariances do, they take the form</p>
+<p><img src="https://latex.codecogs.com/png.latex?%0A%5Cwidehat%7B%5Ctext%7BVar%7D%7D_%7B%5Ctext%7Brobust%7D%7D(%5Chat%5Cbeta)%20=%20(X'X)%5E%7B-1%7D%20%5Cleft(%20%5Csum_i%20%5Chat%5Cvarepsilon_i%5E2%20%5C,%20x_i%20x_i'%20%5Cright)%20(X'X)%5E%7B-1%7D%0A"></p>
+<p>which allows the variance to vary with <img src="https://latex.codecogs.com/png.latex?x">. Where did this come from and why is it considered ‘’robust’’? Recall the solution to least squares</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0Ay%20&amp;=%20X%5Cbeta%20+%20%5Cvarepsilon%20%5C%5C%0A%5Chat%7B%5Cbeta%7D%20%5Cmid%20X%20&amp;=%20(X'X)%5E%7B-1%7D%20X'y%20%5C%5C%0A%5Chat%7B%5Ctext%7BVar%7D%7D(%5Chat%7B%5Cbeta%7D%20%5Cmid%20X)%20&amp;=%20Var((X'X)%5E%7B-1%7D%20X'y)%20%5C%5C%0A%0A&amp;=%20(X'X)%5E%7B-1%7D%20X'%20Var(y%20%5Cmid%20X%20)%20X%20(X'X)%5E%7B-1%7D%0A%5Cend%7Balign%7D"></p>
+<p>The key is the meat matrix <img src="https://latex.codecogs.com/png.latex?X'%20Var(y%20%5Cmid%20X%20)%20X">. Under the assumption that the residual variance is a constant, this meat reduces to <img src="https://latex.codecogs.com/png.latex?%5Csigma%5E2%20X'X">, and the entire covariance matrix for the coefficients reduces to <img src="https://latex.codecogs.com/png.latex?(X'X)%5E%7B-1%7D%20%5Csigma%5E2">. But if we want to operate under the assumptioin that the residual variance is not constant, we can substitute in the empirical <img src="https://latex.codecogs.com/png.latex?%5Cvarepsilon_i%5E2">. Note that <img src="https://latex.codecogs.com/png.latex?%5Cvarepsilon_i%5E2"> is the residual variance since <img src="https://latex.codecogs.com/png.latex?%5Cvarepsilon"> is mean 0.</p>
+<p>The major insight here is that once again, this formula for standard errors is robust regardless of the form of <img src="https://latex.codecogs.com/png.latex?y">. Hence OLS with robust standard errors can indeed create correct inference on the average treatment effect, despite using 0-1 data. In fact, most of the time OLS is the right linear model for experimentation!</p>
+</section>
+<section id="tests-can-hide-the-problem" class="level2">
+<h2 class="anchored" data-anchor-id="tests-can-hide-the-problem">50/50 tests can hide the problem</h2>
+<p>Under a 50/50 test, there is no difference between naive OLS and OLS with robust standard errors. If the traffic split is not 50/50, it is very important to check how OLS is computing standard error.</p>
+<p>Without loss of generality, simplify the model to the case of no covariates, <img src="https://latex.codecogs.com/png.latex?y%20=%20%5Calpha%20+%20Treated%20%5Cbeta_1%20+%20%5Cvarepsilon">, with <img src="https://latex.codecogs.com/png.latex?n_1"> treated units and <img src="https://latex.codecogs.com/png.latex?n_0"> control units, <img src="https://latex.codecogs.com/png.latex?n%20=%20n_1%20+%20n_0">. We will use this simplification so that it is easy to compute <img src="https://latex.codecogs.com/png.latex?(X'X)%5E%7B-1%7D"> in OLS. Naive OLS assumes a single constant residual variance and estimates it by pooling across both arms, <img src="https://latex.codecogs.com/png.latex?%5Chat%5Csigma%5E2_%7B%5Ctext%7Bpooled%7D%7D%20%5Capprox%20w_1%20%5Csigma_1%5E2%20+%20w_0%20%5Csigma_0%5E2">, where <img src="https://latex.codecogs.com/png.latex?w_1%20=%20n_1/n">, <img src="https://latex.codecogs.com/png.latex?w_0%20=%20n_0/n">, and <img src="https://latex.codecogs.com/png.latex?%5Csigma_1%5E2%20=%20%5Ctext%7BVar%7D(y%20%5Cmid%20Treated=1)">, <img src="https://latex.codecogs.com/png.latex?%5Csigma_0%5E2%20=%20%5Ctext%7BVar%7D(y%20%5Cmid%20Treated=0)">. That gives a naive variance of</p>
+<p><img src="https://latex.codecogs.com/png.latex?%0A%5Cwidehat%7B%5Ctext%7BVar%7D%7D_%7B%5Ctext%7Bnaive%7D%7D(%5Chat%5Cbeta_1)%20=%20%5Chat%5Csigma%5E2_%7B%5Ctext%7Bpooled%7D%7D%20%5Ccdot%20%5Cfrac%7Bn%7D%7Bn_1%20n_0%7D.%0A"></p>
+<p>The true sampling variance of a difference in means, letting each arm keep its own variance, is</p>
+<p><img src="https://latex.codecogs.com/png.latex?%0A%5Ctext%7BVar%7D(%5Chat%5Cbeta_1)%20=%20%5Cfrac%7B%5Csigma_1%5E2%7D%7Bn_1%7D%20+%20%5Cfrac%7B%5Csigma_0%5E2%7D%7Bn_0%7D.%0A"></p>
+<p>Substituting <img src="https://latex.codecogs.com/png.latex?n_1%20=%20w_1%20n"> and <img src="https://latex.codecogs.com/png.latex?n_0%20=%20w_0%20n"> into both expressions and setting <img src="https://latex.codecogs.com/png.latex?w_1%20=%20w_0%20=%200.5"> makes them identical! With a 50-50 split, the naive pooled-variance formula happens to already be unbiased for the true sampling variance, even though the constant variance assumption behind it is false.</p>
+</section>
+<section id="code-example" class="level2">
+<h2 class="anchored" data-anchor-id="code-example">Code example</h2>
+<p>The code example below demonstrates the incorrect standard error under OLS when the traffic is not split 50-50.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">set.seed</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>)</span>
+<span id="cb1-2">n <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">5000</span></span>
+<span id="cb1-3">X1 <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rnorm</span>(n)</span>
+<span id="cb1-4"></span>
+<span id="cb1-5"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># Deliberately unbalanced allocation (5% vs 95%) -- unequal arm sizes are</span></span>
+<span id="cb1-6"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># what break the cancellation derived above. Control conversion hovers</span></span>
+<span id="cb1-7"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># near 50% (high variance); treatment conversion is pushed to</span></span>
+<span id="cb1-8"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># near-certainty (low variance).</span></span>
+<span id="cb1-9">treatment <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rbinom</span>(n, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>, <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.05</span>)</span>
+<span id="cb1-10">p <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ifelse</span>(treatment <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">==</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>, <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.97</span>, <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">plogis</span>(<span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.3</span> <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> X1))</span>
+<span id="cb1-11">y <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rbinom</span>(n, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>, p)   <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># binary outcome</span></span>
+<span id="cb1-12"></span>
+<span id="cb1-13">fit <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">lm</span>(y <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">~</span> treatment <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> X1)</span>
+<span id="cb1-14"></span>
+<span id="cb1-15"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># Naive (wrong) SE: assumes constant residual variance</span></span>
+<span id="cb1-16">naive_se <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">summary</span>(fit)<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>coefficients[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"treatment"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Std. Error"</span>]</span>
+<span id="cb1-17"></span>
+<span id="cb1-18"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># Robust (HC1) SE: accounts for p(x)(1-p(x)) heteroskedasticity directly</span></span>
+<span id="cb1-19">X <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">model.matrix</span>(fit)</span>
+<span id="cb1-20">resid <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">residuals</span>(fit)</span>
+<span id="cb1-21">n_obs <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">nrow</span>(X); p_params <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ncol</span>(X)</span>
+<span id="cb1-22">bread <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">solve</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">t</span>(X) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> X)</span>
+<span id="cb1-23">meat <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">t</span>(X) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">diag</span>(resid<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">^</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> X <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> (n_obs <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> (n_obs <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> p_params))</span>
+<span id="cb1-24">robust_vcov <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> bread <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> meat <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> bread</span>
+<span id="cb1-25">robust_se <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sqrt</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">diag</span>(robust_vcov))[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"treatment"</span>]</span>
+<span id="cb1-26"></span>
+<span id="cb1-27"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">cat</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Naive SE: "</span>, naive_se, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">\n</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span>)</span></code></pre></div></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Naive SE:  0.03306658 </code></pre>
+</div>
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">cat</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Robust SE:"</span>, robust_se, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">\n</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span>)</span></code></pre></div></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Robust SE: 0.01150331 </code></pre>
+</div>
+</div>
+
+
+</section>
+
+ ]]></description>
+  <category>causal inference</category>
+  <category>AB testing</category>
+  <category>regression</category>
+  <guid>https://jeffwong.github.io/posts/linear_probability_model/</guid>
+  <pubDate>Thu, 09 Jul 2026 07:00:00 GMT</pubDate>
+</item>
+<item>
   <title>You want the posterior distribution, not the confidence interval</title>
   <dc:creator>Jeffrey Wong</dc:creator>
   <link>https://jeffwong.github.io/posts/posterior_distribution_effect/</link>
@@ -415,7 +660,7 @@ font-style: inherit;">0</span>)</span>
 </section>
 <section id="extensions-for-the-linear-probability-model" class="level1">
 <h1>Extensions for the Linear Probability Model</h1>
-<p>Other than finding an analogy for OLS, we need to find an analogy for the linear probability model (LPM). The LPM is like OLS, but it is modeling a probability. Despite OLS’s ability to output values outside of 0-1, it is still useful in causal inference, so long as we model the treatment effect with robust standard errors. We wrote about this in a <a href="lpm-robust-se.qmd">previous post on the linear probability model</a></p>
+<p>Other than finding an analogy for OLS, we need to find an analogy for the linear probability model (LPM). The LPM is like OLS, but it is modeling a probability. Despite OLS’s ability to output values outside of 0-1, it is still useful in causal inference, so long as we model the treatment effect with robust standard errors. We wrote about this in a <a href="../../posts/linear_probability_model/index.html">previous post on the linear probability model</a>.</p>
 <p>Heteroskedasticity comes into play with a 0-1 outcome variable because <img src="https://latex.codecogs.com/png.latex?%5Ctext%7BVar%7D(Y%20%5Cmid%20X)%20=%20P(X)(1-P(X))">. In the frequentist world, we model this using robust standard errors where the variance of the error term is allowed to be a function of <img src="https://latex.codecogs.com/png.latex?X">. The Bayesian fix is similar: we will replace the naive Gaussian posterior covariance with a robust sandwich covariance derived from the residuals.</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1">bayes_lpm_treatment_effect <span class="ot" style="color: #003B4F;
 background-color: null;
@@ -816,6 +1061,74 @@ font-style: inherit;">0</span>)</span>
   <category>regression</category>
   <guid>https://jeffwong.github.io/posts/posterior_distribution_effect/</guid>
   <pubDate>Thu, 09 Jul 2026 07:00:00 GMT</pubDate>
+</item>
+<item>
+  <title>From OLS to Deep Learning</title>
+  <dc:creator>Jeffrey Wong</dc:creator>
+  <link>https://jeffwong.github.io/posts/ols_to_deep_learning/</link>
+  <description><![CDATA[ 
+
+
+
+
+
+<p>A linear model is a neural network with zero hidden layers. This is not an analogy, it is a special case. Write a network as a composition of linear maps and elementwise nonlinearities</p>
+<p>[f(x) = W_L (W_{L-1} ((W_1 x)))]</p>
+<p>and set <img src="https://latex.codecogs.com/png.latex?L%20=%201"> with <img src="https://latex.codecogs.com/png.latex?%5Csigma%20=%20%5Ctext%7Bid%7D">. This is exactly <img src="https://latex.codecogs.com/png.latex?f(x)%20=%20Wx">. Every technique that shows up in deep learning is best understood as the answer to a question: what breaks, and what has to be invented to fix it, as depth and nonlinearity are turned on one at a time. This post works through that process literally, one knob at a time, starting from OLS and ending at a single hidden layer with a nonlinearity.</p>
+<section id="base-case-l-1-sigma-textid" class="level1">
+<h1>Base Case: <img src="https://latex.codecogs.com/png.latex?L%20=%201">, <img src="https://latex.codecogs.com/png.latex?%5Csigma%20=%20%5Ctext%7Bid%7D"></h1>
+<p>The closed form solution to least squares is well known, <img src="https://latex.codecogs.com/png.latex?%5Chat%7BW%7D%20=%20(X%5ETX)%5E%7B-1%7DX%5ETy">. But it is more useful here to derive it by gradient descent instead, since the gradient descent derivation is the one that generalizes to deep networks and the closed form is the one that does not.</p>
+<p>For a single example <img src="https://latex.codecogs.com/png.latex?(x,%20y)">, the squared error loss is</p>
+<p>[(W) = |Wx - y|^2]</p>
+<p>with gradient</p>
+<p>[ = (Wx - y)x^T]</p>
+<p>The structure of this gradient is worth naming, because it is the structure that persists at every depth: it is the <strong>error at the output</strong>, taken as an outer product with the <strong>input to that layer</strong>. This is backpropagation already, in miniature, before there is any chain rule to speak of.</p>
+<p>The gradient descent update is <img src="https://latex.codecogs.com/png.latex?W%20%5Cleftarrow%20W%20-%20%5Ceta(Wx%20-%20y)x%5ET">. Iterating this converges to the same <img src="https://latex.codecogs.com/png.latex?%5Chat%7BW%7D"> as the normal equations, because <img src="https://latex.codecogs.com/png.latex?%5Cmathcal%7BL%7D"> is convex in <img src="https://latex.codecogs.com/png.latex?W">; the Hessian is <img src="https://latex.codecogs.com/png.latex?xx%5ET%20%5Cotimes%20I%20%5Csucceq%200">. This convexity is a property of the <img src="https://latex.codecogs.com/png.latex?L=1">, <img src="https://latex.codecogs.com/png.latex?%5Csigma%20=%20%5Ctext%7Bid%7D"> case specifically. It will not survive past the next section, and its absence is responsible for a large fraction of what makes deep learning hard.</p>
+</section>
+<section id="turning-on-depth-leaving-sigma-off" class="level1">
+<h1>Turning on Depth, Leaving <img src="https://latex.codecogs.com/png.latex?%5Csigma"> Off</h1>
+<p>Consider <img src="https://latex.codecogs.com/png.latex?L%20=%202"> with no nonlinearity,</p>
+<p>[f(x) = W_2 W_1 x]</p>
+<p>Since <img src="https://latex.codecogs.com/png.latex?W_2%20W_1"> is just some matrix <img src="https://latex.codecogs.com/png.latex?M">, this model class is identical to the <img src="https://latex.codecogs.com/png.latex?L=1"> case. Depth without nonlinearity adds no expressivity. It is still useful to work out the gradient, because the mechanics here are exactly the mechanics of backpropagation at arbitrary depth, even though the model class does not change.</p>
+<p>Let <img src="https://latex.codecogs.com/png.latex?h%20=%20W_1%20x"> be the hidden pre-activation and <img src="https://latex.codecogs.com/png.latex?%5Chat%7By%7D%20=%20W_2%20h"> be the output. By the chain rule,</p>
+<p>[<img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0A%5Cfrac%7B%5Cpartial%20%5Cmathcal%7BL%7D%7D%7B%5Cpartial%20W_2%7D%20&amp;=%20(%5Chat%7By%7D%20-%20y)h%5ET%20%5C%5C%0A%5Cfrac%7B%5Cpartial%20%5Cmathcal%7BL%7D%7D%7B%5Cpartial%20W_1%7D%20&amp;=%20%5Cbig(W_2%5ET%20(%5Chat%7By%7D%20-%20y)%5Cbig)%20x%5ET%0A%5Cend%7Balign%7D">]</p>
+<p>The gradient for <img src="https://latex.codecogs.com/png.latex?W_1"> has the same shape as before, error outer product input, except the error term <img src="https://latex.codecogs.com/png.latex?(%5Chat%20y%20-%20y)"> is pulled back through <img src="https://latex.codecogs.com/png.latex?W_2%5ET"> before it reaches <img src="https://latex.codecogs.com/png.latex?x%5ET">. That pullback is the entire mechanism of backpropagation: to compute the gradient at an earlier layer, take the error and multiply by the transpose of every weight matrix downstream of it. At greater depth this is done repeatedly, once per layer, in reverse order of the forward pass. There is no new linear algebra content here, only bookkeeping, since <img src="https://latex.codecogs.com/png.latex?%5Cpartial%20(W_2%20W_1%20x)/%5Cpartial%20W_1"> involving <img src="https://latex.codecogs.com/png.latex?W_2%5ET"> is not a surprising fact. Deep learning’s contribution at this stage is an algorithm that computes this bookkeeping once, reusing intermediate results, rather than once per parameter.</p>
+</section>
+<section id="turning-on-one-nonlinearity" class="level1">
+<h1>Turning on One Nonlinearity</h1>
+<p>Now consider <img src="https://latex.codecogs.com/png.latex?L%20=%202"> with <img src="https://latex.codecogs.com/png.latex?%5Csigma"> active on the hidden layer,</p>
+<p>[f(x) = W_2, (W_1 x)]</p>
+<p>This is the smallest model in the family that is not secretly linear, and it is where every qualitatively new phenomenon in deep learning originates. Let <img src="https://latex.codecogs.com/png.latex?z%20=%20W_1%20x"> be the pre-activation, <img src="https://latex.codecogs.com/png.latex?h%20=%20%5Csigma(z)"> the post-activation, and <img src="https://latex.codecogs.com/png.latex?%5Chat%7By%7D%20=%20W_2%20h"> the output. Then</p>
+<p>[<img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0A%5Cfrac%7B%5Cpartial%20%5Cmathcal%7BL%7D%7D%7B%5Cpartial%20W_2%7D%20&amp;=%20(%5Chat%7By%7D%20-%20y)h%5ET%20%5C%5C%0A%5Cfrac%7B%5Cpartial%20%5Cmathcal%7BL%7D%7D%7B%5Cpartial%20W_1%7D%20&amp;=%20%5CBig%5B%5Cbig(W_2%5ET(%5Chat%7By%7D%20-%20y)%5Cbig)%20%5Codot%20%5Csigma'(z)%5CBig%5Dx%5ET%0A%5Cend%7Balign%7D">]</p>
+<p>One new object appears, <img src="https://latex.codecogs.com/png.latex?%5Csigma'(z)">, and it enters through an elementwise product <img src="https://latex.codecogs.com/png.latex?%5Codot"> rather than a matrix multiplication. This single fact is responsible for the rest of the subject.</p>
+<p>In the linear case, the backward pass was pure matrix multiplication, the same linear map regardless of <img src="https://latex.codecogs.com/png.latex?x">. Now the effective linear map used to pull the error backward is <img src="https://latex.codecogs.com/png.latex?W_2%5ET%20%5C,%5Ctext%7Bdiag%7D(%5Csigma'(z))">, and <img src="https://latex.codecogs.com/png.latex?%5Csigma'(z)"> depends on <img src="https://latex.codecogs.com/png.latex?z%20=%20W_1%20x">, which depends on the specific input. So the map is different at every point in input space.</p>
+<p>This gives a precise version of the analogy: <strong>a neural network is a linear model whose effective weight matrix is chosen per input by the nonlinearities.</strong> For a fixed <img src="https://latex.codecogs.com/png.latex?x">,</p>
+<p>[f(x) = W_2,(’(z)),W_1,x]</p>
+<p>which holds exactly, not approximately, when <img src="https://latex.codecogs.com/png.latex?%5Csigma"> is piecewise linear, as with ReLU. A ReLU network is literally a linear model whose weight matrix is an <img src="https://latex.codecogs.com/png.latex?x">-dependent selection among a finite number of linear regions. “Nonlinear” here is better read as <strong>piecewise linear, with the pieces chosen adaptively by the data.</strong> The linear algebra has not gone away; a combinatorial layer has been added on top of it, namely the question of which linear region a given <img src="https://latex.codecogs.com/png.latex?x"> falls into, and that question has no analogue in a model with <img src="https://latex.codecogs.com/png.latex?%5Csigma%20=%20%5Ctext%7Bid%7D">.</p>
+<section id="consequence-vanishing-gradients" class="level2">
+<h2 class="anchored" data-anchor-id="consequence-vanishing-gradients">Consequence: Vanishing Gradients</h2>
+<p>Every layer multiplies the backward error by <img src="https://latex.codecogs.com/png.latex?%5Csigma'(z)">. For <img src="https://latex.codecogs.com/png.latex?%5Csigma%20=%20%5Ctanh"> or sigmoid, <img src="https://latex.codecogs.com/png.latex?%5Csigma'"> is bounded well below <img src="https://latex.codecogs.com/png.latex?1"> over most of its domain, so each layer shrinks the error norm. Stacking <img src="https://latex.codecogs.com/png.latex?L"> such layers multiplicatively attenuates the gradient roughly geometrically in <img src="https://latex.codecogs.com/png.latex?L">. There is no analogue in the <img src="https://latex.codecogs.com/png.latex?%5Csigma%20=%20%5Ctext%7Bid%7D"> case, since the gradient there was just <img src="https://latex.codecogs.com/png.latex?x%5ET">, with no per-layer attenuation term at all.</p>
+</section>
+<section id="consequence-dead-units" class="level2">
+<h2 class="anchored" data-anchor-id="consequence-dead-units">Consequence: Dead Units</h2>
+<p>For ReLU, <img src="https://latex.codecogs.com/png.latex?%5Csigma'(z)%20%5Cin%20%5C%7B0,%201%5C%7D">. If <img src="https://latex.codecogs.com/png.latex?z%20%3C%200"> for a given unit and input, the gradient through that unit is exactly zero, and no update reaches <img src="https://latex.codecogs.com/png.latex?W_1"> for it on that example. This is a purely combinatorial failure mode, a unit can become permanently inactive across the whole data distribution, and it has no counterpart when <img src="https://latex.codecogs.com/png.latex?%5Csigma%20=%20%5Ctext%7Bid%7D">.</p>
+</section>
+</section>
+<section id="what-nonlinearity-forces-you-to-invent" class="level1">
+<h1>What Nonlinearity Forces You to Invent</h1>
+<p>Three things become necessary the moment <img src="https://latex.codecogs.com/png.latex?%5Csigma"> is turned on, each a direct response to something in the previous section.</p>
+<p><strong>No closed form, no convexity.</strong> <img src="https://latex.codecogs.com/png.latex?%5Cmathcal%7BL%7D(W_1,%20W_2)"> is no longer a quadratic bowl in the parameters; <img src="https://latex.codecogs.com/png.latex?%5Csigma"> inside the composition destroys convexity in general. Iterative gradient descent stops being a convenient tool and becomes the only tool. It is worth noting the loss remains convex in <img src="https://latex.codecogs.com/png.latex?W_2"> alone for <img src="https://latex.codecogs.com/png.latex?W_1"> fixed, this kind of biconvexity recurs throughout the subject.</p>
+<p><strong>Initialization matters.</strong> In the OLS case, the starting value of <img src="https://latex.codecogs.com/png.latex?W"> does not affect where gradient descent converges, since the problem is convex with a unique minimizer. Here, the scale of <img src="https://latex.codecogs.com/png.latex?W_1"> at initialization determines whether <img src="https://latex.codecogs.com/png.latex?z%20=%20W_1%20x"> lands in the saturating region of <img src="https://latex.codecogs.com/png.latex?%5Csigma">, where gradients are small, or the near-linear region, where they are healthy, before any learning has occurred. This motivates initialization schemes that choose <img src="https://latex.codecogs.com/png.latex?%5Ctext%7BVar%7D(W_%7Bij%7D)"> so that <img src="https://latex.codecogs.com/png.latex?%5Ctext%7BVar%7D(z)"> stays <img src="https://latex.codecogs.com/png.latex?O(1)"> across layers.</p>
+<p><strong>Depth composes attenuation multiplicatively.</strong> Adding layers to a purely linear map did nothing, as shown above; it collapsed to a single matrix. Once <img src="https://latex.codecogs.com/png.latex?%5Csigma'"> terms enter the chain rule multiplicatively, that same stacking becomes unstable whenever those terms are consistently below or above <img src="https://latex.codecogs.com/png.latex?1"> in magnitude. This single fact, that repeated multiplication of terms with norm not equal to <img src="https://latex.codecogs.com/png.latex?1"> is unstable, motivates most of the architectural machinery that follows in the subject, including normalization layers and residual connections.</p>
+<p>The arc here is short but complete. OLS gives the shape of every gradient in deep learning, error outer product input, for free. Adding depth without nonlinearity gives the mechanism, repeated transpose multiplication, with zero new expressivity. Adding a single <img src="https://latex.codecogs.com/png.latex?%5Csigma'"> term turns a global linear map into a per input, piecewise linear one, and vanishing gradients, dead units, non-convexity, and initialization sensitivity all follow mechanically from that one elementwise product.</p>
+
+
+</section>
+
+ ]]></description>
+  <category>mathematical statistics</category>
+  <guid>https://jeffwong.github.io/posts/ols_to_deep_learning/</guid>
+  <pubDate>Wed, 08 Jul 2026 07:00:00 GMT</pubDate>
 </item>
 <item>
   <title>The Variance of your Composite Metric</title>

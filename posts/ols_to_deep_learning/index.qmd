@@ -1,0 +1,88 @@
+---
+title: "From OLS to Deep Learning"
+author: "Jeffrey Wong"
+date: 2026-07-08
+categories: [mathematical statistics]
+---
+
+A linear model is a neural network with zero hidden layers. This is not an analogy, it is a special case. Write a network as a composition of linear maps and elementwise nonlinearities
+
+\[f(x) = W_L \sigma(W_{L-1} \sigma(\cdots \sigma(W_1 x)))\]
+
+and set $L = 1$ with $\sigma = \text{id}$. This is exactly $f(x) = Wx$. Every technique that shows up in deep learning is best understood as the answer to a question: what breaks, and what has to be invented to fix it, as depth and nonlinearity are turned on one at a time. This post works through that process literally, one knob at a time, starting from OLS and ending at a single hidden layer with a nonlinearity.
+
+# Base Case: $L = 1$, $\sigma = \text{id}$
+
+The closed form solution to least squares is well known, $\hat{W} = (X^TX)^{-1}X^Ty$. But it is more useful here to derive it by gradient descent instead, since the gradient descent derivation is the one that generalizes to deep networks and the closed form is the one that does not.
+
+For a single example $(x, y)$, the squared error loss is
+
+\[\mathcal{L}(W) = \frac{1}{2}\|Wx - y\|^2\]
+
+with gradient
+
+\[\frac{\partial \mathcal{L}}{\partial W} = (Wx - y)x^T\]
+
+The structure of this gradient is worth naming, because it is the structure that persists at every depth: it is the **error at the output**, taken as an outer product with the **input to that layer**. This is backpropagation already, in miniature, before there is any chain rule to speak of.
+
+The gradient descent update is $W \leftarrow W - \eta(Wx - y)x^T$. Iterating this converges to the same $\hat{W}$ as the normal equations, because $\mathcal{L}$ is convex in $W$; the Hessian is $xx^T \otimes I \succeq 0$. This convexity is a property of the $L=1$, $\sigma = \text{id}$ case specifically. It will not survive past the next section, and its absence is responsible for a large fraction of what makes deep learning hard.
+
+# Turning on Depth, Leaving $\sigma$ Off
+
+Consider $L = 2$ with no nonlinearity,
+
+\[f(x) = W_2 W_1 x\]
+
+Since $W_2 W_1$ is just some matrix $M$, this model class is identical to the $L=1$ case. Depth without nonlinearity adds no expressivity. It is still useful to work out the gradient, because the mechanics here are exactly the mechanics of backpropagation at arbitrary depth, even though the model class does not change.
+
+Let $h = W_1 x$ be the hidden pre-activation and $\hat{y} = W_2 h$ be the output. By the chain rule,
+
+\[\begin{align}
+\frac{\partial \mathcal{L}}{\partial W_2} &= (\hat{y} - y)h^T \\
+\frac{\partial \mathcal{L}}{\partial W_1} &= \big(W_2^T (\hat{y} - y)\big) x^T
+\end{align}\]
+
+The gradient for $W_1$ has the same shape as before, error outer product input, except the error term $(\hat y - y)$ is pulled back through $W_2^T$ before it reaches $x^T$. That pullback is the entire mechanism of backpropagation: to compute the gradient at an earlier layer, take the error and multiply by the transpose of every weight matrix downstream of it. At greater depth this is done repeatedly, once per layer, in reverse order of the forward pass. There is no new linear algebra content here, only bookkeeping, since $\partial (W_2 W_1 x)/\partial W_1$ involving $W_2^T$ is not a surprising fact. Deep learning's contribution at this stage is an algorithm that computes this bookkeeping once, reusing intermediate results, rather than once per parameter.
+
+# Turning on One Nonlinearity
+
+Now consider $L = 2$ with $\sigma$ active on the hidden layer,
+
+\[f(x) = W_2\, \sigma(W_1 x)\]
+
+This is the smallest model in the family that is not secretly linear, and it is where every qualitatively new phenomenon in deep learning originates. Let $z = W_1 x$ be the pre-activation, $h = \sigma(z)$ the post-activation, and $\hat{y} = W_2 h$ the output. Then
+
+\[\begin{align}
+\frac{\partial \mathcal{L}}{\partial W_2} &= (\hat{y} - y)h^T \\
+\frac{\partial \mathcal{L}}{\partial W_1} &= \Big[\big(W_2^T(\hat{y} - y)\big) \odot \sigma'(z)\Big]x^T
+\end{align}\]
+
+One new object appears, $\sigma'(z)$, and it enters through an elementwise product $\odot$ rather than a matrix multiplication. This single fact is responsible for the rest of the subject.
+
+In the linear case, the backward pass was pure matrix multiplication, the same linear map regardless of $x$. Now the effective linear map used to pull the error backward is $W_2^T \,\text{diag}(\sigma'(z))$, and $\sigma'(z)$ depends on $z = W_1 x$, which depends on the specific input. So the map is different at every point in input space.
+
+This gives a precise version of the analogy: **a neural network is a linear model whose effective weight matrix is chosen per input by the nonlinearities.** For a fixed $x$,
+
+\[f(x) = W_2\,\text{diag}(\sigma'(z))\,W_1\,x\]
+
+which holds exactly, not approximately, when $\sigma$ is piecewise linear, as with ReLU. A ReLU network is literally a linear model whose weight matrix is an $x$-dependent selection among a finite number of linear regions. "Nonlinear" here is better read as **piecewise linear, with the pieces chosen adaptively by the data.** The linear algebra has not gone away; a combinatorial layer has been added on top of it, namely the question of which linear region a given $x$ falls into, and that question has no analogue in a model with $\sigma = \text{id}$.
+
+## Consequence: Vanishing Gradients
+
+Every layer multiplies the backward error by $\sigma'(z)$. For $\sigma = \tanh$ or sigmoid, $\sigma'$ is bounded well below $1$ over most of its domain, so each layer shrinks the error norm. Stacking $L$ such layers multiplicatively attenuates the gradient roughly geometrically in $L$. There is no analogue in the $\sigma = \text{id}$ case, since the gradient there was just $x^T$, with no per-layer attenuation term at all.
+
+## Consequence: Dead Units
+
+For ReLU, $\sigma'(z) \in \{0, 1\}$. If $z < 0$ for a given unit and input, the gradient through that unit is exactly zero, and no update reaches $W_1$ for it on that example. This is a purely combinatorial failure mode, a unit can become permanently inactive across the whole data distribution, and it has no counterpart when $\sigma = \text{id}$.
+
+# What Nonlinearity Forces You to Invent
+
+Three things become necessary the moment $\sigma$ is turned on, each a direct response to something in the previous section.
+
+**No closed form, no convexity.** $\mathcal{L}(W_1, W_2)$ is no longer a quadratic bowl in the parameters; $\sigma$ inside the composition destroys convexity in general. Iterative gradient descent stops being a convenient tool and becomes the only tool. It is worth noting the loss remains convex in $W_2$ alone for $W_1$ fixed, this kind of biconvexity recurs throughout the subject.
+
+**Initialization matters.** In the OLS case, the starting value of $W$ does not affect where gradient descent converges, since the problem is convex with a unique minimizer. Here, the scale of $W_1$ at initialization determines whether $z = W_1 x$ lands in the saturating region of $\sigma$, where gradients are small, or the near-linear region, where they are healthy, before any learning has occurred. This motivates initialization schemes that choose $\text{Var}(W_{ij})$ so that $\text{Var}(z)$ stays $O(1)$ across layers.
+
+**Depth composes attenuation multiplicatively.** Adding layers to a purely linear map did nothing, as shown above; it collapsed to a single matrix. Once $\sigma'$ terms enter the chain rule multiplicatively, that same stacking becomes unstable whenever those terms are consistently below or above $1$ in magnitude. This single fact, that repeated multiplication of terms with norm not equal to $1$ is unstable, motivates most of the architectural machinery that follows in the subject, including normalization layers and residual connections.
+
+The arc here is short but complete. OLS gives the shape of every gradient in deep learning, error outer product input, for free. Adding depth without nonlinearity gives the mechanism, repeated transpose multiplication, with zero new expressivity. Adding a single $\sigma'$ term turns a global linear map into a per input, piecewise linear one, and vanishing gradients, dead units, non-convexity, and initialization sensitivity all follow mechanically from that one elementwise product.

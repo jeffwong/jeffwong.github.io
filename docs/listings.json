@@ -2,7 +2,9 @@
   {
     "listing": "/index.html",
     "items": [
+      "/posts/linear_probability_model/index.html",
       "/posts/posterior_distribution_effect/index.html",
+      "/posts/ols_to_deep_learning/index.html",
       "/posts/composite_metric/index.html",
       "/posts/robust_cuped/index.html",
       "/posts/relative_effects/index.html",

@@ -1,0 +1,105 @@
+---
+title: "It's OK to let least squares output a probability"
+author: "Jeff Wong"
+date: 2026-07-09
+categories: [causal inference, AB testing, regression]
+format:
+  html:
+    toc: true
+    code-fold: show
+---
+
+In AB testing we use linear regression all the time to model data. This is very appropriate when the outcome variable, $y$, is continuous. Many AB outcomes, however, are 0-1 outcome variables, and many would argue that we should use logistic regression instead of linear regression. While technically true, it's actually OK to do inference while using linear regression, despite the fact that it can output an outcome that does not live in 0-1. As long as the linear model is fit with robust standard errors, inference on the treatment effect will be OK.
+
+## The point estimate is already correct.
+
+Ordinary least squares doesn't actually require the outcome to be continuous. Many think that it requires the data to be normally distributed, but even that is not a requirement. OLS requires that the conditional expectation of $y$ is linear in the parameters. If we model 
+$$y = \alpha + Treated \beta_1 + X \beta_2 + \varepsilon$$
+we are saying that the expectation of $y$ is linear in this form.  When $y$ is a 0-1 outcome, its expectation is simply a probability. Hence this is known as the linear probability model.
+
+In an AB test with a 0-1 outcome, we want to describe the average treatment effect as a difference in probabilities. Just like other continuous outcomes, $\beta_1$ represents exactly that
+
+\begin{align}
+\beta_1 &= E[y | Treated = 1, X = x] - E[y | Treated = 0, X = x]\\
+ &= Prob(y = 1 | Treated = 1, X = x] - Prob(y = 0 | Treated = 0, X = x).
+\end{align}
+Under randomization, $\beta_1$ is still identified, regardless of $y$. Hence, OLS still outputs the correct point estimate on the average treatment effect, despite being used to model 0-1 data.
+
+## The standard error must be robust.
+
+Is there a free lunch here? Sidestepping logistic regression and still getting the correct treatment effect feels like cheating. In fact there is no free lunch. The standard errors from OLS will be wrong, by a lot, despite getting the point estimate right.
+
+Under OLS assumptions, $Var(\varepsilon \mid X) = \sigma^2$ is fixed. There is no way for this to be possible under a bernoulli outcome. For a bernoulli outcome we would say $\text{Var}(y \mid X) = P(X)\big(1 - P(X)\big)$, which shows that the variance is a function of $X$ and is not fixed.
+
+Getting a correct standard error does not require us to pivot back to logistic regression. We just need to make a different structural assumption on $Var(\varepsilon \mid X)$. In fact, it's best to not make an assumption at all, and let the data dictate the variance. This is what the sandwich covariances do, they take the form
+
+$$
+\widehat{\text{Var}}_{\text{robust}}(\hat\beta) = (X'X)^{-1} \left( \sum_i \hat\varepsilon_i^2 \, x_i x_i' \right) (X'X)^{-1}
+$$
+
+which allows the variance to vary with $x$. Where did this come from and why is it considered ''robust''? Recall the solution to least squares
+
+\begin{align}
+y &= X\beta + \varepsilon \\
+\hat{\beta} \mid X &= (X'X)^{-1} X'y \\
+\hat{\text{Var}}(\hat{\beta} \mid X) &= Var((X'X)^{-1} X'y) \\
+
+&= (X'X)^{-1} X' Var(y \mid X ) X (X'X)^{-1}
+\end{align}
+
+The key is the meat matrix $X' Var(y \mid X ) X$. Under the assumption that the residual variance is a constant, this meat reduces to $\sigma^2 X'X$, and the entire covariance matrix for the coefficients reduces to $(X'X)^{-1} \sigma^2$. But if we want to operate under the assumptioin that the residual variance is not constant, we can substitute in the empirical $\varepsilon_i^2$. Note that $\varepsilon_i^2$ is the residual variance since $\varepsilon$ is mean 0. 
+
+The major insight here is that once again, this formula for standard errors is robust regardless of the form of $y$. Hence OLS with robust standard errors can indeed create correct inference on the average treatment effect, despite using 0-1 data. In fact, most of the time OLS is the right linear model for experimentation!
+
+## 50/50 tests can hide the problem
+
+Under a 50/50 test, there is no difference between naive OLS and OLS with robust standard errors. If the traffic split is not 50/50, it is very important to check how OLS is computing standard error.
+
+Without loss of generality, simplify the model to the case of no covariates, $y = \alpha + Treated \beta_1 + \varepsilon$, with $n_1$ treated units and $n_0$ control units, $n = n_1 + n_0$. We will use this simplification so that it is easy to compute $(X'X)^{-1}$ in OLS. Naive OLS assumes a single constant residual variance and estimates it by pooling across both arms, $\hat\sigma^2_{\text{pooled}} \approx w_1 \sigma_1^2 + w_0 \sigma_0^2$, where $w_1 = n_1/n$, $w_0 = n_0/n$, and $\sigma_1^2 = \text{Var}(y \mid Treated=1)$, $\sigma_0^2 = \text{Var}(y \mid Treated=0)$. That gives a naive variance of
+
+$$
+\widehat{\text{Var}}_{\text{naive}}(\hat\beta_1) = \hat\sigma^2_{\text{pooled}} \cdot \frac{n}{n_1 n_0}.
+$$
+
+The true sampling variance of a difference in means, letting each arm keep its own variance, is
+
+$$
+\text{Var}(\hat\beta_1) = \frac{\sigma_1^2}{n_1} + \frac{\sigma_0^2}{n_0}.
+$$
+
+Substituting $n_1 = w_1 n$ and $n_0 = w_0 n$ into both expressions and setting $w_1 = w_0 = 0.5$ makes them identical! With a 50-50 split, the naive pooled-variance formula happens to already be unbiased for the true sampling variance, even though the constant variance assumption behind it is false.
+
+## Code example
+
+The code example below demonstrates the incorrect standard error under OLS when the traffic is not split 50-50.
+
+```{r}
+set.seed(1)
+n <- 5000
+X1 <- rnorm(n)
+
+# Deliberately unbalanced allocation (5% vs 95%) -- unequal arm sizes are
+# what break the cancellation derived above. Control conversion hovers
+# near 50% (high variance); treatment conversion is pushed to
+# near-certainty (low variance).
+treatment <- rbinom(n, 1, 0.05)
+p <- ifelse(treatment == 1, 0.97, plogis(0.3 * X1))
+y <- rbinom(n, 1, p)   # binary outcome
+
+fit <- lm(y ~ treatment + X1)
+
+# Naive (wrong) SE: assumes constant residual variance
+naive_se <- summary(fit)$coefficients["treatment", "Std. Error"]
+
+# Robust (HC1) SE: accounts for p(x)(1-p(x)) heteroskedasticity directly
+X <- model.matrix(fit)
+resid <- residuals(fit)
+n_obs <- nrow(X); p_params <- ncol(X)
+bread <- solve(t(X) %*% X)
+meat <- t(X) %*% diag(resid^2) %*% X * (n_obs / (n_obs - p_params))
+robust_vcov <- bread %*% meat %*% bread
+robust_se <- sqrt(diag(robust_vcov))["treatment"]
+
+cat("Naive SE: ", naive_se, "\n")
+cat("Robust SE:", robust_se, "\n")
+```

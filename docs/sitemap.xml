@@ -14,7 +14,11 @@
   </url>
   <url>
     <loc>https://jeffwong.github.io/posts/posterior_distribution_effect/index.html</loc>
-    <lastmod>2026-07-14T05:25:56.588Z</lastmod>
+    <lastmod>2026-07-16T06:30:00.931Z</lastmod>
+  </url>
+  <url>
+    <loc>https://jeffwong.github.io/posts/linear_probability_model/index.html</loc>
+    <lastmod>2026-07-16T06:29:05.693Z</lastmod>
   </url>
   <url>
     <loc>https://jeffwong.github.io/posts/errors_in_experiments/index.html</loc>
@@ -55,6 +59,10 @@
   <url>
     <loc>https://jeffwong.github.io/posts/l2_gaussian_prior/index.html</loc>
     <lastmod>2026-07-12T05:09:05.494Z</lastmod>
+  </url>
+  <url>
+    <loc>https://jeffwong.github.io/posts/ols_to_deep_learning/index.html</loc>
+    <lastmod>2026-07-16T04:58:46.129Z</lastmod>
   </url>
   <url>
     <loc>https://jeffwong.github.io/posts/posthoc_mde/index.html</loc>

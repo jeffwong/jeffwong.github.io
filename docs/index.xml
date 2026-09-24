@@ -1072,57 +1072,816 @@ font-style: inherit;">0</span>)</span>
 
 
 
-<p>A linear model is a neural network with zero hidden layers. This is not an analogy, it is a special case. Write a network as a composition of linear maps and elementwise nonlinearities</p>
-<p>[f(x) = W_L (W_{L-1} ((W_1 x)))]</p>
-<p>and set <img src="https://latex.codecogs.com/png.latex?L%20=%201"> with <img src="https://latex.codecogs.com/png.latex?%5Csigma%20=%20%5Ctext%7Bid%7D">. This is exactly <img src="https://latex.codecogs.com/png.latex?f(x)%20=%20Wx">. Every technique that shows up in deep learning is best understood as the answer to a question: what breaks, and what has to be invented to fix it, as depth and nonlinearity are turned on one at a time. This post works through that process literally, one knob at a time, starting from OLS and ending at a single hidden layer with a nonlinearity.</p>
-<section id="base-case-l-1-sigma-textid" class="level1">
-<h1>Base Case: <img src="https://latex.codecogs.com/png.latex?L%20=%201">, <img src="https://latex.codecogs.com/png.latex?%5Csigma%20=%20%5Ctext%7Bid%7D"></h1>
-<p>The closed form solution to least squares is well known, <img src="https://latex.codecogs.com/png.latex?%5Chat%7BW%7D%20=%20(X%5ETX)%5E%7B-1%7DX%5ETy">. But it is more useful here to derive it by gradient descent instead, since the gradient descent derivation is the one that generalizes to deep networks and the closed form is the one that does not.</p>
-<p>For a single example <img src="https://latex.codecogs.com/png.latex?(x,%20y)">, the squared error loss is</p>
-<p>[(W) = |Wx - y|^2]</p>
-<p>with gradient</p>
-<p>[ = (Wx - y)x^T]</p>
-<p>The structure of this gradient is worth naming, because it is the structure that persists at every depth: it is the <strong>error at the output</strong>, taken as an outer product with the <strong>input to that layer</strong>. This is backpropagation already, in miniature, before there is any chain rule to speak of.</p>
-<p>The gradient descent update is <img src="https://latex.codecogs.com/png.latex?W%20%5Cleftarrow%20W%20-%20%5Ceta(Wx%20-%20y)x%5ET">. Iterating this converges to the same <img src="https://latex.codecogs.com/png.latex?%5Chat%7BW%7D"> as the normal equations, because <img src="https://latex.codecogs.com/png.latex?%5Cmathcal%7BL%7D"> is convex in <img src="https://latex.codecogs.com/png.latex?W">; the Hessian is <img src="https://latex.codecogs.com/png.latex?xx%5ET%20%5Cotimes%20I%20%5Csucceq%200">. This convexity is a property of the <img src="https://latex.codecogs.com/png.latex?L=1">, <img src="https://latex.codecogs.com/png.latex?%5Csigma%20=%20%5Ctext%7Bid%7D"> case specifically. It will not survive past the next section, and its absence is responsible for a large fraction of what makes deep learning hard.</p>
+<p>We often hear “deep learning is a bunch of matrix multiplications”. Is that true? If yes, then is it actually a linear operator like OLS?</p>
+<p>Indeed, there are many similarities between OLS and deep learning. Deep learning is like a composition of many linear models with different activation functions. In fact, a linear model is a neural network with zero hidden layers.</p>
+<section id="ols-is-a-neural-network-with-zero-hidden-layers." class="level1">
+<h1>OLS is a neural network with zero hidden layers.</h1>
+<p>Take the simplest possible network, observeable values in <img src="https://latex.codecogs.com/png.latex?X"> map directly to an observeable <img src="https://latex.codecogs.com/png.latex?y"> through a linear function. There are no hidden layers, as in no transformations of <img src="https://latex.codecogs.com/png.latex?X"> that are learned other than to produce <img src="https://latex.codecogs.com/png.latex?y"> itself. This is a zero hidden layer neural network and it is equivalent to OLS. See the picture below. <img src="https://latex.codecogs.com/png.latex?%5Chat%20y%20=%20XW%20+%20b."></p>
+<div class="cell" data-layout-align="center">
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="https://jeffwong.github.io/posts/ols_to_deep_learning/index_files/figure-html/unnamed-chunk-1-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="576"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The only thing that differs is <em>how</em> we solve it. OLS is usually taught with the closed form normal equations, <img src="https://latex.codecogs.com/png.latex?%5Chat%5Cbeta%20=%20(X'X)%5E%7B-1%7DX'y">. A “zero hidden layer network” is instead typically fit by gradient descent, taking small steps down the loss surface. Both procedures, if they converge, land on the identical <img src="https://latex.codecogs.com/png.latex?%5Chat%5Cbeta">.</p>
 </section>
-<section id="turning-on-depth-leaving-sigma-off" class="level1">
-<h1>Turning on Depth, Leaving <img src="https://latex.codecogs.com/png.latex?%5Csigma"> Off</h1>
-<p>Consider <img src="https://latex.codecogs.com/png.latex?L%20=%202"> with no nonlinearity,</p>
-<p>[f(x) = W_2 W_1 x]</p>
-<p>Since <img src="https://latex.codecogs.com/png.latex?W_2%20W_1"> is just some matrix <img src="https://latex.codecogs.com/png.latex?M">, this model class is identical to the <img src="https://latex.codecogs.com/png.latex?L=1"> case. Depth without nonlinearity adds no expressivity. It is still useful to work out the gradient, because the mechanics here are exactly the mechanics of backpropagation at arbitrary depth, even though the model class does not change.</p>
-<p>Let <img src="https://latex.codecogs.com/png.latex?h%20=%20W_1%20x"> be the hidden pre-activation and <img src="https://latex.codecogs.com/png.latex?%5Chat%7By%7D%20=%20W_2%20h"> be the output. By the chain rule,</p>
-<p>[<img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0A%5Cfrac%7B%5Cpartial%20%5Cmathcal%7BL%7D%7D%7B%5Cpartial%20W_2%7D%20&amp;=%20(%5Chat%7By%7D%20-%20y)h%5ET%20%5C%5C%0A%5Cfrac%7B%5Cpartial%20%5Cmathcal%7BL%7D%7D%7B%5Cpartial%20W_1%7D%20&amp;=%20%5Cbig(W_2%5ET%20(%5Chat%7By%7D%20-%20y)%5Cbig)%20x%5ET%0A%5Cend%7Balign%7D">]</p>
-<p>The gradient for <img src="https://latex.codecogs.com/png.latex?W_1"> has the same shape as before, error outer product input, except the error term <img src="https://latex.codecogs.com/png.latex?(%5Chat%20y%20-%20y)"> is pulled back through <img src="https://latex.codecogs.com/png.latex?W_2%5ET"> before it reaches <img src="https://latex.codecogs.com/png.latex?x%5ET">. That pullback is the entire mechanism of backpropagation: to compute the gradient at an earlier layer, take the error and multiply by the transpose of every weight matrix downstream of it. At greater depth this is done repeatedly, once per layer, in reverse order of the forward pass. There is no new linear algebra content here, only bookkeeping, since <img src="https://latex.codecogs.com/png.latex?%5Cpartial%20(W_2%20W_1%20x)/%5Cpartial%20W_1"> involving <img src="https://latex.codecogs.com/png.latex?W_2%5ET"> is not a surprising fact. Deep learning’s contribution at this stage is an algorithm that computes this bookkeeping once, reusing intermediate results, rather than once per parameter.</p>
+<section id="one-hidden-layer" class="level1">
+<h1>One hidden layer</h1>
+<p>OLS can be equivalently expressed as</p>
+<p><img src="https://latex.codecogs.com/png.latex?y%20=%20f(x_1,%20x_2,%20x_3)."></p>
+<p>The inputs are fed into a function to produce <img src="https://latex.codecogs.com/png.latex?y">. Now imagine that we nested more functions like so</p>
+<p><img src="https://latex.codecogs.com/png.latex?y%20=%20g(h_1(x_1,%20x_2,%20x_3),%20h_2(x_1,%20x_2,%20x_3),%20h_3(x_1,%20x_2,%20x_3))."></p>
+<p>We can think of this as a type of feature engineering. We map the inputs <img src="https://latex.codecogs.com/png.latex?(x_1,%20x_2,%20x_3)"> into an intermediate function like <img src="https://latex.codecogs.com/png.latex?h_1"> to engineer a new feature. We do that again to produce <img src="https://latex.codecogs.com/png.latex?h_2"> and <img src="https://latex.codecogs.com/png.latex?h_3">. Finally, we learn an OLS model on the newly engineered features.</p>
+<p>This is what a neural network with one hidden layer does. We can draw the extension below. The 3 blue nodes collectively represent one hidden layer. That hidden layer serves as new inputs to learn a linear function that outputs <img src="https://latex.codecogs.com/png.latex?y">.</p>
+<div class="cell" data-layout-align="center">
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="https://jeffwong.github.io/posts/ols_to_deep_learning/index_files/figure-html/unnamed-chunk-2-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="624"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Let’s keep it simple. In a one hidden layer network, each node <img src="https://latex.codecogs.com/png.latex?j"> in the hidden layer will take the form <img src="https://latex.codecogs.com/png.latex?%5Csigma(X%20W_j)">. <img src="https://latex.codecogs.com/png.latex?X%20W_j"> is called the preactivation and it is a linear combination of the input features, obtained from the previous layer, with weights that are specific to node <img src="https://latex.codecogs.com/png.latex?j">. The preactivation is then transformed through an activation function <img src="https://latex.codecogs.com/png.latex?%5Csigma">. There are many different types of activation functions, such as ReLU or the sigmoid. In a fully connected graph, which is almost always the use case, all nodes in layer <img src="https://latex.codecogs.com/png.latex?h"> are operating on the same input features, so we can vectorize and express the <img src="https://latex.codecogs.com/png.latex?h"> layer overall as <img src="https://latex.codecogs.com/png.latex?h%20=%20%5Csigma(XW)">. Here we are using a convenient vectorized expression where every node in the layer is using the same activation function, though that is not a mathematical requirement.</p>
+<p>For vocabulary sake, a layer that has width <img src="https://latex.codecogs.com/png.latex?k"> means there are <img src="https://latex.codecogs.com/png.latex?k"> nodes in that layer. A neural network that has depth <img src="https://latex.codecogs.com/png.latex?L"> has <img src="https://latex.codecogs.com/png.latex?L"> layers.</p>
+<p>Matrix multiplications on top of matrix multiplications feel redundant. It’s the activation function that makes a layer meaningful. Because <img src="https://latex.codecogs.com/png.latex?%5Csigma"> is nonlinear, <img src="https://latex.codecogs.com/png.latex?h"> is no longer a linear transform of <img src="https://latex.codecogs.com/png.latex?X">.</p>
+<section id="the-geometry-that-motivates-multiple-units" class="level2">
+<h2 class="anchored" data-anchor-id="the-geometry-that-motivates-multiple-units">The geometry that motivates multiple units</h2>
+<p>There is a geometric interpretation where each unit “bends” the input space in different ways before the downstream layer recombines them.</p>
+<p>Consider a single hidden unit: the preactivation starts as a linear combination, which is then bent with a nonlinear transformation. A ReLU unit, <img src="https://latex.codecogs.com/png.latex?h=%5Cmax(0,%20Xw+b)"> represents a hinge: there are values of <img src="https://latex.codecogs.com/png.latex?Xw%20+%20b"> that are negative but are then mapped to a constant 0, and for the space where <img src="https://latex.codecogs.com/png.latex?Xw%20+%20b%20%3E%200"> it is a hyperplane. This structure, flat on one side in <img src="https://latex.codecogs.com/png.latex?X">-space and linear on the other, is exactly a hinge that bends the inputs.</p>
+<div class="cell" data-layout-align="center">
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="https://jeffwong.github.io/posts/ols_to_deep_learning/index_files/figure-html/unnamed-chunk-3-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="576"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Adding units to a layer gives the layer <img src="https://latex.codecogs.com/png.latex?k"> of these one-bend building blocks, each bending a different direction of <img src="https://latex.codecogs.com/png.latex?X">-space at a different location. It’s analogous to OLS regressing <img src="https://latex.codecogs.com/png.latex?y"> on several hand-picked basis functions (polynomial terms, spline knots, indicator variables) instead of on <img src="https://latex.codecogs.com/png.latex?X"> alone, except here the basis functions are learned rather than chosen.</p>
 </section>
-<section id="turning-on-one-nonlinearity" class="level1">
-<h1>Turning on One Nonlinearity</h1>
-<p>Now consider <img src="https://latex.codecogs.com/png.latex?L%20=%202"> with <img src="https://latex.codecogs.com/png.latex?%5Csigma"> active on the hidden layer,</p>
-<p>[f(x) = W_2, (W_1 x)]</p>
-<p>This is the smallest model in the family that is not secretly linear, and it is where every qualitatively new phenomenon in deep learning originates. Let <img src="https://latex.codecogs.com/png.latex?z%20=%20W_1%20x"> be the pre-activation, <img src="https://latex.codecogs.com/png.latex?h%20=%20%5Csigma(z)"> the post-activation, and <img src="https://latex.codecogs.com/png.latex?%5Chat%7By%7D%20=%20W_2%20h"> the output. Then</p>
-<p>[<img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0A%5Cfrac%7B%5Cpartial%20%5Cmathcal%7BL%7D%7D%7B%5Cpartial%20W_2%7D%20&amp;=%20(%5Chat%7By%7D%20-%20y)h%5ET%20%5C%5C%0A%5Cfrac%7B%5Cpartial%20%5Cmathcal%7BL%7D%7D%7B%5Cpartial%20W_1%7D%20&amp;=%20%5CBig%5B%5Cbig(W_2%5ET(%5Chat%7By%7D%20-%20y)%5Cbig)%20%5Codot%20%5Csigma'(z)%5CBig%5Dx%5ET%0A%5Cend%7Balign%7D">]</p>
-<p>One new object appears, <img src="https://latex.codecogs.com/png.latex?%5Csigma'(z)">, and it enters through an elementwise product <img src="https://latex.codecogs.com/png.latex?%5Codot"> rather than a matrix multiplication. This single fact is responsible for the rest of the subject.</p>
-<p>In the linear case, the backward pass was pure matrix multiplication, the same linear map regardless of <img src="https://latex.codecogs.com/png.latex?x">. Now the effective linear map used to pull the error backward is <img src="https://latex.codecogs.com/png.latex?W_2%5ET%20%5C,%5Ctext%7Bdiag%7D(%5Csigma'(z))">, and <img src="https://latex.codecogs.com/png.latex?%5Csigma'(z)"> depends on <img src="https://latex.codecogs.com/png.latex?z%20=%20W_1%20x">, which depends on the specific input. So the map is different at every point in input space.</p>
-<p>This gives a precise version of the analogy: <strong>a neural network is a linear model whose effective weight matrix is chosen per input by the nonlinearities.</strong> For a fixed <img src="https://latex.codecogs.com/png.latex?x">,</p>
-<p>[f(x) = W_2,(’(z)),W_1,x]</p>
-<p>which holds exactly, not approximately, when <img src="https://latex.codecogs.com/png.latex?%5Csigma"> is piecewise linear, as with ReLU. A ReLU network is literally a linear model whose weight matrix is an <img src="https://latex.codecogs.com/png.latex?x">-dependent selection among a finite number of linear regions. “Nonlinear” here is better read as <strong>piecewise linear, with the pieces chosen adaptively by the data.</strong> The linear algebra has not gone away; a combinatorial layer has been added on top of it, namely the question of which linear region a given <img src="https://latex.codecogs.com/png.latex?x"> falls into, and that question has no analogue in a model with <img src="https://latex.codecogs.com/png.latex?%5Csigma%20=%20%5Ctext%7Bid%7D">.</p>
-<section id="consequence-vanishing-gradients" class="level2">
-<h2 class="anchored" data-anchor-id="consequence-vanishing-gradients">Consequence: Vanishing Gradients</h2>
-<p>Every layer multiplies the backward error by <img src="https://latex.codecogs.com/png.latex?%5Csigma'(z)">. For <img src="https://latex.codecogs.com/png.latex?%5Csigma%20=%20%5Ctanh"> or sigmoid, <img src="https://latex.codecogs.com/png.latex?%5Csigma'"> is bounded well below <img src="https://latex.codecogs.com/png.latex?1"> over most of its domain, so each layer shrinks the error norm. Stacking <img src="https://latex.codecogs.com/png.latex?L"> such layers multiplicatively attenuates the gradient roughly geometrically in <img src="https://latex.codecogs.com/png.latex?L">. There is no analogue in the <img src="https://latex.codecogs.com/png.latex?%5Csigma%20=%20%5Ctext%7Bid%7D"> case, since the gradient there was just <img src="https://latex.codecogs.com/png.latex?x%5ET">, with no per-layer attenuation term at all.</p>
-</section>
-<section id="consequence-dead-units" class="level2">
-<h2 class="anchored" data-anchor-id="consequence-dead-units">Consequence: Dead Units</h2>
-<p>For ReLU, <img src="https://latex.codecogs.com/png.latex?%5Csigma'(z)%20%5Cin%20%5C%7B0,%201%5C%7D">. If <img src="https://latex.codecogs.com/png.latex?z%20%3C%200"> for a given unit and input, the gradient through that unit is exactly zero, and no update reaches <img src="https://latex.codecogs.com/png.latex?W_1"> for it on that example. This is a purely combinatorial failure mode, a unit can become permanently inactive across the whole data distribution, and it has no counterpart when <img src="https://latex.codecogs.com/png.latex?%5Csigma%20=%20%5Ctext%7Bid%7D">.</p>
+<section id="the-geometry-that-motivates-multiple-layers" class="level2">
+<h2 class="anchored" data-anchor-id="the-geometry-that-motivates-multiple-layers">The geometry that motivates multiple layers</h2>
+<p>Each unit in our one layer network above is bending in a naive way. The <img src="https://latex.codecogs.com/png.latex?k"> bends are generated in parallel, and do not leverage one another. In order to make use of them effectively, we need to stack more layers.</p>
+<p>Let <img src="https://latex.codecogs.com/png.latex?L"> be the number of hidden layers we choose to stack. Along with the final layer that outputs a prediction, the network has <img src="https://latex.codecogs.com/png.latex?L+1"> total layers of parameters. We can see the pattern</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0Ah%5E%7B(0)%7D%20&amp;=%20X%20%5C%5C%0Ah%5E%7B(1)%7D%20&amp;=%20%5Csigma%5C!%5Cleft(h%5E%7B(0)%7DW%5E%7B(1)%7D%20+%20b%5E%7B(1)%7D%5Cright)%20%5C%5C%0Ah%5E%7B(2)%7D%20&amp;=%20%5Csigma%5C!%5Cleft(h%5E%7B(1)%7DW%5E%7B(2)%7D%20+%20b%5E%7B(2)%7D%5Cright)%20%5C%5C%0Ah%5E%7B(L)%7D%20&amp;=%20%5Csigma%5C!%5Cleft(h%5E%7B(L-1)%7DW%5E%7B(L)%7D%20+%20b%5E%7B(L)%7D%5Cright)%0A%5Cend%7Balign%7D"></p>
+<p>The final layer is ultimately OLS, where we learn coefficients and an intercept for a new set of feature vectors captured by <img src="https://latex.codecogs.com/png.latex?h%5E%7B(L)%7D">. In a sense, this deep neural network is OLS with learned feature engineering, and that feature engineering is a series of bends!</p>
+<div class="cell" data-layout-align="center">
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="https://jeffwong.github.io/posts/ols_to_deep_learning/index_files/figure-html/unnamed-chunk-4-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="624"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Each panel is a composition of the hinge <img src="https://latex.codecogs.com/png.latex?T(x)%20=%202%5Cmax(0,x)%20-%204%5Cmax(0,x-0.5)">. This represents a hidden layer with 2 ReLU units. The upper left panel represents the case where L = 1, then the upper right is when <img src="https://latex.codecogs.com/png.latex?L%20=%202"> and the output stacks <img src="https://latex.codecogs.com/png.latex?T(T(x))">. As we get to <img src="https://latex.codecogs.com/png.latex?L%20=%204"> we are able to nest multiple hinges to change the shape of the output, to the point where 4 layers containing a total of 8 nodes is able to represent 16 teeth. In order to accomplish this with one single layer we would need 16 nodes.</p>
 </section>
 </section>
-<section id="what-nonlinearity-forces-you-to-invent" class="level1">
-<h1>What Nonlinearity Forces You to Invent</h1>
-<p>Three things become necessary the moment <img src="https://latex.codecogs.com/png.latex?%5Csigma"> is turned on, each a direct response to something in the previous section.</p>
-<p><strong>No closed form, no convexity.</strong> <img src="https://latex.codecogs.com/png.latex?%5Cmathcal%7BL%7D(W_1,%20W_2)"> is no longer a quadratic bowl in the parameters; <img src="https://latex.codecogs.com/png.latex?%5Csigma"> inside the composition destroys convexity in general. Iterative gradient descent stops being a convenient tool and becomes the only tool. It is worth noting the loss remains convex in <img src="https://latex.codecogs.com/png.latex?W_2"> alone for <img src="https://latex.codecogs.com/png.latex?W_1"> fixed, this kind of biconvexity recurs throughout the subject.</p>
-<p><strong>Initialization matters.</strong> In the OLS case, the starting value of <img src="https://latex.codecogs.com/png.latex?W"> does not affect where gradient descent converges, since the problem is convex with a unique minimizer. Here, the scale of <img src="https://latex.codecogs.com/png.latex?W_1"> at initialization determines whether <img src="https://latex.codecogs.com/png.latex?z%20=%20W_1%20x"> lands in the saturating region of <img src="https://latex.codecogs.com/png.latex?%5Csigma">, where gradients are small, or the near-linear region, where they are healthy, before any learning has occurred. This motivates initialization schemes that choose <img src="https://latex.codecogs.com/png.latex?%5Ctext%7BVar%7D(W_%7Bij%7D)"> so that <img src="https://latex.codecogs.com/png.latex?%5Ctext%7BVar%7D(z)"> stays <img src="https://latex.codecogs.com/png.latex?O(1)"> across layers.</p>
-<p><strong>Depth composes attenuation multiplicatively.</strong> Adding layers to a purely linear map did nothing, as shown above; it collapsed to a single matrix. Once <img src="https://latex.codecogs.com/png.latex?%5Csigma'"> terms enter the chain rule multiplicatively, that same stacking becomes unstable whenever those terms are consistently below or above <img src="https://latex.codecogs.com/png.latex?1"> in magnitude. This single fact, that repeated multiplication of terms with norm not equal to <img src="https://latex.codecogs.com/png.latex?1"> is unstable, motivates most of the architectural machinery that follows in the subject, including normalization layers and residual connections.</p>
-<p>The arc here is short but complete. OLS gives the shape of every gradient in deep learning, error outer product input, for free. Adding depth without nonlinearity gives the mechanism, repeated transpose multiplication, with zero new expressivity. Adding a single <img src="https://latex.codecogs.com/png.latex?%5Csigma'"> term turns a global linear map into a per input, piecewise linear one, and vanishing gradients, dead units, non-convexity, and initialization sensitivity all follow mechanically from that one elementwise product.</p>
+<section id="training-loss-and-backpropagation" class="level1">
+<h1>Training: loss and backpropagation</h1>
+<p>So far we have described the architecture of a neural network and its relationship to OLS. Now we will describe how the network is trained.</p>
+<p>We want to minimize our loss function <img src="https://latex.codecogs.com/png.latex?L(%5Ctheta)%20=%20%5Cfrac%7B1%7D%7Bn%7D%5Csum_i%20(y_i%20-%20%5Chat%20y_i(%5Ctheta))%5E2"> using the parameters across the entire network, where <img src="https://latex.codecogs.com/png.latex?%5Ctheta%20=%20%5C%7BW%5E%7B(1)%7D,%20b%5E%7B(1)%7D,%20%5Cldots,%20W%5E%7B(L+1)%7D,%20b%5E%7B(L+1)%7D%5C%7D">. Training a network is hard; to get an understanding of the size of <img src="https://latex.codecogs.com/png.latex?%5Ctheta">, let <img src="https://latex.codecogs.com/png.latex?k_l"> denote the number of nodes in layer <img src="https://latex.codecogs.com/png.latex?l">, for <img src="https://latex.codecogs.com/png.latex?l%20=%200,%201,%20%5Cldots,%20L+1">, with <img src="https://latex.codecogs.com/png.latex?k_0"> the number of input features in the original <img src="https://latex.codecogs.com/png.latex?X"> and <img src="https://latex.codecogs.com/png.latex?k_%7BL+1%7D%20=%201"> for a single regression output. Layer <img src="https://latex.codecogs.com/png.latex?l">’s weight matrix <img src="https://latex.codecogs.com/png.latex?W%5E%7B(l)%7D"> maps the <img src="https://latex.codecogs.com/png.latex?k_%7Bl-1%7D"> nodes of the previous layer into the <img src="https://latex.codecogs.com/png.latex?k_l"> nodes of layer <img src="https://latex.codecogs.com/png.latex?l">, so <img src="https://latex.codecogs.com/png.latex?W%5E%7B(l)%7D"> is <img src="https://latex.codecogs.com/png.latex?k_%7Bl-1%7D%5Ctimes%20k_l">; its bias <img src="https://latex.codecogs.com/png.latex?b%5E%7B(l)%7D"> has one entry per node of layer <img src="https://latex.codecogs.com/png.latex?l">, so it’s <img src="https://latex.codecogs.com/png.latex?k_l">-dimensional. Altogether,</p>
+<p><img src="https://latex.codecogs.com/png.latex?%7C%5Ctheta%7C%20=%20%5Csum_%7Bl=1%7D%5E%7BL+1%7D%5Cleft(k_%7Bl-1%7Dk_l%20+%20k_l%5Cright)."></p>
+<p>In our running example, <img src="https://latex.codecogs.com/png.latex?k_0%20=%203"> inputs, <img src="https://latex.codecogs.com/png.latex?k_1%20=%203"> hidden units, <img src="https://latex.codecogs.com/png.latex?k_2%20=%201"> output, so <img src="https://latex.codecogs.com/png.latex?W%5E%7B(1)%7D"> is <img src="https://latex.codecogs.com/png.latex?3%5Ctimes3"> (9 parameters), <img src="https://latex.codecogs.com/png.latex?b%5E%7B(1)%7D"> is 3-dimensional, <img src="https://latex.codecogs.com/png.latex?W%5E%7B(2)%7D"> is <img src="https://latex.codecogs.com/png.latex?3%5Ctimes1"> (3 parameters), and <img src="https://latex.codecogs.com/png.latex?b%5E%7B(2)%7D"> is a single scalar, for <img src="https://latex.codecogs.com/png.latex?%7C%5Ctheta%7C%20=%20(9+3)+(3+1)%20=%2016"> parameters total.</p>
+<p>We can’t optimize the loss function algebraically in closed form. Instead, we will solve this using numerical optimization, which requires us to know the gradient of <img src="https://latex.codecogs.com/png.latex?L(%5Ctheta)"> at each of its parameters. Expressing the gradient around a layer <img src="https://latex.codecogs.com/png.latex?l"> is natural since a layer is matrix multiplication (due to vectorization described above) and a single activation layer. We are going to leverage the fact that layer <img src="https://latex.codecogs.com/png.latex?l"> is directly related to layer <img src="https://latex.codecogs.com/png.latex?l-1"> in order to create an elegant recursion. We will apply the chain rule throughout that recursion to create a simple computational strategy, known as backpropagation.</p>
+<p>Backpropagation is a very clever computational strategy. But let’s start with the naive formulation, which would be to compute <img src="https://latex.codecogs.com/png.latex?%5Cpartial%20L/%5Cpartial%5Ctheta">. Say we try to compute a specific component <img src="https://latex.codecogs.com/png.latex?%5Cpartial%20L/%5Cpartial%20W%5E%7B(l)%7D">, the way to do this is to express <img src="https://latex.codecogs.com/png.latex?%5Chat%7By%7D(%5Ctheta)"> from the loss function as a function of the output layer, which is a function of the previous layer, which is a function of its previous layer, etc, until peeling backwards to layer <img src="https://latex.codecogs.com/png.latex?l">. Expressing <img src="https://latex.codecogs.com/png.latex?%5Chat%7By%7D(%5Ctheta)"> like this lets us differentiate it by <img src="https://latex.codecogs.com/png.latex?W%5E%7B(l)%7D">. Let’s go back to our 1 hidden layer example, where there are 3 <img src="https://latex.codecogs.com/png.latex?X"> inputs that go to 1 hidden layer with 3 nodes, which goes to the output layer. Differentiating the loss by the parameters in the hidden layer, <img src="https://latex.codecogs.com/png.latex?W%5E%7B(1)%7D"> would look like</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0AL(%5Ctheta)%20&amp;=%20%5Cfrac%7B1%7D%7Bn%7D%5Csum_i%20(y_i%20-%20%5Chat%20y_i(%5Ctheta))%5E2%20%5C%5C%0Az%5E%7B(1)%7D%20&amp;=%20XW%5E%7B(1)%7D%20+%20b%5E%7B(1)%7D%20%5C%5C%0Ah%20&amp;=%20%5Csigma(z%5E%7B(1)%7D)%20%5C%5C%0A%5Chat%20y%20&amp;=%20hW%5E%7B(2)%7D%20+%20b%5E%7B(2)%7D%20%5C%5C%0A%5Cfrac%7B%5Cpartial%20L%7D%7B%5Cpartial%20W%5E%7B(1)%7D%7D%20&amp;=%20%5Cfrac%7B%5Cpartial%20L%7D%7B%5Cpartial%20%5Chat%20y%7D%20%5Ccdot%20%5Cfrac%7B%5Cpartial%20%5Chat%20y%7D%7B%5Cpartial%20h%7D%20%20%5Ccdot%20%5Cfrac%7B%5Cpartial%20h%7D%7B%5Cpartial%20z%5E%7B(1)%7D%7D%20%5Ccdot%20%5Cfrac%7B%5Cpartial%20z%5E%7B(1)%7D%7D%7B%5Cpartial%20W%5E%7B(1)%7D%7D%0A%5Cend%7Balign%7D"></p>
+<p>Conceptually, we unpacked the gradient through a series of chain rules, and it looks like we can just multiply through. Unfortunately the reality is much more complex because each of these variables have their own shape, some are scalars, some are vectors, some are matrices. It is misleading to say it’s just multiplication. Let’s examine the structure:</p>
+<ol type="1">
+<li><img src="https://latex.codecogs.com/png.latex?%5Cpartial%20L/%5Cpartial%5Chat%20y"> is a scalar, since the output layer here has width <img src="https://latex.codecogs.com/png.latex?k_2%20=%201">.</li>
+<li><img src="https://latex.codecogs.com/png.latex?%5Cpartial%5Chat%20y/%5Cpartial%20h"> is a <img src="https://latex.codecogs.com/png.latex?1%5Ctimes%20k_1"> row vector — the sensitivity of the single output to each of the <img src="https://latex.codecogs.com/png.latex?k_1%20=%203"> hidden units — and combining it with the scalar before it is ordinary scalar-vector rescaling.</li>
+<li><img src="https://latex.codecogs.com/png.latex?%5Cpartial%20h/%5Cpartial%20z%5E%7B(1)%7D"> is, in full generality, a <img src="https://latex.codecogs.com/png.latex?k_1%5Ctimes%20k_1"> Jacobian, but because <img src="https://latex.codecogs.com/png.latex?h%20=%20%5Csigma(z%5E%7B(1)%7D)"> acts unit by unit that Jacobian is diagonal and collapses to the <img src="https://latex.codecogs.com/png.latex?k_1">-vector <img src="https://latex.codecogs.com/png.latex?%5Csigma'(z%5E%7B(1)%7D)">; combining it with the row vector before it is an elementwise (Hadamard) product. Chaining these first three factors together is <img src="https://latex.codecogs.com/png.latex?%5Cdelta%5E%7B(1)%7D%20=%20%5Cpartial%20L/%5Cpartial%20z%5E%7B(1)%7D">, a <img src="https://latex.codecogs.com/png.latex?1%5Ctimes%20k_1"> row vector.</li>
+<li><img src="https://latex.codecogs.com/png.latex?%5Cpartial%20z%5E%7B(1)%7D/%5Cpartial%20W%5E%7B(1)%7D"> is, in full generality, a three-index object — <img src="https://latex.codecogs.com/png.latex?z%5E%7B(1)%7D"> has <img src="https://latex.codecogs.com/png.latex?k_1"> entries and <img src="https://latex.codecogs.com/png.latex?W%5E%7B(1)%7D"> has <img src="https://latex.codecogs.com/png.latex?k_0%5Ctimes%20k_1"> entries of its own. Differentiating a vector by a matrix is going to feel funny, but we leverage the fact that <img src="https://latex.codecogs.com/png.latex?z%5E%7B(1)%7D%20=%20XW%5E%7B(1)%7D%20+%20b%5E%7B(1)%7D"> is affine, and each <img src="https://latex.codecogs.com/png.latex?z%5E%7B(1)%7D_j"> only depends on column <img src="https://latex.codecogs.com/png.latex?j"> of <img src="https://latex.codecogs.com/png.latex?W%5E%7B(1)%7D"> through the same <img src="https://latex.codecogs.com/png.latex?k_0"> inputs, so <img src="https://latex.codecogs.com/png.latex?%5Cpartial%20z%5E%7B(1)%7D_j/%5Cpartial%20W%5E%7B(1)%7D_%7Bij%7D%20=%20X_i"> for every <img src="https://latex.codecogs.com/png.latex?j">. This is just <img src="https://latex.codecogs.com/png.latex?X"> replicated multiple times, the same <img src="https://latex.codecogs.com/png.latex?k_0">-vector no matter which hidden unit <img src="https://latex.codecogs.com/png.latex?j"> we’re looking at. Stacking that <img src="https://latex.codecogs.com/png.latex?k_0">-vector with the <img src="https://latex.codecogs.com/png.latex?1%5Ctimes%20k_1"> row vector <img src="https://latex.codecogs.com/png.latex?%5Cdelta%5E%7B(1)%7D"> from the first three factors is an outer product, <img src="https://latex.codecogs.com/png.latex?X'%5Cdelta%5E%7B(1)%7D">, producing the <img src="https://latex.codecogs.com/png.latex?k_0%5Ctimes%20k_1"> result that matches <img src="https://latex.codecogs.com/png.latex?W%5E%7B(1)%7D">’s own shape.</li>
+</ol>
+<p>It turns out this is unnecessarily complicated. We can make the computation much more tractable by factoring out <img src="https://latex.codecogs.com/png.latex?%5Cdelta%5E%7B(l)%7D%20=%20%5Cpartial%20L/%5Cpartial%20z%5E%7B(l)%7D">, the loss’s sensitivity to the <em>pre-activation</em>. We rewrite the chain rule above as</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cboxed%7B%5Cfrac%7B%5Cpartial%20L%7D%7B%5Cpartial%20W%5E%7B(l)%7D%7D%20=%20h%5E%7B(l-1)%5Cprime%7D%5Cdelta%5E%7B(l)%7D.%7D"></p>
+<p>This says that the gradient at layer <img src="https://latex.codecogs.com/png.latex?l"> is partially computed using output information that we already know from the previous layer. The remainder, <img src="https://latex.codecogs.com/png.latex?%5Cdelta%5E%7B(l)%7D">, is the peeling of layers from the final output going backwards. The gradient is the product of a <strong>forward pass</strong> and a <strong>backward pass</strong>, which is the critical insight for how to organize the computational strategy. Once a set of weights have been initialized, we are able to compute all <img src="https://latex.codecogs.com/png.latex?h"> values for all layers in a single forward pass. Similarly, we can compute all <img src="https://latex.codecogs.com/png.latex?%5Cdelta"> values for all layers in a single backwards pass. The computation for <img src="https://latex.codecogs.com/png.latex?%5Cdelta"> values ought to leverage a cache of <img src="https://latex.codecogs.com/png.latex?h"> values from the first pass. As a result, we can compute <img src="https://latex.codecogs.com/png.latex?%5Cfrac%7B%5Cpartial%20L%7D%7B%5Cpartial%20W%5E%7B(l)%7D%7D"> for all layers with a single forward and backwards pass. This is the key insight behind backpropagation and avoids a quadratic complexity that is in the naive approach.</p>
+<p>The backwards pass is computed as</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cboxed%7B%5Cdelta%5E%7B(l)%7D%20=%20%5Cfrac%7B%5Cpartial%20L%7D%7B%5Cpartial%20z%5E%7B(l)%7D%7D%20=%20%5Cfrac%7B%5Cpartial%20L%7D%7B%5Cpartial%20z%5E%7B(l+1)%7D%7D%5Ccdot%5Cfrac%7B%5Cpartial%20z%5E%7B(l+1)%7D%7D%7B%5Cpartial%20h%5E%7B(l)%7D%7D%5Ccdot%5Cfrac%7B%5Cpartial%20h%5E%7B(l)%7D%7D%7B%5Cpartial%20z%5E%7B(l)%7D%7D%20=%20%5Cdelta%5E%7B(l+1)%7DW%5E%7B(l+1)%5Cprime%7D%5Codot%5Csigma'%5C!%5Cleft(z%5E%7B(l)%7D%5Cright)%7D"></p>
+</section>
+<section id="practical-example" class="level1">
+<h1>Practical example</h1>
+<p>Let’s run this on our 3-input, 3-hidden-unit, 1-output network, starting at the output layer and working backward. The output layer has no activation, so <img src="https://latex.codecogs.com/png.latex?z%5E%7B(2)%7D%20=%20%5Chat%20y"> directly, and the base case is just <img src="https://latex.codecogs.com/png.latex?%5Cdelta%5E%7B(2)%7D%20=%20%5Cpartial%20L/%5Cpartial%5Chat%20y%20=%20-%5Cfrac%7B2%7D%7Bn%7D(y%20-%20%5Chat%20y)">. Say for one training example <img src="https://latex.codecogs.com/png.latex?y%20-%20%5Chat%20y%20=%20-0.2"> (with <img src="https://latex.codecogs.com/png.latex?n=1">), so <img src="https://latex.codecogs.com/png.latex?%5Cdelta%5E%7B(2)%7D%20=%200.4">. Suppose the output layer’s weights are <img src="https://latex.codecogs.com/png.latex?W%5E%7B(2)%7D%20=%20(1,%5C%200.5,%5C%20-1)"> and <img src="https://latex.codecogs.com/png.latex?%5Csigma'(z%5E%7B(1)%7D)%20=%20(0.5,%5C%200.2,%5C%200.1)"> for that example. One application of the recursion gives</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0A%5Cdelta%5E%7B(1)%7D%20&amp;=%20%5Cleft(%5Cdelta%5E%7B(2)%7DW%5E%7B(2)%5Cprime%7D%5Cright)%5Codot%5Csigma'%5C!%5Cleft(z%5E%7B(1)%7D%5Cright)%20%5C%5C%0A&amp;=%20%5Cleft(0.4%5Ctimes(1,%5C%200.5,%5C%20-1)%5Cright)%5Codot(0.5,%5C%200.2,%5C%200.1)%20%5C%5C%0A&amp;=%20(0.4,%5C%200.2,%5C%20-0.4)%5Codot(0.5,%5C%200.2,%5C%200.1)%20%5C%5C%0A&amp;=%20(0.2,%5C%200.04,%5C%20-0.04).%0A%5Cend%7Balign%7D"></p>
+<p>If this network had another hidden layer before this one, we would repeat exactly this step — retrieve the delta value from the layer in front, multiply by that layer’s weights, then multiply elementwise by the current layer’s <img src="https://latex.codecogs.com/png.latex?%5Csigma'">, and so on.</p>
+<p>Now we bring it all back together. Say we had <img src="https://latex.codecogs.com/png.latex?X%20=%20(1,%5C%202,%5C%20-1)">, a cached <img src="https://latex.codecogs.com/png.latex?h"> value of <img src="https://latex.codecogs.com/png.latex?h%20=%20(0.6,%5C%200.7,%5C%200.3)">. With <img src="https://latex.codecogs.com/png.latex?%5Cdelta%5E%7B(1)%7D"> and <img src="https://latex.codecogs.com/png.latex?%5Cdelta%5E%7B(2)%7D"> above, the gradients we need for numerical optimization are <img src="https://latex.codecogs.com/png.latex?%5Cfrac%7B%5Cpartial%20L%7D%7B%5Cpartial%20W%5E%7B(1)%7D%7D%20=%20X'%5Cdelta%5E%7B(1)%7D%20=%20%5Cbegin%7Bpmatrix%7D0.2%20&amp;%200.04%20&amp;%20-0.04%5C%5C0.4%20&amp;%200.08%20&amp;%20-0.08%5C%5C-0.2%20&amp;%20-0.04%20&amp;%200.04%5Cend%7Bpmatrix%7D,%20%5Cqquad%20%5Cfrac%7B%5Cpartial%20L%7D%7B%5Cpartial%20W%5E%7B(2)%7D%7D%20=%20h'%5Cdelta%5E%7B(2)%7D%20=%20%5Cbegin%7Bpmatrix%7D0.24%5C%5C0.28%5C%5C0.12%5Cend%7Bpmatrix%7D."></p>
+</section>
+<section id="complexities-in-real-world-training" class="level1">
+<h1>Complexities in real world training</h1>
+<section id="vanishing-gradients" class="level2">
+<h2 class="anchored" data-anchor-id="vanishing-gradients">Vanishing gradients</h2>
+<p>Every time we peel a layer of <img src="https://latex.codecogs.com/png.latex?%5Cdelta%5E%7B(l)%7D">, we multiply by a <img src="https://latex.codecogs.com/png.latex?%5Csigma'(z%5E%7B(m)%7D)">. Consider the case when <img src="https://latex.codecogs.com/png.latex?%5Csigma"> is a sigmoid, or <img src="https://latex.codecogs.com/png.latex?%5Ctanh">; their derivatives hit a ceiling of 0.25 and 1. As we accumulate more of these multiplications, <img src="https://latex.codecogs.com/png.latex?%5Cdelta"> shrinks geometrically towards 0 as we have more layers. A network that is too deep becomes very difficult to train. In particular, the convergence speed for weights near the output, which have less peeling, is higher than the convergence speed for weights near the input.</p>
+<p>Note this does not happen in OLS.</p>
+<p>In practice this is manageable. ReLU-family activations sidestep the sigmoid/tanh ceiling directly, since their derivative is exactly 1 (not less than 1) wherever the unit is “on.” Skip connections — adding <img src="https://latex.codecogs.com/png.latex?h%5E%7B(l-2)%7D"> back into <img src="https://latex.codecogs.com/png.latex?h%5E%7B(l)%7D">, as in a residual network — give <img src="https://latex.codecogs.com/png.latex?%5Cdelta"> an alternate path back to early layers with a derivative of exactly 1, so it doesn’t have to survive a long product of <img src="https://latex.codecogs.com/png.latex?%5Csigma'"> terms to get there. Careful weight initialization (e.g.&nbsp;He or Xavier initialization, which scales <img src="https://latex.codecogs.com/png.latex?W%5E%7B(l)%7D">’s starting variance by the layer’s width) and normalization layers (batch norm, layer norm) keep <img src="https://latex.codecogs.com/png.latex?z%5E%7B(l)%7D"> away from <img src="https://latex.codecogs.com/png.latex?%5Csigma">’s saturating extremes to begin with.</p>
+</section>
+<section id="dead-units" class="level2">
+<h2 class="anchored" data-anchor-id="dead-units">Dead units</h2>
+<p>The ReLU function, <img src="https://latex.codecogs.com/png.latex?%5Csigma(z)%20=%20%5Cmax(0,%20z)">, has derivative exactly <img src="https://latex.codecogs.com/png.latex?0"> for <img src="https://latex.codecogs.com/png.latex?z%20%3C%200">. If at any point during the training process a unit’s weights yield <img src="https://latex.codecogs.com/png.latex?z%20%3C%200"> for <em>every training example</em>, <img src="https://latex.codecogs.com/png.latex?%5Csigma'(z)%20=%200"> wherever it is evaluated, so <img src="https://latex.codecogs.com/png.latex?%5Cdelta%5E%7B(l)%7D%20=%200"> for that unit on every future step. The multiplication with zero prevents us from ever updating the weights. The unit is permanently stuck outputting <img src="https://latex.codecogs.com/png.latex?0">, a “dead” unit.</p>
+<p>Note this does not happen in OLS.</p>
+<p>The usual fix is to give a unit some way back to life. Leaky ReLU, <img src="https://latex.codecogs.com/png.latex?%5Csigma(z)%20=%20%5Cmax(%5Calpha%20z,%20z)"> for a small <img src="https://latex.codecogs.com/png.latex?%5Calpha"> like 0.01, has a small nonzero slope for <img src="https://latex.codecogs.com/png.latex?z%3C0"> instead of exactly 0, so a unit that’s gone negative still receives a (small) gradient and can recover. Smooth variants like ELU, GELU, or Swish achieve something similar without a hard kink at 0. Good initialization and normalization help here too, by keeping a unit’s pre-activations from being pushed uniformly negative in the first place.</p>
+</section>
+<section id="convexity" class="level2">
+<h2 class="anchored" data-anchor-id="convexity">Convexity</h2>
+<p>The loss function in OLS is convex, so a minimum is guaranteed to be found. Composing several nonlinear activations destroys convexity. The loss surface of a deep network can have many local minima and plateaus, and gradient descent has no guarantee of finding the global minimum, or even the same minimum across two different random initializations.</p>
+<p>Modern practice largely sidesteps this rather than solving it. Empirically, the local minima that stochastic gradient descent finds in large, overparameterized networks tend to have similar loss — the genuinely bad local minima that plague small networks become rare as width grows, which is part of why today’s networks are made so large. Multiple random initializations, or training several networks and ensembling their predictions, is a cheap hedge against landing in a worse-than-typical minimum.</p>
+</section>
+<section id="saddle-points" class="level2">
+<h2 class="anchored" data-anchor-id="saddle-points">Saddle points</h2>
+<p>In high dimensions, non-convex loss surfaces have far more saddle points than bad local minima. A critical point, where the gradient <img src="https://latex.codecogs.com/png.latex?%5Cnabla_%5Ctheta%20L%20=%200">, is a local minimum only if the loss curves upward in every one of the <img src="https://latex.codecogs.com/png.latex?%5Cdim(%5Ctheta)"> directions simultaneously; as the parameter count grows large, the chance that all directions curve this way shrinks fast, while simultaneously the odds of some directions curve up and others curve down — a saddle — grows. Near a saddle the gradient can shrink toward zero even though we are nowhere near a good solution, so plain gradient descent can stall there for a long time. This is one reason practical training uses momentum or adaptive step sizes, e.g.&nbsp;Adam, instead of plain gradient descent.</p>
+<p>Momentum carries velocity through a flat region instead of slowing to match the local gradient, so it coasts past saddle points rather than stalling on them. Adam and its relatives rescale each parameter’s step by a running estimate of that parameter’s typical gradient magnitude, speeding up movement in directions where the raw gradient is tiny. The mini-batch noise in stochastic gradient descent helps too: an exact saddle point is a measure-zero target, and noisy gradients essentially never sit exactly on one for long.</p>
+</section>
+</section>
+<section id="code-example" class="level1">
+<h1>Code example</h1>
+<p>The rest of this post has been symbolic. Let’s make it concrete: build the exact 3-input, one-hidden-layer, one-output network from the examples above in R, starting from a blank dataframe and ending with a fully trained network.</p>
+<section id="the-data" class="level2">
+<h2 class="anchored" data-anchor-id="the-data">The data</h2>
+<p>We need a <img src="https://latex.codecogs.com/png.latex?y"> that a linear model <em>can’t</em> fit exactly, otherwise the hidden layer would buy us nothing. <img src="https://latex.codecogs.com/png.latex?y"> below is a nonlinear function of <img src="https://latex.codecogs.com/png.latex?X_1,%20X_2,%20X_3"> — a quadratic term and an interaction — plus noise:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">set.seed</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>)</span>
+<span id="cb1-2">n <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">200</span></span>
+<span id="cb1-3">df <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">data.frame</span>(</span>
+<span id="cb1-4">  <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">X1 =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rnorm</span>(n),</span>
+<span id="cb1-5">  <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">X2 =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rnorm</span>(n),</span>
+<span id="cb1-6">  <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">X3 =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rnorm</span>(n)</span>
+<span id="cb1-7">)</span>
+<span id="cb1-8">df<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>y <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">with</span>(df, X1<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">^</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span> <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span>X1<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span>X2 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.5</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span>X3 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rnorm</span>(n, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">sd =</span> <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.3</span>))</span>
+<span id="cb1-9"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">head</span>(df)</span></code></pre></div></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>          X1         X2         X3        y
+1 -0.6264538  0.4094018  1.0744410 1.340287
+2  0.1836433  1.6888733  1.8956548 0.811979
+3 -0.8356286  1.5865884 -0.6029973 3.206866
+4  1.5952808 -0.3309078 -0.3908678 3.567926
+5  0.3295078 -2.2852355 -0.4162220 1.365468
+6 -0.8204684  2.4976616 -0.3756574 4.242824</code></pre>
+</div>
+</div>
+</section>
+<section id="architecture-and-weights" class="level2">
+<h2 class="anchored" data-anchor-id="architecture-and-weights">Architecture and weights</h2>
+<p><img src="https://latex.codecogs.com/png.latex?k_0%20=%203"> inputs, <img src="https://latex.codecogs.com/png.latex?k_1%20=%206"> hidden units, <img src="https://latex.codecogs.com/png.latex?k_2%20=%201"> output. <img src="https://latex.codecogs.com/png.latex?W%5E%7B(1)%7D"> is <img src="https://latex.codecogs.com/png.latex?k_0%5Ctimes%20k_1">, <img src="https://latex.codecogs.com/png.latex?W%5E%7B(2)%7D"> is <img src="https://latex.codecogs.com/png.latex?k_1%5Ctimes%20k_2">, and both biases start at 0:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1">X <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">as.matrix</span>(df[, <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"X1"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"X2"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"X3"</span>)])</span>
+<span id="cb3-2">y <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">matrix</span>(df<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>y, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">ncol =</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>)</span>
+<span id="cb3-3"></span>
+<span id="cb3-4">k0 <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">3</span>; k1 <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">6</span>; k2 <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span></span>
+<span id="cb3-5"></span>
+<span id="cb3-6">sigmoid <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">function</span>(z) <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span> <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> (<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span> <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">exp</span>(<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span>z))</span>
+<span id="cb3-7"></span>
+<span id="cb3-8"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">set.seed</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">42</span>)</span>
+<span id="cb3-9">W1 <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">matrix</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rnorm</span>(k0 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> k1, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">sd =</span> <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.5</span>), <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">nrow =</span> k0, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">ncol =</span> k1)</span>
+<span id="cb3-10">b1 <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rep</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, k1)</span>
+<span id="cb3-11">W2 <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">matrix</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rnorm</span>(k1 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> k2, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">sd =</span> <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.5</span>), <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">nrow =</span> k1, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">ncol =</span> k2)</span>
+<span id="cb3-12">b2 <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rep</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, k2)</span></code></pre></div></div>
+</div>
+</section>
+<section id="forward-and-backward-pass" class="level2">
+<h2 class="anchored" data-anchor-id="forward-and-backward-pass">Forward and backward pass</h2>
+<p><code>forward_pass()</code> computes <img src="https://latex.codecogs.com/png.latex?z%5E%7B(1)%7D">, <img src="https://latex.codecogs.com/png.latex?h">, and <img src="https://latex.codecogs.com/png.latex?%5Chat%20y"> for every row of <img src="https://latex.codecogs.com/png.latex?X"> at once. <code>backward_pass()</code> is nothing but the <img src="https://latex.codecogs.com/png.latex?%5Cdelta"> recursion and the outer-product gradient formula derived above — <img src="https://latex.codecogs.com/png.latex?%5Cdelta%5E%7B(2)%7D%20=%20-%5Cfrac%7B2%7D%7Bn%7D(y-%5Chat%20y)">, <img src="https://latex.codecogs.com/png.latex?%5Cdelta%5E%7B(1)%7D%20=%20(%5Cdelta%5E%7B(2)%7DW%5E%7B(2)%5Cprime%7D)%5Codot%5Csigma'(z%5E%7B(1)%7D)">, and <img src="https://latex.codecogs.com/png.latex?%5Cpartial%20L/%5Cpartial%20W%5E%7B(l)%7D%20=%20h%5E%7B(l-1)%5Cprime%7D%5Cdelta%5E%7B(l)%7D">:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1">forward_pass <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">function</span>(X, W1, b1, W2, b2) {</span>
+<span id="cb4-2">  n <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">nrow</span>(X)</span>
+<span id="cb4-3">  Z1 <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> X <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> W1 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">matrix</span>(b1, n, <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">length</span>(b1), <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">byrow =</span> <span class="cn" style="color: #8f5902;
+background-color: null;
+font-style: inherit;">TRUE</span>)</span>
+<span id="cb4-4">  H  <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sigmoid</span>(Z1)</span>
+<span id="cb4-5">  Yhat <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> H <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> W2 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">matrix</span>(b2, n, <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">length</span>(b2), <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">byrow =</span> <span class="cn" style="color: #8f5902;
+background-color: null;
+font-style: inherit;">TRUE</span>)</span>
+<span id="cb4-6">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">list</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">Z1 =</span> Z1, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">H =</span> H, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">Yhat =</span> Yhat)</span>
+<span id="cb4-7">}</span>
+<span id="cb4-8"></span>
+<span id="cb4-9">backward_pass <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">function</span>(X, y, H, Yhat, W2) {</span>
+<span id="cb4-10">  n <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">nrow</span>(X)</span>
+<span id="cb4-11">  delta2 <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span> <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> n <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> (y <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> Yhat)</span>
+<span id="cb4-12">  dW2 <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">t</span>(H) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> delta2</span>
+<span id="cb4-13">  db2 <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">colSums</span>(delta2)</span>
+<span id="cb4-14">  delta1 <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> (delta2 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">t</span>(W2)) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> (H <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> (<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span> <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> H))</span>
+<span id="cb4-15">  dW1 <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">t</span>(X) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> delta1</span>
+<span id="cb4-16">  db1 <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">colSums</span>(delta1)</span>
+<span id="cb4-17">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">list</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">dW1 =</span> dW1, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">db1 =</span> db1, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">dW2 =</span> dW2, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">db2 =</span> db2)</span>
+<span id="cb4-18">}</span></code></pre></div></div>
+</div>
+</section>
+<section id="one-single-iteration" class="level2">
+<h2 class="anchored" data-anchor-id="one-single-iteration">One single iteration</h2>
+<p>Before training, run the two functions once to see exactly what a single gradient computation produces from the randomly initialized weights:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1">fwd <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">forward_pass</span>(X, W1, b1, W2, b2)</span>
+<span id="cb5-2"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">cat</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Initial MSE:"</span>, <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mean</span>((y <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> fwd<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>Yhat)<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">^</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>), <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">\n</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span>)</span></code></pre></div></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Initial MSE: 7.025462 </code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1">grad <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">backward_pass</span>(X, y, fwd<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>H, fwd<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>Yhat, W2)</span>
+<span id="cb7-2"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">cat</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"dL/dW1:</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">\n</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span>); <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">print</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">round</span>(grad<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>dW1, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">4</span>))</span></code></pre></div></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>dL/dW1:</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>     [,1]    [,2]    [,3]   [,4]   [,5]    [,6]
+X1 0.0414 -0.0482 -0.0044 0.0496 0.0022 -0.0369
+X2 0.1196 -0.0780  0.0159 0.0153 0.0093 -0.0489
+X3 0.4599 -0.2809  0.0346 0.1933 0.0334 -0.1195</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">cat</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"dL/dW2:</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">\n</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span>); <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">print</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">round</span>(grad<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>dW2, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">4</span>))</span></code></pre></div></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>dL/dW2:</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>        [,1]
+[1,] -1.4594
+[2,] -1.3988
+[3,] -1.7333
+[4,] -1.8041
+[5,] -1.2826
+[6,] -0.9423</code></pre>
+</div>
+</div>
+<p>That’s the entire computation from the “Practical Example” section above, run on 200 rows at once instead of one row by hand. <code>backward_pass()</code> never does anything except the <img src="https://latex.codecogs.com/png.latex?%5Cdelta"> recursion and an outer product, no matter how many layers or rows are involved.</p>
+</section>
+<section id="training-to-convergence" class="level2">
+<h2 class="anchored" data-anchor-id="training-to-convergence">Training to convergence</h2>
+<p>One gradient step nudges the weights very slightly. Training just repeats the forward/backward pair, taking a small step down the gradient each time, until the loss stops moving:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1">lr <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.1</span></span>
+<span id="cb13-2">max_iter <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">40000</span></span>
+<span id="cb13-3">tol <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1e-7</span></span>
+<span id="cb13-4">prev_loss <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="cn" style="color: #8f5902;
+background-color: null;
+font-style: inherit;">Inf</span></span>
+<span id="cb13-5">loss_history <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">numeric</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>)</span>
+<span id="cb13-6"></span>
+<span id="cb13-7"><span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">for</span> (iter <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">in</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">:</span>max_iter) {</span>
+<span id="cb13-8">  fwd <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">forward_pass</span>(X, W1, b1, W2, b2)</span>
+<span id="cb13-9">  loss <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mean</span>((y <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> fwd<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>Yhat)<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">^</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>)</span>
+<span id="cb13-10">  loss_history[iter] <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> loss</span>
+<span id="cb13-11">  <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">if</span> (<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">abs</span>(prev_loss <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> loss) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">&lt;</span> tol) <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">break</span></span>
+<span id="cb13-12">  prev_loss <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> loss</span>
+<span id="cb13-13"></span>
+<span id="cb13-14">  grad <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">backward_pass</span>(X, y, fwd<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>H, fwd<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>Yhat, W2)</span>
+<span id="cb13-15">  W1 <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> W1 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> lr <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> grad<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>dW1</span>
+<span id="cb13-16">  b1 <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> b1 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> lr <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> grad<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>db1</span>
+<span id="cb13-17">  W2 <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> W2 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> lr <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> grad<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>dW2</span>
+<span id="cb13-18">  b2 <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> b2 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> lr <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> grad<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>db2</span>
+<span id="cb13-19">}</span>
+<span id="cb13-20"></span>
+<span id="cb13-21"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">cat</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Converged after"</span>, iter, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"iterations. Final MSE:"</span>, <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">round</span>(loss, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">4</span>), <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">\n</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span>)</span></code></pre></div></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Converged after 33544 iterations. Final MSE: 0.0966 </code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">plot</span>(loss_history, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">type =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"l"</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">col =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"steelblue4"</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">lwd =</span> <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1.5</span>,</span>
+<span id="cb15-2">     <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">xlab =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"iteration"</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">ylab =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"MSE"</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">main =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Training loss"</span>)</span></code></pre></div></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="https://jeffwong.github.io/posts/ols_to_deep_learning/index_files/figure-html/unnamed-chunk-9-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1">ols_fit <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">lm</span>(y <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">~</span> X1 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> X2 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> X3, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">data =</span> df)</span>
+<span id="cb16-2"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">cat</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"OLS MSE:    "</span>, <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">round</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mean</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">residuals</span>(ols_fit)<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">^</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>), <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">4</span>), <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">\n</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span>)</span></code></pre></div></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>OLS MSE:     4.2993 </code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">cat</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Network MSE:"</span>, <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">round</span>(loss, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">4</span>), <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">\n</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span>)</span></code></pre></div></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Network MSE: 0.0966 </code></pre>
+</div>
+</div>
+<p>The network converges to roughly the noise floor (<img src="https://latex.codecogs.com/png.latex?%5Ctext%7Bsd%7D=0.3%20%5CRightarrow%20%5Ctext%7BVar%7D%5Capprox%200.09">), while OLS is stuck far higher — a linear combination of <img src="https://latex.codecogs.com/png.latex?X_1,%20X_2,%20X_3"> has no way to represent <img src="https://latex.codecogs.com/png.latex?X_1%5E2"> or <img src="https://latex.codecogs.com/png.latex?X_1%20X_2">. The hidden layer built exactly the nonlinear features it needed, on its own, from data alone.</p>
 
 
+</section>
 </section>
 
  ]]></description>

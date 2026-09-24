@@ -438,21 +438,84 @@
     "href": "posts/ols_to_deep_learning/index.html",
     "title": "From OLS to Deep Learning",
     "section": "",
-    "text": "A linear model is a neural network with zero hidden layers. This is not an analogy, it is a special case. Write a network as a composition of linear maps and elementwise nonlinearities\n[f(x) = W_L (W_{L-1} ((W_1 x)))]\nand set \\(L = 1\\) with \\(\\sigma = \\text{id}\\). This is exactly \\(f(x) = Wx\\). Every technique that shows up in deep learning is best understood as the answer to a question: what breaks, and what has to be invented to fix it, as depth and nonlinearity are turned on one at a time. This post works through that process literally, one knob at a time, starting from OLS and ending at a single hidden layer with a nonlinearity."
+    "text": "We often hear “deep learning is a bunch of matrix multiplications”. Is that true? If yes, then is it actually a linear operator like OLS?\nIndeed, there are many similarities between OLS and deep learning. Deep learning is like a composition of many linear models with different activation functions. In fact, a linear model is a neural network with zero hidden layers."
   },
   {
-    "objectID": "posts/ols_to_deep_learning/index.html#consequence-vanishing-gradients",
-    "href": "posts/ols_to_deep_learning/index.html#consequence-vanishing-gradients",
+    "objectID": "posts/ols_to_deep_learning/index.html#the-geometry-that-motivates-multiple-units",
+    "href": "posts/ols_to_deep_learning/index.html#the-geometry-that-motivates-multiple-units",
     "title": "From OLS to Deep Learning",
-    "section": "Consequence: Vanishing Gradients",
-    "text": "Consequence: Vanishing Gradients\nEvery layer multiplies the backward error by \\(\\sigma'(z)\\). For \\(\\sigma = \\tanh\\) or sigmoid, \\(\\sigma'\\) is bounded well below \\(1\\) over most of its domain, so each layer shrinks the error norm. Stacking \\(L\\) such layers multiplicatively attenuates the gradient roughly geometrically in \\(L\\). There is no analogue in the \\(\\sigma = \\text{id}\\) case, since the gradient there was just \\(x^T\\), with no per-layer attenuation term at all."
+    "section": "The geometry that motivates multiple units",
+    "text": "The geometry that motivates multiple units\nThere is a geometric interpretation where each unit “bends” the input space in different ways before the downstream layer recombines them.\nConsider a single hidden unit: the preactivation starts as a linear combination, which is then bent with a nonlinear transformation. A ReLU unit, \\(h=\\max(0, Xw+b)\\) represents a hinge: there are values of \\(Xw + b\\) that are negative but are then mapped to a constant 0, and for the space where \\(Xw + b &gt; 0\\) it is a hyperplane. This structure, flat on one side in \\(X\\)-space and linear on the other, is exactly a hinge that bends the inputs.\n\n\n\n\n\n\n\n\n\nAdding units to a layer gives the layer \\(k\\) of these one-bend building blocks, each bending a different direction of \\(X\\)-space at a different location. It’s analogous to OLS regressing \\(y\\) on several hand-picked basis functions (polynomial terms, spline knots, indicator variables) instead of on \\(X\\) alone, except here the basis functions are learned rather than chosen."
   },
   {
-    "objectID": "posts/ols_to_deep_learning/index.html#consequence-dead-units",
-    "href": "posts/ols_to_deep_learning/index.html#consequence-dead-units",
+    "objectID": "posts/ols_to_deep_learning/index.html#the-geometry-that-motivates-multiple-layers",
+    "href": "posts/ols_to_deep_learning/index.html#the-geometry-that-motivates-multiple-layers",
     "title": "From OLS to Deep Learning",
-    "section": "Consequence: Dead Units",
-    "text": "Consequence: Dead Units\nFor ReLU, \\(\\sigma'(z) \\in \\{0, 1\\}\\). If \\(z &lt; 0\\) for a given unit and input, the gradient through that unit is exactly zero, and no update reaches \\(W_1\\) for it on that example. This is a purely combinatorial failure mode, a unit can become permanently inactive across the whole data distribution, and it has no counterpart when \\(\\sigma = \\text{id}\\)."
+    "section": "The geometry that motivates multiple layers",
+    "text": "The geometry that motivates multiple layers\nEach unit in our one layer network above is bending in a naive way. The \\(k\\) bends are generated in parallel, and do not leverage one another. In order to make use of them effectively, we need to stack more layers.\nLet \\(L\\) be the number of hidden layers we choose to stack. Along with the final layer that outputs a prediction, the network has \\(L+1\\) total layers of parameters. We can see the pattern\n\\[\\begin{align}\nh^{(0)} &= X \\\\\nh^{(1)} &= \\sigma\\!\\left(h^{(0)}W^{(1)} + b^{(1)}\\right) \\\\\nh^{(2)} &= \\sigma\\!\\left(h^{(1)}W^{(2)} + b^{(2)}\\right) \\\\\nh^{(L)} &= \\sigma\\!\\left(h^{(L-1)}W^{(L)} + b^{(L)}\\right)\n\\end{align}\\]\nThe final layer is ultimately OLS, where we learn coefficients and an intercept for a new set of feature vectors captured by \\(h^{(L)}\\). In a sense, this deep neural network is OLS with learned feature engineering, and that feature engineering is a series of bends!\n\n\n\n\n\n\n\n\n\nEach panel is a composition of the hinge \\(T(x) = 2\\max(0,x) - 4\\max(0,x-0.5)\\). This represents a hidden layer with 2 ReLU units. The upper left panel represents the case where L = 1, then the upper right is when \\(L = 2\\) and the output stacks \\(T(T(x))\\). As we get to \\(L = 4\\) we are able to nest multiple hinges to change the shape of the output, to the point where 4 layers containing a total of 8 nodes is able to represent 16 teeth. In order to accomplish this with one single layer we would need 16 nodes."
+  },
+  {
+    "objectID": "posts/ols_to_deep_learning/index.html#vanishing-gradients",
+    "href": "posts/ols_to_deep_learning/index.html#vanishing-gradients",
+    "title": "From OLS to Deep Learning",
+    "section": "Vanishing gradients",
+    "text": "Vanishing gradients\nEvery time we peel a layer of \\(\\delta^{(l)}\\), we multiply by a \\(\\sigma'(z^{(m)})\\). Consider the case when \\(\\sigma\\) is a sigmoid, or \\(\\tanh\\); their derivatives hit a ceiling of 0.25 and 1. As we accumulate more of these multiplications, \\(\\delta\\) shrinks geometrically towards 0 as we have more layers. A network that is too deep becomes very difficult to train. In particular, the convergence speed for weights near the output, which have less peeling, is higher than the convergence speed for weights near the input.\nNote this does not happen in OLS.\nIn practice this is manageable. ReLU-family activations sidestep the sigmoid/tanh ceiling directly, since their derivative is exactly 1 (not less than 1) wherever the unit is “on.” Skip connections — adding \\(h^{(l-2)}\\) back into \\(h^{(l)}\\), as in a residual network — give \\(\\delta\\) an alternate path back to early layers with a derivative of exactly 1, so it doesn’t have to survive a long product of \\(\\sigma'\\) terms to get there. Careful weight initialization (e.g. He or Xavier initialization, which scales \\(W^{(l)}\\)’s starting variance by the layer’s width) and normalization layers (batch norm, layer norm) keep \\(z^{(l)}\\) away from \\(\\sigma\\)’s saturating extremes to begin with."
+  },
+  {
+    "objectID": "posts/ols_to_deep_learning/index.html#dead-units",
+    "href": "posts/ols_to_deep_learning/index.html#dead-units",
+    "title": "From OLS to Deep Learning",
+    "section": "Dead units",
+    "text": "Dead units\nThe ReLU function, \\(\\sigma(z) = \\max(0, z)\\), has derivative exactly \\(0\\) for \\(z &lt; 0\\). If at any point during the training process a unit’s weights yield \\(z &lt; 0\\) for every training example, \\(\\sigma'(z) = 0\\) wherever it is evaluated, so \\(\\delta^{(l)} = 0\\) for that unit on every future step. The multiplication with zero prevents us from ever updating the weights. The unit is permanently stuck outputting \\(0\\), a “dead” unit.\nNote this does not happen in OLS.\nThe usual fix is to give a unit some way back to life. Leaky ReLU, \\(\\sigma(z) = \\max(\\alpha z, z)\\) for a small \\(\\alpha\\) like 0.01, has a small nonzero slope for \\(z&lt;0\\) instead of exactly 0, so a unit that’s gone negative still receives a (small) gradient and can recover. Smooth variants like ELU, GELU, or Swish achieve something similar without a hard kink at 0. Good initialization and normalization help here too, by keeping a unit’s pre-activations from being pushed uniformly negative in the first place."
+  },
+  {
+    "objectID": "posts/ols_to_deep_learning/index.html#convexity",
+    "href": "posts/ols_to_deep_learning/index.html#convexity",
+    "title": "From OLS to Deep Learning",
+    "section": "Convexity",
+    "text": "Convexity\nThe loss function in OLS is convex, so a minimum is guaranteed to be found. Composing several nonlinear activations destroys convexity. The loss surface of a deep network can have many local minima and plateaus, and gradient descent has no guarantee of finding the global minimum, or even the same minimum across two different random initializations.\nModern practice largely sidesteps this rather than solving it. Empirically, the local minima that stochastic gradient descent finds in large, overparameterized networks tend to have similar loss — the genuinely bad local minima that plague small networks become rare as width grows, which is part of why today’s networks are made so large. Multiple random initializations, or training several networks and ensembling their predictions, is a cheap hedge against landing in a worse-than-typical minimum."
+  },
+  {
+    "objectID": "posts/ols_to_deep_learning/index.html#saddle-points",
+    "href": "posts/ols_to_deep_learning/index.html#saddle-points",
+    "title": "From OLS to Deep Learning",
+    "section": "Saddle points",
+    "text": "Saddle points\nIn high dimensions, non-convex loss surfaces have far more saddle points than bad local minima. A critical point, where the gradient \\(\\nabla_\\theta L = 0\\), is a local minimum only if the loss curves upward in every one of the \\(\\dim(\\theta)\\) directions simultaneously; as the parameter count grows large, the chance that all directions curve this way shrinks fast, while simultaneously the odds of some directions curve up and others curve down — a saddle — grows. Near a saddle the gradient can shrink toward zero even though we are nowhere near a good solution, so plain gradient descent can stall there for a long time. This is one reason practical training uses momentum or adaptive step sizes, e.g. Adam, instead of plain gradient descent.\nMomentum carries velocity through a flat region instead of slowing to match the local gradient, so it coasts past saddle points rather than stalling on them. Adam and its relatives rescale each parameter’s step by a running estimate of that parameter’s typical gradient magnitude, speeding up movement in directions where the raw gradient is tiny. The mini-batch noise in stochastic gradient descent helps too: an exact saddle point is a measure-zero target, and noisy gradients essentially never sit exactly on one for long."
+  },
+  {
+    "objectID": "posts/ols_to_deep_learning/index.html#the-data",
+    "href": "posts/ols_to_deep_learning/index.html#the-data",
+    "title": "From OLS to Deep Learning",
+    "section": "The data",
+    "text": "The data\nWe need a \\(y\\) that a linear model can’t fit exactly, otherwise the hidden layer would buy us nothing. \\(y\\) below is a nonlinear function of \\(X_1, X_2, X_3\\) — a quadratic term and an interaction — plus noise:\n\nset.seed(1)\nn &lt;- 200\ndf &lt;- data.frame(\n  X1 = rnorm(n),\n  X2 = rnorm(n),\n  X3 = rnorm(n)\n)\ndf$y &lt;- with(df, X1^2 - 2*X1*X2 + 0.5*X3 + rnorm(n, sd = 0.3))\nhead(df)\n\n          X1         X2         X3        y\n1 -0.6264538  0.4094018  1.0744410 1.340287\n2  0.1836433  1.6888733  1.8956548 0.811979\n3 -0.8356286  1.5865884 -0.6029973 3.206866\n4  1.5952808 -0.3309078 -0.3908678 3.567926\n5  0.3295078 -2.2852355 -0.4162220 1.365468\n6 -0.8204684  2.4976616 -0.3756574 4.242824"
+  },
+  {
+    "objectID": "posts/ols_to_deep_learning/index.html#architecture-and-weights",
+    "href": "posts/ols_to_deep_learning/index.html#architecture-and-weights",
+    "title": "From OLS to Deep Learning",
+    "section": "Architecture and weights",
+    "text": "Architecture and weights\n\\(k_0 = 3\\) inputs, \\(k_1 = 6\\) hidden units, \\(k_2 = 1\\) output. \\(W^{(1)}\\) is \\(k_0\\times k_1\\), \\(W^{(2)}\\) is \\(k_1\\times k_2\\), and both biases start at 0:\n\nX &lt;- as.matrix(df[, c(\"X1\", \"X2\", \"X3\")])\ny &lt;- matrix(df$y, ncol = 1)\n\nk0 &lt;- 3; k1 &lt;- 6; k2 &lt;- 1\n\nsigmoid &lt;- function(z) 1 / (1 + exp(-z))\n\nset.seed(42)\nW1 &lt;- matrix(rnorm(k0 * k1, sd = 0.5), nrow = k0, ncol = k1)\nb1 &lt;- rep(0, k1)\nW2 &lt;- matrix(rnorm(k1 * k2, sd = 0.5), nrow = k1, ncol = k2)\nb2 &lt;- rep(0, k2)"
+  },
+  {
+    "objectID": "posts/ols_to_deep_learning/index.html#forward-and-backward-pass",
+    "href": "posts/ols_to_deep_learning/index.html#forward-and-backward-pass",
+    "title": "From OLS to Deep Learning",
+    "section": "Forward and backward pass",
+    "text": "Forward and backward pass\nforward_pass() computes \\(z^{(1)}\\), \\(h\\), and \\(\\hat y\\) for every row of \\(X\\) at once. backward_pass() is nothing but the \\(\\delta\\) recursion and the outer-product gradient formula derived above — \\(\\delta^{(2)} = -\\frac{2}{n}(y-\\hat y)\\), \\(\\delta^{(1)} = (\\delta^{(2)}W^{(2)\\prime})\\odot\\sigma'(z^{(1)})\\), and \\(\\partial L/\\partial W^{(l)} = h^{(l-1)\\prime}\\delta^{(l)}\\):\n\nforward_pass &lt;- function(X, W1, b1, W2, b2) {\n  n &lt;- nrow(X)\n  Z1 &lt;- X %*% W1 + matrix(b1, n, length(b1), byrow = TRUE)\n  H  &lt;- sigmoid(Z1)\n  Yhat &lt;- H %*% W2 + matrix(b2, n, length(b2), byrow = TRUE)\n  list(Z1 = Z1, H = H, Yhat = Yhat)\n}\n\nbackward_pass &lt;- function(X, y, H, Yhat, W2) {\n  n &lt;- nrow(X)\n  delta2 &lt;- -2 / n * (y - Yhat)\n  dW2 &lt;- t(H) %*% delta2\n  db2 &lt;- colSums(delta2)\n  delta1 &lt;- (delta2 %*% t(W2)) * (H * (1 - H))\n  dW1 &lt;- t(X) %*% delta1\n  db1 &lt;- colSums(delta1)\n  list(dW1 = dW1, db1 = db1, dW2 = dW2, db2 = db2)\n}"
+  },
+  {
+    "objectID": "posts/ols_to_deep_learning/index.html#one-single-iteration",
+    "href": "posts/ols_to_deep_learning/index.html#one-single-iteration",
+    "title": "From OLS to Deep Learning",
+    "section": "One single iteration",
+    "text": "One single iteration\nBefore training, run the two functions once to see exactly what a single gradient computation produces from the randomly initialized weights:\n\nfwd &lt;- forward_pass(X, W1, b1, W2, b2)\ncat(\"Initial MSE:\", mean((y - fwd$Yhat)^2), \"\\n\")\n\nInitial MSE: 7.025462 \n\ngrad &lt;- backward_pass(X, y, fwd$H, fwd$Yhat, W2)\ncat(\"dL/dW1:\\n\"); print(round(grad$dW1, 4))\n\ndL/dW1:\n\n\n     [,1]    [,2]    [,3]   [,4]   [,5]    [,6]\nX1 0.0414 -0.0482 -0.0044 0.0496 0.0022 -0.0369\nX2 0.1196 -0.0780  0.0159 0.0153 0.0093 -0.0489\nX3 0.4599 -0.2809  0.0346 0.1933 0.0334 -0.1195\n\ncat(\"dL/dW2:\\n\"); print(round(grad$dW2, 4))\n\ndL/dW2:\n\n\n        [,1]\n[1,] -1.4594\n[2,] -1.3988\n[3,] -1.7333\n[4,] -1.8041\n[5,] -1.2826\n[6,] -0.9423\n\n\nThat’s the entire computation from the “Practical Example” section above, run on 200 rows at once instead of one row by hand. backward_pass() never does anything except the \\(\\delta\\) recursion and an outer product, no matter how many layers or rows are involved."
+  },
+  {
+    "objectID": "posts/ols_to_deep_learning/index.html#training-to-convergence",
+    "href": "posts/ols_to_deep_learning/index.html#training-to-convergence",
+    "title": "From OLS to Deep Learning",
+    "section": "Training to convergence",
+    "text": "Training to convergence\nOne gradient step nudges the weights very slightly. Training just repeats the forward/backward pair, taking a small step down the gradient each time, until the loss stops moving:\n\nlr &lt;- 0.1\nmax_iter &lt;- 40000\ntol &lt;- 1e-7\nprev_loss &lt;- Inf\nloss_history &lt;- numeric(0)\n\nfor (iter in 1:max_iter) {\n  fwd &lt;- forward_pass(X, W1, b1, W2, b2)\n  loss &lt;- mean((y - fwd$Yhat)^2)\n  loss_history[iter] &lt;- loss\n  if (abs(prev_loss - loss) &lt; tol) break\n  prev_loss &lt;- loss\n\n  grad &lt;- backward_pass(X, y, fwd$H, fwd$Yhat, W2)\n  W1 &lt;- W1 - lr * grad$dW1\n  b1 &lt;- b1 - lr * grad$db1\n  W2 &lt;- W2 - lr * grad$dW2\n  b2 &lt;- b2 - lr * grad$db2\n}\n\ncat(\"Converged after\", iter, \"iterations. Final MSE:\", round(loss, 4), \"\\n\")\n\nConverged after 33544 iterations. Final MSE: 0.0966 \n\nplot(loss_history, type = \"l\", col = \"steelblue4\", lwd = 1.5,\n     xlab = \"iteration\", ylab = \"MSE\", main = \"Training loss\")\n\n\n\n\n\n\n\n\n\nols_fit &lt;- lm(y ~ X1 + X2 + X3, data = df)\ncat(\"OLS MSE:    \", round(mean(residuals(ols_fit)^2), 4), \"\\n\")\n\nOLS MSE:     4.2993 \n\ncat(\"Network MSE:\", round(loss, 4), \"\\n\")\n\nNetwork MSE: 0.0966 \n\n\nThe network converges to roughly the noise floor (\\(\\text{sd}=0.3 \\Rightarrow \\text{Var}\\approx 0.09\\)), while OLS is stuck far higher — a linear combination of \\(X_1, X_2, X_3\\) has no way to represent \\(X_1^2\\) or \\(X_1 X_2\\). The hidden layer built exactly the nonlinear features it needed, on its own, from data alone."
   },
   {
     "objectID": "posts/posthoc_mde/index.html",

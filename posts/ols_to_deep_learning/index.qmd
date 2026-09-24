@@ -5,84 +5,387 @@ date: 2026-07-08
 categories: [mathematical statistics]
 ---
 
-A linear model is a neural network with zero hidden layers. This is not an analogy, it is a special case. Write a network as a composition of linear maps and elementwise nonlinearities
+We often hear "deep learning is a bunch of matrix multiplications". Is that true? If yes, then is it actually a linear operator like OLS?
 
-\[f(x) = W_L \sigma(W_{L-1} \sigma(\cdots \sigma(W_1 x)))\]
+Indeed, there are many similarities between OLS and deep learning. Deep learning is like a composition of many linear models with different activation functions. In fact, a linear model is a neural network with zero hidden layers.
 
-and set $L = 1$ with $\sigma = \text{id}$. This is exactly $f(x) = Wx$. Every technique that shows up in deep learning is best understood as the answer to a question: what breaks, and what has to be invented to fix it, as depth and nonlinearity are turned on one at a time. This post works through that process literally, one knob at a time, starting from OLS and ending at a single hidden layer with a nonlinearity.
+# OLS is a neural network with zero hidden layers.
 
-# Base Case: $L = 1$, $\sigma = \text{id}$
+Take the simplest possible network, observeable values in $X$ map directly to an observeable $y$ through a linear function. There are no hidden layers, as in no transformations of $X$ that are learned other than to produce $y$ itself.
+This is a zero hidden layer neural network and it is equivalent to OLS. See the picture below.
+$$\hat y = XW + b.$$
 
-The closed form solution to least squares is well known, $\hat{W} = (X^TX)^{-1}X^Ty$. But it is more useful here to derive it by gradient descent instead, since the gradient descent derivation is the one that generalizes to deep networks and the closed form is the one that does not.
+```{r, echo=FALSE, fig.width=6, fig.height=4.4, fig.align="center"}
+op <- par(mar = c(0.5, 0.5, 3, 0.5))
+plot(NA, xlim = c(0, 10), ylim = c(1, 10), xlab = "", ylab = "",
+     axes = FALSE, asp = 1)
 
-For a single example $(x, y)$, the squared error loss is
+input_y <- c(8.5, 6.5, 4.5, 2.5)
+input_labels <- c(expression(X[1]), expression(X[2]), expression(X[3]), "1")
+input_x <- rep(1.5, 4)
 
-\[\mathcal{L}(W) = \frac{1}{2}\|Wx - y\|^2\]
+output_x <- 8.5
+output_y <- 5.5
 
-with gradient
+weight_labels <- c(expression(W[1]), expression(W[2]), expression(W[3]), "b")
+for (i in 1:4) {
+  segments(input_x[i] + 0.6, input_y[i], output_x - 0.6, output_y, col = "gray40", lwd = 1.5)
+  mid_x <- input_x[i] + 0.7 * (output_x - input_x[i])
+  mid_y <- input_y[i] + 0.7 * (output_y - input_y[i])
+  text(mid_x, mid_y + 0.3, weight_labels[i], cex = 0.9)
+}
 
-\[\frac{\partial \mathcal{L}}{\partial W} = (Wx - y)x^T\]
+symbols(input_x, input_y, circles = rep(0.6, 4), inches = FALSE, add = TRUE, bg = "white", lwd = 1.5)
+text(input_x, input_y, input_labels, cex = 1.1)
 
-The structure of this gradient is worth naming, because it is the structure that persists at every depth: it is the **error at the output**, taken as an outer product with the **input to that layer**. This is backpropagation already, in miniature, before there is any chain rule to speak of.
+symbols(output_x, output_y, circles = 0.6, inches = FALSE, add = TRUE, bg = "gray90", lwd = 1.5)
+text(output_x, output_y, expression(hat(y)), cex = 1.1)
 
-The gradient descent update is $W \leftarrow W - \eta(Wx - y)x^T$. Iterating this converges to the same $\hat{W}$ as the normal equations, because $\mathcal{L}$ is convex in $W$; the Hessian is $xx^T \otimes I \succeq 0$. This convexity is a property of the $L=1$, $\sigma = \text{id}$ case specifically. It will not survive past the next section, and its absence is responsible for a large fraction of what makes deep learning hard.
+title(main = expression(hat(y) == XW + b ~ "   (zero hidden layers = OLS)"))
+par(op)
+```
 
-# Turning on Depth, Leaving $\sigma$ Off
+The only thing that differs is *how* we solve it. OLS is usually taught with the closed form normal equations, $\hat\beta = (X'X)^{-1}X'y$. A "zero hidden layer network" is instead typically fit by gradient descent, taking small steps down the loss surface. Both procedures, if they converge, land on the identical $\hat\beta$.
 
-Consider $L = 2$ with no nonlinearity,
+# One hidden layer
 
-\[f(x) = W_2 W_1 x\]
+OLS can be equivalently expressed as
 
-Since $W_2 W_1$ is just some matrix $M$, this model class is identical to the $L=1$ case. Depth without nonlinearity adds no expressivity. It is still useful to work out the gradient, because the mechanics here are exactly the mechanics of backpropagation at arbitrary depth, even though the model class does not change.
+$$y = f(x_1, x_2, x_3).$$
 
-Let $h = W_1 x$ be the hidden pre-activation and $\hat{y} = W_2 h$ be the output. By the chain rule,
+The inputs are fed into a function to produce $y$. Now imagine that we nested more functions like so
 
-\[\begin{align}
-\frac{\partial \mathcal{L}}{\partial W_2} &= (\hat{y} - y)h^T \\
-\frac{\partial \mathcal{L}}{\partial W_1} &= \big(W_2^T (\hat{y} - y)\big) x^T
-\end{align}\]
+$$y = g(h_1(x_1, x_2, x_3), h_2(x_1, x_2, x_3), h_3(x_1, x_2, x_3)).$$
 
-The gradient for $W_1$ has the same shape as before, error outer product input, except the error term $(\hat y - y)$ is pulled back through $W_2^T$ before it reaches $x^T$. That pullback is the entire mechanism of backpropagation: to compute the gradient at an earlier layer, take the error and multiply by the transpose of every weight matrix downstream of it. At greater depth this is done repeatedly, once per layer, in reverse order of the forward pass. There is no new linear algebra content here, only bookkeeping, since $\partial (W_2 W_1 x)/\partial W_1$ involving $W_2^T$ is not a surprising fact. Deep learning's contribution at this stage is an algorithm that computes this bookkeeping once, reusing intermediate results, rather than once per parameter.
+We can think of this as a type of feature engineering. We map the inputs $(x_1, x_2, x_3)$ into an intermediate function like $h_1$ to engineer a new feature. We do that again to produce $h_2$ and $h_3$. Finally, we learn an OLS model on the newly engineered features.
 
-# Turning on One Nonlinearity
+This is what a neural network with one hidden layer does. We can draw the extension below. The 3 blue nodes collectively represent one hidden layer. That hidden layer serves as new inputs to learn a linear function that outputs $y$.
 
-Now consider $L = 2$ with $\sigma$ active on the hidden layer,
+```{r, echo=FALSE, fig.width=6.5, fig.height=4.4, fig.align="center"}
+op <- par(mar = c(0.5, 0.5, 3, 0.5))
+plot(NA, xlim = c(0, 12), ylim = c(0.5, 10), xlab = "", ylab = "",
+     axes = FALSE, asp = 1)
 
-\[f(x) = W_2\, \sigma(W_1 x)\]
+input_y <- c(8.5, 6.5, 4.5, 2.5)
+input_labels <- c(expression(X[1]), expression(X[2]), expression(X[3]), "1")
+input_x <- rep(1.2, 4)
 
-This is the smallest model in the family that is not secretly linear, and it is where every qualitatively new phenomenon in deep learning originates. Let $z = W_1 x$ be the pre-activation, $h = \sigma(z)$ the post-activation, and $\hat{y} = W_2 h$ the output. Then
+hidden_y <- c(7.5, 5.5, 3.5)
+hidden_labels <- c(expression(h[1]), expression(h[2]), expression(h[3]))
+hidden_x <- rep(6, 3)
 
-\[\begin{align}
-\frac{\partial \mathcal{L}}{\partial W_2} &= (\hat{y} - y)h^T \\
-\frac{\partial \mathcal{L}}{\partial W_1} &= \Big[\big(W_2^T(\hat{y} - y)\big) \odot \sigma'(z)\Big]x^T
-\end{align}\]
+output_x <- 10.5
+output_y <- 5.5
 
-One new object appears, $\sigma'(z)$, and it enters through an elementwise product $\odot$ rather than a matrix multiplication. This single fact is responsible for the rest of the subject.
+for (i in 1:4) {
+  for (j in 1:3) {
+    segments(input_x[i] + 0.55, input_y[i], hidden_x[j] - 0.55, hidden_y[j],
+             col = "gray60", lwd = 1)
+  }
+}
+for (j in 1:3) {
+  segments(hidden_x[j] + 0.55, hidden_y[j], output_x - 0.55, output_y,
+           col = "gray40", lwd = 1.3)
+}
 
-In the linear case, the backward pass was pure matrix multiplication, the same linear map regardless of $x$. Now the effective linear map used to pull the error backward is $W_2^T \,\text{diag}(\sigma'(z))$, and $\sigma'(z)$ depends on $z = W_1 x$, which depends on the specific input. So the map is different at every point in input space.
+symbols(input_x, input_y, circles = rep(0.55, 4), inches = FALSE, add = TRUE, bg = "white", lwd = 1.5)
+text(input_x, input_y, input_labels, cex = 1.05)
 
-This gives a precise version of the analogy: **a neural network is a linear model whose effective weight matrix is chosen per input by the nonlinearities.** For a fixed $x$,
+symbols(hidden_x, hidden_y, circles = rep(0.55, 3), inches = FALSE, add = TRUE, bg = "lightsteelblue1", lwd = 1.5)
+text(hidden_x, hidden_y, hidden_labels, cex = 1.05)
 
-\[f(x) = W_2\,\text{diag}(\sigma'(z))\,W_1\,x\]
+symbols(output_x, output_y, circles = 0.55, inches = FALSE, add = TRUE, bg = "gray90", lwd = 1.5)
+text(output_x, output_y, expression(hat(y)), cex = 1.05)
 
-which holds exactly, not approximately, when $\sigma$ is piecewise linear, as with ReLU. A ReLU network is literally a linear model whose weight matrix is an $x$-dependent selection among a finite number of linear regions. "Nonlinear" here is better read as **piecewise linear, with the pieces chosen adaptively by the data.** The linear algebra has not gone away; a combinatorial layer has been added on top of it, namely the question of which linear region a given $x$ falls into, and that question has no analogue in a model with $\sigma = \text{id}$.
+text(mean(c(1.2, 6)), 9.4, expression(W^(1) * "," ~ b^(1)), cex = 1)
+text(mean(c(6, 10.5)), 9.4, expression(W^(2) * "," ~ b^(2)), cex = 1)
+text(6, 1.7, expression(h[j] == sigma(X * w[j]^(1) + b[j]^(1))), cex = 0.95)
 
-## Consequence: Vanishing Gradients
+title(main = expression(h == sigma(X*W^(1) + b^(1)) * "," ~ hat(y) == h*W^(2) + b^(2) ~ "   (one hidden layer)"), cex.main = 0.95)
+par(op)
+```
 
-Every layer multiplies the backward error by $\sigma'(z)$. For $\sigma = \tanh$ or sigmoid, $\sigma'$ is bounded well below $1$ over most of its domain, so each layer shrinks the error norm. Stacking $L$ such layers multiplicatively attenuates the gradient roughly geometrically in $L$. There is no analogue in the $\sigma = \text{id}$ case, since the gradient there was just $x^T$, with no per-layer attenuation term at all.
+Let's keep it simple. In a one hidden layer network, each node $j$ in the hidden layer will take the form $\sigma(X W_j)$. $X W_j$ is called the preactivation and it is a linear combination of the input features, obtained from the previous layer, with weights that are specific to node $j$. The preactivation is then transformed through an activation function $\sigma$. There are many different types of activation functions, such as ReLU or the sigmoid. In a fully connected graph, which is almost always the use case, all nodes in layer $h$ are operating on the same input features, so we can vectorize and express the $h$ layer overall as $h = \sigma(XW)$. Here we are using a convenient vectorized expression where every node in the layer is using the same activation function, though that is not a mathematical requirement.
 
-## Consequence: Dead Units
+For vocabulary sake, a layer that has width $k$ means there are $k$ nodes in that layer. A neural network that has depth $L$ has $L$ layers.
 
-For ReLU, $\sigma'(z) \in \{0, 1\}$. If $z < 0$ for a given unit and input, the gradient through that unit is exactly zero, and no update reaches $W_1$ for it on that example. This is a purely combinatorial failure mode, a unit can become permanently inactive across the whole data distribution, and it has no counterpart when $\sigma = \text{id}$.
+Matrix multiplications on top of matrix multiplications feel redundant. It's the activation function that makes a layer meaningful. 
+Because $\sigma$ is nonlinear, $h$ is no longer a linear transform of $X$. 
 
-# What Nonlinearity Forces You to Invent
+## The geometry that motivates multiple units
 
-Three things become necessary the moment $\sigma$ is turned on, each a direct response to something in the previous section.
+There is a geometric interpretation where each unit "bends" the input space in different ways before the downstream layer recombines them. 
 
-**No closed form, no convexity.** $\mathcal{L}(W_1, W_2)$ is no longer a quadratic bowl in the parameters; $\sigma$ inside the composition destroys convexity in general. Iterative gradient descent stops being a convenient tool and becomes the only tool. It is worth noting the loss remains convex in $W_2$ alone for $W_1$ fixed, this kind of biconvexity recurs throughout the subject.
+Consider a single hidden unit: the preactivation starts as a linear combination, which is then bent with a nonlinear transformation. A ReLU unit, $h=\max(0, Xw+b)$ represents a hinge: there are values of $Xw + b$ that are negative but are then mapped to a constant 0, and for the space where $Xw + b > 0$ it is a hyperplane. This structure, flat on one side in $X$-space and linear on the other, is exactly a hinge that bends the inputs.
 
-**Initialization matters.** In the OLS case, the starting value of $W$ does not affect where gradient descent converges, since the problem is convex with a unique minimizer. Here, the scale of $W_1$ at initialization determines whether $z = W_1 x$ lands in the saturating region of $\sigma$, where gradients are small, or the near-linear region, where they are healthy, before any learning has occurred. This motivates initialization schemes that choose $\text{Var}(W_{ij})$ so that $\text{Var}(z)$ stays $O(1)$ across layers.
+```{r, echo=FALSE, fig.width=6, fig.height=4.4, fig.align="center"}
+op <- par(mar = c(1, 1, 3, 1))
 
-**Depth composes attenuation multiplicatively.** Adding layers to a purely linear map did nothing, as shown above; it collapsed to a single matrix. Once $\sigma'$ terms enter the chain rule multiplicatively, that same stacking becomes unstable whenever those terms are consistently below or above $1$ in magnitude. This single fact, that repeated multiplication of terms with norm not equal to $1$ is unstable, motivates most of the architectural machinery that follows in the subject, including normalization layers and residual connections.
+x1 <- seq(-2, 2, length.out = 40)
+x2 <- seq(-2, 2, length.out = 40)
+w1 <- 1; w2 <- 0.6; b <- 0
+z <- outer(x1, x2, function(a, c) pmax(0, w1 * a + w2 * c + b))
 
-The arc here is short but complete. OLS gives the shape of every gradient in deep learning, error outer product input, for free. Adding depth without nonlinearity gives the mechanism, repeated transpose multiplication, with zero new expressivity. Adding a single $\sigma'$ term turns a global linear map into a per input, piecewise linear one, and vanishing gradients, dead units, non-convexity, and initialization sensitivity all follow mechanically from that one elementwise product.
+pmat <- persp(x1, x2, z, theta = -35, phi = 22, expand = 0.6,
+              col = "lightsteelblue1", shade = 0.4, border = "gray30", lwd = 0.4,
+              ticktype = "simple", box = TRUE,
+              xlab = "X1", ylab = "X2", zlab = "h = max(0, Xw + b)",
+              main = "A single ReLU hinge")
+
+cx1 <- seq(-2, 2, length.out = 50)
+cx2 <- pmin(pmax(-(w1 * cx1 + b) / w2, -2), 2)
+lines(trans3d(cx1, cx2, 0, pmat), col = "black", lwd = 2.2)
+
+text(trans3d(-1.3, -1.3, 0, pmat), labels = "flat: hinge is \"off\"", cex = 0.85, pos = 1, offset = 0.6)
+text(trans3d(1.2, 1.2, 1.9, pmat), labels = "linear: hinge is \"on\"", cex = 0.85, pos = 3)
+text(trans3d(0.3, -0.5, 0, pmat), labels = "crease: Xw + b = 0", cex = 0.85, pos = 1, font = 3)
+
+par(op)
+```
+
+Adding units to a layer gives the layer $k$ of these one-bend building blocks, each bending a different direction of $X$-space at a different location. It's analogous to OLS regressing $y$ on several hand-picked basis functions (polynomial terms, spline knots, indicator variables) instead of on $X$ alone, except here the basis functions are learned rather than chosen.
+
+## The geometry that motivates multiple layers
+
+Each unit in our one layer network above is bending in a naive way. The $k$ bends are generated in parallel, and do not leverage one another. In order to make use of them effectively, we need to stack more layers.
+
+Let $L$ be the number of hidden layers we choose to stack. Along with the final layer that outputs a prediction, the network has $L+1$ total layers of parameters. We can see the pattern
+
+\begin{align}
+h^{(0)} &= X \\
+h^{(1)} &= \sigma\!\left(h^{(0)}W^{(1)} + b^{(1)}\right) \\ 
+h^{(2)} &= \sigma\!\left(h^{(1)}W^{(2)} + b^{(2)}\right) \\
+h^{(L)} &= \sigma\!\left(h^{(L-1)}W^{(L)} + b^{(L)}\right)
+\end{align}
+
+The final layer is ultimately OLS, where we learn coefficients and an intercept for a new set of feature vectors captured by $h^{(L)}$. In a sense, this deep neural network is OLS with learned feature engineering, and that feature engineering is a series of bends!
+
+```{r, echo=FALSE, fig.width=6.5, fig.height=5, fig.align="center"}
+tent <- function(x) {
+  r1 <- pmax(0, x)
+  r2 <- pmax(0, x - 0.5)
+  2*r1 - 4*r2
+}
+compose_n <- function(x, n) {
+  y <- x
+  for (i in seq_len(n)) y <- tent(y)
+  y
+}
+
+x <- seq(0, 1, length.out = 3000)
+op <- par(mfrow = c(2, 2), mar = c(3, 3, 2.5, 1))
+for (L in 1:4) {
+  y <- compose_n(x, L)
+  plot(x, y, type = "l", lwd = 1.3, col = "steelblue4",
+       xlab = "X", ylab = bquote(T^(.(L))*(X)),
+       main = paste0("L = ", L, " layers   (", 2^L, " linear pieces)"),
+       cex.main = 0.95)
+}
+par(op)
+```
+
+Each panel is a composition of the hinge $T(x) = 2\max(0,x) - 4\max(0,x-0.5)$. This represents a hidden layer with 2 ReLU units. The upper left panel represents the case where L = 1, then the upper right is when $L = 2$ and the output stacks $T(T(x))$. As we get to $L = 4$ we are able to nest multiple hinges to change the shape of the output, to the point where 4 layers containing a total of 8 nodes is able to represent 16 teeth. In order to accomplish this with one single layer we would need 16 nodes.
+
+# Training: loss and backpropagation
+
+So far we have described the architecture of a neural network and its relationship to OLS. Now we will describe how the network is trained.
+
+We want to minimize our loss function $L(\theta) = \frac{1}{n}\sum_i (y_i - \hat y_i(\theta))^2$ using the parameters across the entire network, where $\theta = \{W^{(1)}, b^{(1)}, \ldots, W^{(L+1)}, b^{(L+1)}\}$. Training a network is hard; to get an understanding of the size of $\theta$, let $k_l$ denote the number of nodes in layer $l$, for $l = 0, 1, \ldots, L+1$, with $k_0$ the number of input features in the original $X$ and $k_{L+1} = 1$ for a single regression output. Layer $l$'s weight matrix $W^{(l)}$ maps the $k_{l-1}$ nodes of the previous layer into the $k_l$ nodes of layer $l$, so $W^{(l)}$ is $k_{l-1}\times k_l$; its bias $b^{(l)}$ has one entry per node of layer $l$, so it's $k_l$-dimensional. Altogether,
+
+$$|\theta| = \sum_{l=1}^{L+1}\left(k_{l-1}k_l + k_l\right).$$
+
+In our running example, $k_0 = 3$ inputs, $k_1 = 3$ hidden units, $k_2 = 1$ output, so $W^{(1)}$ is $3\times3$ (9 parameters), $b^{(1)}$ is 3-dimensional, $W^{(2)}$ is $3\times1$ (3 parameters), and $b^{(2)}$ is a single scalar, for $|\theta| = (9+3)+(3+1) = 16$ parameters total.
+
+We can't optimize the loss function algebraically in closed form. Instead, we will solve this using numerical optimization, which requires us to know the gradient of $L(\theta)$ at each of its parameters. Expressing the gradient around a layer $l$ is natural since a layer is matrix multiplication (due to vectorization described above) and a single activation layer. We are going to leverage the fact that layer $l$ is directly related to layer $l-1$ in order to create an elegant recursion. We will apply the chain rule throughout that recursion to create a simple computational strategy, known as backpropagation.
+
+Backpropagation is a very clever computational strategy. But let's start with the naive formulation, which would be to compute $\partial L/\partial\theta$. Say we try to compute a specific component $\partial L/\partial W^{(l)}$, the way to do this is to express $\hat{y}(\theta)$ from the loss function as a function of the output layer, which is a function of the previous layer, which is a function of its previous layer, etc, until peeling backwards to layer $l$. Expressing $\hat{y}(\theta)$ like this lets us differentiate it by $W^{(l)}$. Let's go back to our 1 hidden layer example, where there are 3 $X$ inputs that go to 1 hidden layer with 3 nodes, which goes to the output layer. Differentiating the loss by the parameters in the hidden layer, $W^{(1)}$ would look like
+
+\begin{align}
+L(\theta) &= \frac{1}{n}\sum_i (y_i - \hat y_i(\theta))^2 \\
+z^{(1)} &= XW^{(1)} + b^{(1)} \\
+h &= \sigma(z^{(1)}) \\
+\hat y &= hW^{(2)} + b^{(2)} \\
+\frac{\partial L}{\partial W^{(1)}} &= \frac{\partial L}{\partial \hat y} \cdot \frac{\partial \hat y}{\partial h}  \cdot \frac{\partial h}{\partial z^{(1)}} \cdot \frac{\partial z^{(1)}}{\partial W^{(1)}}
+\end{align}
+
+Conceptually, we unpacked the gradient through a series of chain rules, and it looks like we can just multiply through. Unfortunately the reality is much more complex because each of these variables have their own shape, some are scalars, some are vectors, some are matrices. It is misleading to say it's just multiplication. Let's examine the structure:
+
+1. $\partial L/\partial\hat y$ is a scalar, since the output layer here has width $k_2 = 1$.
+2. $\partial\hat y/\partial h$ is a $1\times k_1$ row vector — the sensitivity of the single output to each of the $k_1 = 3$ hidden units — and combining it with the scalar before it is ordinary scalar-vector rescaling.
+3. $\partial h/\partial z^{(1)}$ is, in full generality, a $k_1\times k_1$ Jacobian, but because $h = \sigma(z^{(1)})$ acts unit by unit that Jacobian is diagonal and collapses to the $k_1$-vector $\sigma'(z^{(1)})$; combining it with the row vector before it is an elementwise (Hadamard) product. Chaining these first three factors together is $\delta^{(1)} = \partial L/\partial z^{(1)}$, a $1\times k_1$ row vector.
+4. $\partial z^{(1)}/\partial W^{(1)}$ is, in full generality, a three-index object — $z^{(1)}$ has $k_1$ entries and $W^{(1)}$ has $k_0\times k_1$ entries of its own. Differentiating a vector by a matrix is going to feel funny, but we leverage the fact that $z^{(1)} = XW^{(1)} + b^{(1)}$ is affine, and each $z^{(1)}_j$ only depends on column $j$ of $W^{(1)}$ through the same $k_0$ inputs, so $\partial z^{(1)}_j/\partial W^{(1)}_{ij} = X_i$ for every $j$. This is just $X$ replicated multiple times, the same $k_0$-vector no matter which hidden unit $j$ we're looking at. Stacking that $k_0$-vector with the $1\times k_1$ row vector $\delta^{(1)}$ from the first three factors is an outer product, $X'\delta^{(1)}$, producing the $k_0\times k_1$ result that matches $W^{(1)}$'s own shape.
+
+It turns out this is unnecessarily complicated. We can make the computation much more tractable by factoring out $\delta^{(l)} = \partial L/\partial z^{(l)}$, the loss's sensitivity to the *pre-activation*. We rewrite the chain rule above as 
+
+$$\boxed{\frac{\partial L}{\partial W^{(l)}} = h^{(l-1)\prime}\delta^{(l)}.}$$
+
+This says that the gradient at layer $l$ is partially computed using output information that we already know from the previous layer. The remainder, $\delta^{(l)}$, is the peeling of layers from the final output going backwards. The gradient is the product of a **forward pass** and a **backward pass**, which is the critical insight for how to organize the computational strategy. Once a set of weights have been initialized, we are able to compute all $h$ values for all layers in a single forward pass. Similarly, we can compute all $\delta$ values for all layers in a single backwards pass. The computation for $\delta$ values ought to leverage a cache of $h$ values from the first pass. As a result, we can compute $\frac{\partial L}{\partial W^{(l)}}$ for all layers with a single forward and backwards pass. This is the key insight behind backpropagation and avoids a quadratic complexity that is in the naive approach.
+
+The backwards pass is computed as
+
+$$\boxed{\delta^{(l)} = \frac{\partial L}{\partial z^{(l)}} = \frac{\partial L}{\partial z^{(l+1)}}\cdot\frac{\partial z^{(l+1)}}{\partial h^{(l)}}\cdot\frac{\partial h^{(l)}}{\partial z^{(l)}} = \delta^{(l+1)}W^{(l+1)\prime}\odot\sigma'\!\left(z^{(l)}\right)}$$
+
+# Practical example
+
+Let's run this on our 3-input, 3-hidden-unit, 1-output network, starting at the output layer and working backward. The output layer has no activation, so $z^{(2)} = \hat y$ directly, and the base case is just $\delta^{(2)} = \partial L/\partial\hat y = -\frac{2}{n}(y - \hat y)$. Say for one training example $y - \hat y = -0.2$ (with $n=1$), so $\delta^{(2)} = 0.4$. Suppose the output layer's weights are $W^{(2)} = (1,\ 0.5,\ -1)$ and $\sigma'(z^{(1)}) = (0.5,\ 0.2,\ 0.1)$ for that example. One application of the recursion gives
+
+\begin{align}
+\delta^{(1)} &= \left(\delta^{(2)}W^{(2)\prime}\right)\odot\sigma'\!\left(z^{(1)}\right) \\
+ &= \left(0.4\times(1,\ 0.5,\ -1)\right)\odot(0.5,\ 0.2,\ 0.1) \\ 
+ &= (0.4,\ 0.2,\ -0.4)\odot(0.5,\ 0.2,\ 0.1) \\
+ &= (0.2,\ 0.04,\ -0.04).
+\end{align}
+
+If this network had another hidden layer before this one, we would repeat exactly this step — retrieve the delta value from the layer in front, multiply by that layer's weights, then multiply elementwise by the current layer's $\sigma'$, and so on.
+
+Now we bring it all back together. Say we had $X = (1,\ 2,\ -1)$, a cached $h$ value of $h = (0.6,\ 0.7,\ 0.3)$. With $\delta^{(1)}$ and $\delta^{(2)}$ above, the gradients we need for numerical optimization are
+$$\frac{\partial L}{\partial W^{(1)}} = X'\delta^{(1)} = \begin{pmatrix}0.2 & 0.04 & -0.04\\0.4 & 0.08 & -0.08\\-0.2 & -0.04 & 0.04\end{pmatrix}, \qquad \frac{\partial L}{\partial W^{(2)}} = h'\delta^{(2)} = \begin{pmatrix}0.24\\0.28\\0.12\end{pmatrix}.$$
+
+# Complexities in real world training
+
+## Vanishing gradients
+
+Every time we peel a layer of $\delta^{(l)}$, we multiply by a $\sigma'(z^{(m)})$. Consider the case when $\sigma$ is a sigmoid, or $\tanh$; their derivatives hit a ceiling of 0.25 and 1. As we accumulate more of these multiplications, $\delta$ shrinks geometrically towards 0 as we have more layers. A network that is too deep becomes very difficult to train. In particular, the convergence speed for weights near the output, which have less peeling, is higher than the convergence speed for weights near the input.
+
+Note this does not happen in OLS.
+
+In practice this is manageable. ReLU-family activations sidestep the sigmoid/tanh ceiling directly, since their derivative is exactly 1 (not less than 1) wherever the unit is "on." Skip connections — adding $h^{(l-2)}$ back into $h^{(l)}$, as in a residual network — give $\delta$ an alternate path back to early layers with a derivative of exactly 1, so it doesn't have to survive a long product of $\sigma'$ terms to get there. Careful weight initialization (e.g. He or Xavier initialization, which scales $W^{(l)}$'s starting variance by the layer's width) and normalization layers (batch norm, layer norm) keep $z^{(l)}$ away from $\sigma$'s saturating extremes to begin with.
+
+## Dead units
+
+The ReLU function, $\sigma(z) = \max(0, z)$, has derivative exactly $0$ for $z < 0$. If at any point during the training process a unit's weights yield $z < 0$ for *every training example*, $\sigma'(z) = 0$ wherever it is evaluated, so $\delta^{(l)} = 0$ for that unit on every future step. The multiplication with zero prevents us from ever updating the weights. The unit is permanently stuck outputting $0$, a "dead" unit.
+
+Note this does not happen in OLS.
+
+The usual fix is to give a unit some way back to life. Leaky ReLU, $\sigma(z) = \max(\alpha z, z)$ for a small $\alpha$ like 0.01, has a small nonzero slope for $z<0$ instead of exactly 0, so a unit that's gone negative still receives a (small) gradient and can recover. Smooth variants like ELU, GELU, or Swish achieve something similar without a hard kink at 0. Good initialization and normalization help here too, by keeping a unit's pre-activations from being pushed uniformly negative in the first place.
+
+## Convexity
+
+The loss function in OLS is convex, so a minimum is guaranteed to be found. Composing several nonlinear activations destroys convexity. The loss surface of a deep network can have many local minima and plateaus, and gradient descent has no guarantee of finding the global minimum, or even the same minimum across two different random initializations.
+
+Modern practice largely sidesteps this rather than solving it. Empirically, the local minima that stochastic gradient descent finds in large, overparameterized networks tend to have similar loss — the genuinely bad local minima that plague small networks become rare as width grows, which is part of why today's networks are made so large. Multiple random initializations, or training several networks and ensembling their predictions, is a cheap hedge against landing in a worse-than-typical minimum.
+
+## Saddle points
+
+In high dimensions, non-convex loss surfaces have far more saddle points than bad local minima. A critical point, where the gradient $\nabla_\theta L = 0$, is a local minimum only if the loss curves upward in every one of the $\dim(\theta)$ directions simultaneously; as the parameter count grows large, the chance that all directions curve this way shrinks fast, while simultaneously the odds of some directions curve up and others curve down — a saddle — grows. Near a saddle the gradient can shrink toward zero even though we are nowhere near a good solution, so plain gradient descent can stall there for a long time. This is one reason practical training uses momentum or adaptive step sizes, e.g. Adam, instead of plain gradient descent.
+
+Momentum carries velocity through a flat region instead of slowing to match the local gradient, so it coasts past saddle points rather than stalling on them. Adam and its relatives rescale each parameter's step by a running estimate of that parameter's typical gradient magnitude, speeding up movement in directions where the raw gradient is tiny. The mini-batch noise in stochastic gradient descent helps too: an exact saddle point is a measure-zero target, and noisy gradients essentially never sit exactly on one for long.
+
+# Code example
+
+The rest of this post has been symbolic. Let's make it concrete: build the exact 3-input, one-hidden-layer, one-output network from the examples above in R, starting from a blank dataframe and ending with a fully trained network.
+
+## The data
+
+We need a $y$ that a linear model *can't* fit exactly, otherwise the hidden layer would buy us nothing. $y$ below is a nonlinear function of $X_1, X_2, X_3$ — a quadratic term and an interaction — plus noise:
+
+```{r}
+set.seed(1)
+n <- 200
+df <- data.frame(
+  X1 = rnorm(n),
+  X2 = rnorm(n),
+  X3 = rnorm(n)
+)
+df$y <- with(df, X1^2 - 2*X1*X2 + 0.5*X3 + rnorm(n, sd = 0.3))
+head(df)
+```
+
+## Architecture and weights
+
+$k_0 = 3$ inputs, $k_1 = 6$ hidden units, $k_2 = 1$ output. $W^{(1)}$ is $k_0\times k_1$, $W^{(2)}$ is $k_1\times k_2$, and both biases start at 0:
+
+```{r}
+X <- as.matrix(df[, c("X1", "X2", "X3")])
+y <- matrix(df$y, ncol = 1)
+
+k0 <- 3; k1 <- 6; k2 <- 1
+
+sigmoid <- function(z) 1 / (1 + exp(-z))
+
+set.seed(42)
+W1 <- matrix(rnorm(k0 * k1, sd = 0.5), nrow = k0, ncol = k1)
+b1 <- rep(0, k1)
+W2 <- matrix(rnorm(k1 * k2, sd = 0.5), nrow = k1, ncol = k2)
+b2 <- rep(0, k2)
+```
+
+## Forward and backward pass
+
+`forward_pass()` computes $z^{(1)}$, $h$, and $\hat y$ for every row of $X$ at once. `backward_pass()` is nothing but the $\delta$ recursion and the outer-product gradient formula derived above — $\delta^{(2)} = -\frac{2}{n}(y-\hat y)$, $\delta^{(1)} = (\delta^{(2)}W^{(2)\prime})\odot\sigma'(z^{(1)})$, and $\partial L/\partial W^{(l)} = h^{(l-1)\prime}\delta^{(l)}$:
+
+```{r}
+forward_pass <- function(X, W1, b1, W2, b2) {
+  n <- nrow(X)
+  Z1 <- X %*% W1 + matrix(b1, n, length(b1), byrow = TRUE)
+  H  <- sigmoid(Z1)
+  Yhat <- H %*% W2 + matrix(b2, n, length(b2), byrow = TRUE)
+  list(Z1 = Z1, H = H, Yhat = Yhat)
+}
+
+backward_pass <- function(X, y, H, Yhat, W2) {
+  n <- nrow(X)
+  delta2 <- -2 / n * (y - Yhat)
+  dW2 <- t(H) %*% delta2
+  db2 <- colSums(delta2)
+  delta1 <- (delta2 %*% t(W2)) * (H * (1 - H))
+  dW1 <- t(X) %*% delta1
+  db1 <- colSums(delta1)
+  list(dW1 = dW1, db1 = db1, dW2 = dW2, db2 = db2)
+}
+```
+
+## One single iteration
+
+Before training, run the two functions once to see exactly what a single gradient computation produces from the randomly initialized weights:
+
+```{r}
+fwd <- forward_pass(X, W1, b1, W2, b2)
+cat("Initial MSE:", mean((y - fwd$Yhat)^2), "\n")
+
+grad <- backward_pass(X, y, fwd$H, fwd$Yhat, W2)
+cat("dL/dW1:\n"); print(round(grad$dW1, 4))
+cat("dL/dW2:\n"); print(round(grad$dW2, 4))
+```
+
+That's the entire computation from the "Practical Example" section above, run on 200 rows at once instead of one row by hand. `backward_pass()` never does anything except the $\delta$ recursion and an outer product, no matter how many layers or rows are involved.
+
+## Training to convergence
+
+One gradient step nudges the weights very slightly. Training just repeats the forward/backward pair, taking a small step down the gradient each time, until the loss stops moving:
+
+```{r}
+lr <- 0.1
+max_iter <- 40000
+tol <- 1e-7
+prev_loss <- Inf
+loss_history <- numeric(0)
+
+for (iter in 1:max_iter) {
+  fwd <- forward_pass(X, W1, b1, W2, b2)
+  loss <- mean((y - fwd$Yhat)^2)
+  loss_history[iter] <- loss
+  if (abs(prev_loss - loss) < tol) break
+  prev_loss <- loss
+
+  grad <- backward_pass(X, y, fwd$H, fwd$Yhat, W2)
+  W1 <- W1 - lr * grad$dW1
+  b1 <- b1 - lr * grad$db1
+  W2 <- W2 - lr * grad$dW2
+  b2 <- b2 - lr * grad$db2
+}
+
+cat("Converged after", iter, "iterations. Final MSE:", round(loss, 4), "\n")
+
+plot(loss_history, type = "l", col = "steelblue4", lwd = 1.5,
+     xlab = "iteration", ylab = "MSE", main = "Training loss")
+```
+
+```{r}
+ols_fit <- lm(y ~ X1 + X2 + X3, data = df)
+cat("OLS MSE:    ", round(mean(residuals(ols_fit)^2), 4), "\n")
+cat("Network MSE:", round(loss, 4), "\n")
+```
+
+The network converges to roughly the noise floor ($\text{sd}=0.3 \Rightarrow \text{Var}\approx 0.09$), while OLS is stuck far higher — a linear combination of $X_1, X_2, X_3$ has no way to represent $X_1^2$ or $X_1 X_2$. The hidden layer built exactly the nonlinear features it needed, on its own, from data alone.
+

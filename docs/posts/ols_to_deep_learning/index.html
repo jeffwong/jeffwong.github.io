@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Jeffrey Wong">
+<meta name="dcterms.date" content="2026-07-08">
+
+<title>From OLS to Deep Learning – From First Principles</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<script src="../../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap-158031087360bce0ff56dc785ce39e06.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../../styles.css">
+</head>
+
+<body class="nav-fixed fullcontent quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top quarto-banner">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../../index.html">
+    <span class="navbar-title">From First Principles</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../../about.html"> 
+<span class="menu-text">About Me</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="https://linkedin.com/jeffctwong"> <i class="bi bi-linkedin" role="img">
+</i> 
+<span class="menu-text">LinkedIn</span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<header id="title-block-header" class="quarto-title-block default page-columns page-full">
+  <div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-body">
+      <h1 class="title">From OLS to Deep Learning</h1>
+                                <div class="quarto-categories">
+                <div class="quarto-category">mathematical statistics</div>
+              </div>
+                  </div>
+  </div>
+    
+  
+  <div class="quarto-title-meta">
+
+      <div>
+      <div class="quarto-title-meta-heading">Author</div>
+      <div class="quarto-title-meta-contents">
+               <p>Jeffrey Wong </p>
+            </div>
+    </div>
+      
+      <div>
+      <div class="quarto-title-meta-heading">Published</div>
+      <div class="quarto-title-meta-contents">
+        <p class="date">July 8, 2026</p>
+      </div>
+    </div>
+    
+      
+    </div>
+    
+  
+  </header><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content quarto-banner-title-block" id="quarto-document-content">
+
+
+
+
+
+<p>We often hear “deep learning is a bunch of matrix multiplications”. Is that true? If yes, then is it actually a linear operator like OLS?</p>
+<p>Indeed, there are many similarities between OLS and deep learning. Deep learning is like a composition of many linear models with different activation functions. In fact, a linear model is a neural network with zero hidden layers.</p>
+<section id="ols-is-a-neural-network-with-zero-hidden-layers." class="level1">
+<h1>OLS is a neural network with zero hidden layers.</h1>
+<p>Take the simplest possible network, observeable values in <span class="math inline">\(X\)</span> map directly to an observeable <span class="math inline">\(y\)</span> through a linear function. There are no hidden layers, as in no transformations of <span class="math inline">\(X\)</span> that are learned other than to produce <span class="math inline">\(y\)</span> itself. This is a zero hidden layer neural network and it is equivalent to OLS. See the picture below. <span class="math display">\[\hat y = XW + b.\]</span></p>
+<div class="cell" data-layout-align="center">
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="index_files/figure-html/unnamed-chunk-1-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="576"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The only thing that differs is <em>how</em> we solve it. OLS is usually taught with the closed form normal equations, <span class="math inline">\(\hat\beta = (X'X)^{-1}X'y\)</span>. A “zero hidden layer network” is instead typically fit by gradient descent, taking small steps down the loss surface. Both procedures, if they converge, land on the identical <span class="math inline">\(\hat\beta\)</span>.</p>
+</section>
+<section id="one-hidden-layer" class="level1">
+<h1>One hidden layer</h1>
+<p>OLS can be equivalently expressed as</p>
+<p><span class="math display">\[y = f(x_1, x_2, x_3).\]</span></p>
+<p>The inputs are fed into a function to produce <span class="math inline">\(y\)</span>. Now imagine that we nested more functions like so</p>
+<p><span class="math display">\[y = g(h_1(x_1, x_2, x_3), h_2(x_1, x_2, x_3), h_3(x_1, x_2, x_3)).\]</span></p>
+<p>We can think of this as a type of feature engineering. We map the inputs <span class="math inline">\((x_1, x_2, x_3)\)</span> into an intermediate function like <span class="math inline">\(h_1\)</span> to engineer a new feature. We do that again to produce <span class="math inline">\(h_2\)</span> and <span class="math inline">\(h_3\)</span>. Finally, we learn an OLS model on the newly engineered features.</p>
+<p>This is what a neural network with one hidden layer does. We can draw the extension below. The 3 blue nodes collectively represent one hidden layer. That hidden layer serves as new inputs to learn a linear function that outputs <span class="math inline">\(y\)</span>.</p>
+<div class="cell" data-layout-align="center">
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="index_files/figure-html/unnamed-chunk-2-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="624"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Let’s keep it simple. In a one hidden layer network, each node <span class="math inline">\(j\)</span> in the hidden layer will take the form <span class="math inline">\(\sigma(X W_j)\)</span>. <span class="math inline">\(X W_j\)</span> is called the preactivation and it is a linear combination of the input features, obtained from the previous layer, with weights that are specific to node <span class="math inline">\(j\)</span>. The preactivation is then transformed through an activation function <span class="math inline">\(\sigma\)</span>. There are many different types of activation functions, such as ReLU or the sigmoid. In a fully connected graph, which is almost always the use case, all nodes in layer <span class="math inline">\(h\)</span> are operating on the same input features, so we can vectorize and express the <span class="math inline">\(h\)</span> layer overall as <span class="math inline">\(h = \sigma(XW)\)</span>. Here we are using a convenient vectorized expression where every node in the layer is using the same activation function, though that is not a mathematical requirement.</p>
+<p>For vocabulary sake, a layer that has width <span class="math inline">\(k\)</span> means there are <span class="math inline">\(k\)</span> nodes in that layer. A neural network that has depth <span class="math inline">\(L\)</span> has <span class="math inline">\(L\)</span> layers.</p>
+<p>Matrix multiplications on top of matrix multiplications feel redundant. It’s the activation function that makes a layer meaningful. Because <span class="math inline">\(\sigma\)</span> is nonlinear, <span class="math inline">\(h\)</span> is no longer a linear transform of <span class="math inline">\(X\)</span>.</p>
+<section id="the-geometry-that-motivates-multiple-units" class="level2">
+<h2 class="anchored" data-anchor-id="the-geometry-that-motivates-multiple-units">The geometry that motivates multiple units</h2>
+<p>There is a geometric interpretation where each unit “bends” the input space in different ways before the downstream layer recombines them.</p>
+<p>Consider a single hidden unit: the preactivation starts as a linear combination, which is then bent with a nonlinear transformation. A ReLU unit, <span class="math inline">\(h=\max(0, Xw+b)\)</span> represents a hinge: there are values of <span class="math inline">\(Xw + b\)</span> that are negative but are then mapped to a constant 0, and for the space where <span class="math inline">\(Xw + b &gt; 0\)</span> it is a hyperplane. This structure, flat on one side in <span class="math inline">\(X\)</span>-space and linear on the other, is exactly a hinge that bends the inputs.</p>
+<div class="cell" data-layout-align="center">
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="index_files/figure-html/unnamed-chunk-3-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="576"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Adding units to a layer gives the layer <span class="math inline">\(k\)</span> of these one-bend building blocks, each bending a different direction of <span class="math inline">\(X\)</span>-space at a different location. It’s analogous to OLS regressing <span class="math inline">\(y\)</span> on several hand-picked basis functions (polynomial terms, spline knots, indicator variables) instead of on <span class="math inline">\(X\)</span> alone, except here the basis functions are learned rather than chosen.</p>
+</section>
+<section id="the-geometry-that-motivates-multiple-layers" class="level2">
+<h2 class="anchored" data-anchor-id="the-geometry-that-motivates-multiple-layers">The geometry that motivates multiple layers</h2>
+<p>Each unit in our one layer network above is bending in a naive way. The <span class="math inline">\(k\)</span> bends are generated in parallel, and do not leverage one another. In order to make use of them effectively, we need to stack more layers.</p>
+<p>Let <span class="math inline">\(L\)</span> be the number of hidden layers we choose to stack. Along with the final layer that outputs a prediction, the network has <span class="math inline">\(L+1\)</span> total layers of parameters. We can see the pattern</p>
+<p><span class="math display">\[\begin{align}
+h^{(0)} &amp;= X \\
+h^{(1)} &amp;= \sigma\!\left(h^{(0)}W^{(1)} + b^{(1)}\right) \\
+h^{(2)} &amp;= \sigma\!\left(h^{(1)}W^{(2)} + b^{(2)}\right) \\
+h^{(L)} &amp;= \sigma\!\left(h^{(L-1)}W^{(L)} + b^{(L)}\right)
+\end{align}\]</span></p>
+<p>The final layer is ultimately OLS, where we learn coefficients and an intercept for a new set of feature vectors captured by <span class="math inline">\(h^{(L)}\)</span>. In a sense, this deep neural network is OLS with learned feature engineering, and that feature engineering is a series of bends!</p>
+<div class="cell" data-layout-align="center">
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="index_files/figure-html/unnamed-chunk-4-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="624"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Each panel is a composition of the hinge <span class="math inline">\(T(x) = 2\max(0,x) - 4\max(0,x-0.5)\)</span>. This represents a hidden layer with 2 ReLU units. The upper left panel represents the case where L = 1, then the upper right is when <span class="math inline">\(L = 2\)</span> and the output stacks <span class="math inline">\(T(T(x))\)</span>. As we get to <span class="math inline">\(L = 4\)</span> we are able to nest multiple hinges to change the shape of the output, to the point where 4 layers containing a total of 8 nodes is able to represent 16 teeth. In order to accomplish this with one single layer we would need 16 nodes.</p>
+</section>
+</section>
+<section id="training-loss-and-backpropagation" class="level1">
+<h1>Training: loss and backpropagation</h1>
+<p>So far we have described the architecture of a neural network and its relationship to OLS. Now we will describe how the network is trained.</p>
+<p>We want to minimize our loss function <span class="math inline">\(L(\theta) = \frac{1}{n}\sum_i (y_i - \hat y_i(\theta))^2\)</span> using the parameters across the entire network, where <span class="math inline">\(\theta = \{W^{(1)}, b^{(1)}, \ldots, W^{(L+1)}, b^{(L+1)}\}\)</span>. Training a network is hard; to get an understanding of the size of <span class="math inline">\(\theta\)</span>, let <span class="math inline">\(k_l\)</span> denote the number of nodes in layer <span class="math inline">\(l\)</span>, for <span class="math inline">\(l = 0, 1, \ldots, L+1\)</span>, with <span class="math inline">\(k_0\)</span> the number of input features in the original <span class="math inline">\(X\)</span> and <span class="math inline">\(k_{L+1} = 1\)</span> for a single regression output. Layer <span class="math inline">\(l\)</span>’s weight matrix <span class="math inline">\(W^{(l)}\)</span> maps the <span class="math inline">\(k_{l-1}\)</span> nodes of the previous layer into the <span class="math inline">\(k_l\)</span> nodes of layer <span class="math inline">\(l\)</span>, so <span class="math inline">\(W^{(l)}\)</span> is <span class="math inline">\(k_{l-1}\times k_l\)</span>; its bias <span class="math inline">\(b^{(l)}\)</span> has one entry per node of layer <span class="math inline">\(l\)</span>, so it’s <span class="math inline">\(k_l\)</span>-dimensional. Altogether,</p>
+<p><span class="math display">\[|\theta| = \sum_{l=1}^{L+1}\left(k_{l-1}k_l + k_l\right).\]</span></p>
+<p>In our running example, <span class="math inline">\(k_0 = 3\)</span> inputs, <span class="math inline">\(k_1 = 3\)</span> hidden units, <span class="math inline">\(k_2 = 1\)</span> output, so <span class="math inline">\(W^{(1)}\)</span> is <span class="math inline">\(3\times3\)</span> (9 parameters), <span class="math inline">\(b^{(1)}\)</span> is 3-dimensional, <span class="math inline">\(W^{(2)}\)</span> is <span class="math inline">\(3\times1\)</span> (3 parameters), and <span class="math inline">\(b^{(2)}\)</span> is a single scalar, for <span class="math inline">\(|\theta| = (9+3)+(3+1) = 16\)</span> parameters total.</p>
+<p>We can’t optimize the loss function algebraically in closed form. Instead, we will solve this using numerical optimization, which requires us to know the gradient of <span class="math inline">\(L(\theta)\)</span> at each of its parameters. Expressing the gradient around a layer <span class="math inline">\(l\)</span> is natural since a layer is matrix multiplication (due to vectorization described above) and a single activation layer. We are going to leverage the fact that layer <span class="math inline">\(l\)</span> is directly related to layer <span class="math inline">\(l-1\)</span> in order to create an elegant recursion. We will apply the chain rule throughout that recursion to create a simple computational strategy, known as backpropagation.</p>
+<p>Backpropagation is a very clever computational strategy. But let’s start with the naive formulation, which would be to compute <span class="math inline">\(\partial L/\partial\theta\)</span>. Say we try to compute a specific component <span class="math inline">\(\partial L/\partial W^{(l)}\)</span>, the way to do this is to express <span class="math inline">\(\hat{y}(\theta)\)</span> from the loss function as a function of the output layer, which is a function of the previous layer, which is a function of its previous layer, etc, until peeling backwards to layer <span class="math inline">\(l\)</span>. Expressing <span class="math inline">\(\hat{y}(\theta)\)</span> like this lets us differentiate it by <span class="math inline">\(W^{(l)}\)</span>. Let’s go back to our 1 hidden layer example, where there are 3 <span class="math inline">\(X\)</span> inputs that go to 1 hidden layer with 3 nodes, which goes to the output layer. Differentiating the loss by the parameters in the hidden layer, <span class="math inline">\(W^{(1)}\)</span> would look like</p>
+<p><span class="math display">\[\begin{align}
+L(\theta) &amp;= \frac{1}{n}\sum_i (y_i - \hat y_i(\theta))^2 \\
+z^{(1)} &amp;= XW^{(1)} + b^{(1)} \\
+h &amp;= \sigma(z^{(1)}) \\
+\hat y &amp;= hW^{(2)} + b^{(2)} \\
+\frac{\partial L}{\partial W^{(1)}} &amp;= \frac{\partial L}{\partial \hat y} \cdot \frac{\partial \hat y}{\partial h}  \cdot \frac{\partial h}{\partial z^{(1)}} \cdot \frac{\partial z^{(1)}}{\partial W^{(1)}}
+\end{align}\]</span></p>
+<p>Conceptually, we unpacked the gradient through a series of chain rules, and it looks like we can just multiply through. Unfortunately the reality is much more complex because each of these variables have their own shape, some are scalars, some are vectors, some are matrices. It is misleading to say it’s just multiplication. Let’s examine the structure:</p>
+<ol type="1">
+<li><span class="math inline">\(\partial L/\partial\hat y\)</span> is a scalar, since the output layer here has width <span class="math inline">\(k_2 = 1\)</span>.</li>
+<li><span class="math inline">\(\partial\hat y/\partial h\)</span> is a <span class="math inline">\(1\times k_1\)</span> row vector — the sensitivity of the single output to each of the <span class="math inline">\(k_1 = 3\)</span> hidden units — and combining it with the scalar before it is ordinary scalar-vector rescaling.</li>
+<li><span class="math inline">\(\partial h/\partial z^{(1)}\)</span> is, in full generality, a <span class="math inline">\(k_1\times k_1\)</span> Jacobian, but because <span class="math inline">\(h = \sigma(z^{(1)})\)</span> acts unit by unit that Jacobian is diagonal and collapses to the <span class="math inline">\(k_1\)</span>-vector <span class="math inline">\(\sigma'(z^{(1)})\)</span>; combining it with the row vector before it is an elementwise (Hadamard) product. Chaining these first three factors together is <span class="math inline">\(\delta^{(1)} = \partial L/\partial z^{(1)}\)</span>, a <span class="math inline">\(1\times k_1\)</span> row vector.</li>
+<li><span class="math inline">\(\partial z^{(1)}/\partial W^{(1)}\)</span> is, in full generality, a three-index object — <span class="math inline">\(z^{(1)}\)</span> has <span class="math inline">\(k_1\)</span> entries and <span class="math inline">\(W^{(1)}\)</span> has <span class="math inline">\(k_0\times k_1\)</span> entries of its own. Differentiating a vector by a matrix is going to feel funny, but we leverage the fact that <span class="math inline">\(z^{(1)} = XW^{(1)} + b^{(1)}\)</span> is affine, and each <span class="math inline">\(z^{(1)}_j\)</span> only depends on column <span class="math inline">\(j\)</span> of <span class="math inline">\(W^{(1)}\)</span> through the same <span class="math inline">\(k_0\)</span> inputs, so <span class="math inline">\(\partial z^{(1)}_j/\partial W^{(1)}_{ij} = X_i\)</span> for every <span class="math inline">\(j\)</span>. This is just <span class="math inline">\(X\)</span> replicated multiple times, the same <span class="math inline">\(k_0\)</span>-vector no matter which hidden unit <span class="math inline">\(j\)</span> we’re looking at. Stacking that <span class="math inline">\(k_0\)</span>-vector with the <span class="math inline">\(1\times k_1\)</span> row vector <span class="math inline">\(\delta^{(1)}\)</span> from the first three factors is an outer product, <span class="math inline">\(X'\delta^{(1)}\)</span>, producing the <span class="math inline">\(k_0\times k_1\)</span> result that matches <span class="math inline">\(W^{(1)}\)</span>’s own shape.</li>
+</ol>
+<p>It turns out this is unnecessarily complicated. We can make the computation much more tractable by factoring out <span class="math inline">\(\delta^{(l)} = \partial L/\partial z^{(l)}\)</span>, the loss’s sensitivity to the <em>pre-activation</em>. We rewrite the chain rule above as</p>
+<p><span class="math display">\[\boxed{\frac{\partial L}{\partial W^{(l)}} = h^{(l-1)\prime}\delta^{(l)}.}\]</span></p>
+<p>This says that the gradient at layer <span class="math inline">\(l\)</span> is partially computed using output information that we already know from the previous layer. The remainder, <span class="math inline">\(\delta^{(l)}\)</span>, is the peeling of layers from the final output going backwards. The gradient is the product of a <strong>forward pass</strong> and a <strong>backward pass</strong>, which is the critical insight for how to organize the computational strategy. Once a set of weights have been initialized, we are able to compute all <span class="math inline">\(h\)</span> values for all layers in a single forward pass. Similarly, we can compute all <span class="math inline">\(\delta\)</span> values for all layers in a single backwards pass. The computation for <span class="math inline">\(\delta\)</span> values ought to leverage a cache of <span class="math inline">\(h\)</span> values from the first pass. As a result, we can compute <span class="math inline">\(\frac{\partial L}{\partial W^{(l)}}\)</span> for all layers with a single forward and backwards pass. This is the key insight behind backpropagation and avoids a quadratic complexity that is in the naive approach.</p>
+<p>The backwards pass is computed as</p>
+<p><span class="math display">\[\boxed{\delta^{(l)} = \frac{\partial L}{\partial z^{(l)}} = \frac{\partial L}{\partial z^{(l+1)}}\cdot\frac{\partial z^{(l+1)}}{\partial h^{(l)}}\cdot\frac{\partial h^{(l)}}{\partial z^{(l)}} = \delta^{(l+1)}W^{(l+1)\prime}\odot\sigma'\!\left(z^{(l)}\right)}\]</span></p>
+</section>
+<section id="practical-example" class="level1">
+<h1>Practical example</h1>
+<p>Let’s run this on our 3-input, 3-hidden-unit, 1-output network, starting at the output layer and working backward. The output layer has no activation, so <span class="math inline">\(z^{(2)} = \hat y\)</span> directly, and the base case is just <span class="math inline">\(\delta^{(2)} = \partial L/\partial\hat y = -\frac{2}{n}(y - \hat y)\)</span>. Say for one training example <span class="math inline">\(y - \hat y = -0.2\)</span> (with <span class="math inline">\(n=1\)</span>), so <span class="math inline">\(\delta^{(2)} = 0.4\)</span>. Suppose the output layer’s weights are <span class="math inline">\(W^{(2)} = (1,\ 0.5,\ -1)\)</span> and <span class="math inline">\(\sigma'(z^{(1)}) = (0.5,\ 0.2,\ 0.1)\)</span> for that example. One application of the recursion gives</p>
+<p><span class="math display">\[\begin{align}
+\delta^{(1)} &amp;= \left(\delta^{(2)}W^{(2)\prime}\right)\odot\sigma'\!\left(z^{(1)}\right) \\
+&amp;= \left(0.4\times(1,\ 0.5,\ -1)\right)\odot(0.5,\ 0.2,\ 0.1) \\
+&amp;= (0.4,\ 0.2,\ -0.4)\odot(0.5,\ 0.2,\ 0.1) \\
+&amp;= (0.2,\ 0.04,\ -0.04).
+\end{align}\]</span></p>
+<p>If this network had another hidden layer before this one, we would repeat exactly this step — retrieve the delta value from the layer in front, multiply by that layer’s weights, then multiply elementwise by the current layer’s <span class="math inline">\(\sigma'\)</span>, and so on.</p>
+<p>Now we bring it all back together. Say we had <span class="math inline">\(X = (1,\ 2,\ -1)\)</span>, a cached <span class="math inline">\(h\)</span> value of <span class="math inline">\(h = (0.6,\ 0.7,\ 0.3)\)</span>. With <span class="math inline">\(\delta^{(1)}\)</span> and <span class="math inline">\(\delta^{(2)}\)</span> above, the gradients we need for numerical optimization are <span class="math display">\[\frac{\partial L}{\partial W^{(1)}} = X'\delta^{(1)} = \begin{pmatrix}0.2 &amp; 0.04 &amp; -0.04\\0.4 &amp; 0.08 &amp; -0.08\\-0.2 &amp; -0.04 &amp; 0.04\end{pmatrix}, \qquad \frac{\partial L}{\partial W^{(2)}} = h'\delta^{(2)} = \begin{pmatrix}0.24\\0.28\\0.12\end{pmatrix}.\]</span></p>
+</section>
+<section id="complexities-in-real-world-training" class="level1">
+<h1>Complexities in real world training</h1>
+<section id="vanishing-gradients" class="level2">
+<h2 class="anchored" data-anchor-id="vanishing-gradients">Vanishing gradients</h2>
+<p>Every time we peel a layer of <span class="math inline">\(\delta^{(l)}\)</span>, we multiply by a <span class="math inline">\(\sigma'(z^{(m)})\)</span>. Consider the case when <span class="math inline">\(\sigma\)</span> is a sigmoid, or <span class="math inline">\(\tanh\)</span>; their derivatives hit a ceiling of 0.25 and 1. As we accumulate more of these multiplications, <span class="math inline">\(\delta\)</span> shrinks geometrically towards 0 as we have more layers. A network that is too deep becomes very difficult to train. In particular, the convergence speed for weights near the output, which have less peeling, is higher than the convergence speed for weights near the input.</p>
+<p>Note this does not happen in OLS.</p>
+<p>In practice this is manageable. ReLU-family activations sidestep the sigmoid/tanh ceiling directly, since their derivative is exactly 1 (not less than 1) wherever the unit is “on.” Skip connections — adding <span class="math inline">\(h^{(l-2)}\)</span> back into <span class="math inline">\(h^{(l)}\)</span>, as in a residual network — give <span class="math inline">\(\delta\)</span> an alternate path back to early layers with a derivative of exactly 1, so it doesn’t have to survive a long product of <span class="math inline">\(\sigma'\)</span> terms to get there. Careful weight initialization (e.g.&nbsp;He or Xavier initialization, which scales <span class="math inline">\(W^{(l)}\)</span>’s starting variance by the layer’s width) and normalization layers (batch norm, layer norm) keep <span class="math inline">\(z^{(l)}\)</span> away from <span class="math inline">\(\sigma\)</span>’s saturating extremes to begin with.</p>
+</section>
+<section id="dead-units" class="level2">
+<h2 class="anchored" data-anchor-id="dead-units">Dead units</h2>
+<p>The ReLU function, <span class="math inline">\(\sigma(z) = \max(0, z)\)</span>, has derivative exactly <span class="math inline">\(0\)</span> for <span class="math inline">\(z &lt; 0\)</span>. If at any point during the training process a unit’s weights yield <span class="math inline">\(z &lt; 0\)</span> for <em>every training example</em>, <span class="math inline">\(\sigma'(z) = 0\)</span> wherever it is evaluated, so <span class="math inline">\(\delta^{(l)} = 0\)</span> for that unit on every future step. The multiplication with zero prevents us from ever updating the weights. The unit is permanently stuck outputting <span class="math inline">\(0\)</span>, a “dead” unit.</p>
+<p>Note this does not happen in OLS.</p>
+<p>The usual fix is to give a unit some way back to life. Leaky ReLU, <span class="math inline">\(\sigma(z) = \max(\alpha z, z)\)</span> for a small <span class="math inline">\(\alpha\)</span> like 0.01, has a small nonzero slope for <span class="math inline">\(z&lt;0\)</span> instead of exactly 0, so a unit that’s gone negative still receives a (small) gradient and can recover. Smooth variants like ELU, GELU, or Swish achieve something similar without a hard kink at 0. Good initialization and normalization help here too, by keeping a unit’s pre-activations from being pushed uniformly negative in the first place.</p>
+</section>
+<section id="convexity" class="level2">
+<h2 class="anchored" data-anchor-id="convexity">Convexity</h2>
+<p>The loss function in OLS is convex, so a minimum is guaranteed to be found. Composing several nonlinear activations destroys convexity. The loss surface of a deep network can have many local minima and plateaus, and gradient descent has no guarantee of finding the global minimum, or even the same minimum across two different random initializations.</p>
+<p>Modern practice largely sidesteps this rather than solving it. Empirically, the local minima that stochastic gradient descent finds in large, overparameterized networks tend to have similar loss — the genuinely bad local minima that plague small networks become rare as width grows, which is part of why today’s networks are made so large. Multiple random initializations, or training several networks and ensembling their predictions, is a cheap hedge against landing in a worse-than-typical minimum.</p>
+</section>
+<section id="saddle-points" class="level2">
+<h2 class="anchored" data-anchor-id="saddle-points">Saddle points</h2>
+<p>In high dimensions, non-convex loss surfaces have far more saddle points than bad local minima. A critical point, where the gradient <span class="math inline">\(\nabla_\theta L = 0\)</span>, is a local minimum only if the loss curves upward in every one of the <span class="math inline">\(\dim(\theta)\)</span> directions simultaneously; as the parameter count grows large, the chance that all directions curve this way shrinks fast, while simultaneously the odds of some directions curve up and others curve down — a saddle — grows. Near a saddle the gradient can shrink toward zero even though we are nowhere near a good solution, so plain gradient descent can stall there for a long time. This is one reason practical training uses momentum or adaptive step sizes, e.g.&nbsp;Adam, instead of plain gradient descent.</p>
+<p>Momentum carries velocity through a flat region instead of slowing to match the local gradient, so it coasts past saddle points rather than stalling on them. Adam and its relatives rescale each parameter’s step by a running estimate of that parameter’s typical gradient magnitude, speeding up movement in directions where the raw gradient is tiny. The mini-batch noise in stochastic gradient descent helps too: an exact saddle point is a measure-zero target, and noisy gradients essentially never sit exactly on one for long.</p>
+</section>
+</section>
+<section id="code-example" class="level1">
+<h1>Code example</h1>
+<p>The rest of this post has been symbolic. Let’s make it concrete: build the exact 3-input, one-hidden-layer, one-output network from the examples above in R, starting from a blank dataframe and ending with a fully trained network.</p>
+<section id="the-data" class="level2">
+<h2 class="anchored" data-anchor-id="the-data">The data</h2>
+<p>We need a <span class="math inline">\(y\)</span> that a linear model <em>can’t</em> fit exactly, otherwise the hidden layer would buy us nothing. <span class="math inline">\(y\)</span> below is a nonlinear function of <span class="math inline">\(X_1, X_2, X_3\)</span> — a quadratic term and an interaction — plus noise:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">200</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">X1 =</span> <span class="fu">rnorm</span>(n),</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">X2 =</span> <span class="fu">rnorm</span>(n),</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">X3 =</span> <span class="fu">rnorm</span>(n)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>df<span class="sc">$</span>y <span class="ot">&lt;-</span> <span class="fu">with</span>(df, X1<span class="sc">^</span><span class="dv">2</span> <span class="sc">-</span> <span class="dv">2</span><span class="sc">*</span>X1<span class="sc">*</span>X2 <span class="sc">+</span> <span class="fl">0.5</span><span class="sc">*</span>X3 <span class="sc">+</span> <span class="fu">rnorm</span>(n, <span class="at">sd =</span> <span class="fl">0.3</span>))</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(df)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>          X1         X2         X3        y
+1 -0.6264538  0.4094018  1.0744410 1.340287
+2  0.1836433  1.6888733  1.8956548 0.811979
+3 -0.8356286  1.5865884 -0.6029973 3.206866
+4  1.5952808 -0.3309078 -0.3908678 3.567926
+5  0.3295078 -2.2852355 -0.4162220 1.365468
+6 -0.8204684  2.4976616 -0.3756574 4.242824</code></pre>
+</div>
+</div>
+</section>
+<section id="architecture-and-weights" class="level2">
+<h2 class="anchored" data-anchor-id="architecture-and-weights">Architecture and weights</h2>
+<p><span class="math inline">\(k_0 = 3\)</span> inputs, <span class="math inline">\(k_1 = 6\)</span> hidden units, <span class="math inline">\(k_2 = 1\)</span> output. <span class="math inline">\(W^{(1)}\)</span> is <span class="math inline">\(k_0\times k_1\)</span>, <span class="math inline">\(W^{(2)}\)</span> is <span class="math inline">\(k_1\times k_2\)</span>, and both biases start at 0:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>X <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(df[, <span class="fu">c</span>(<span class="st">"X1"</span>, <span class="st">"X2"</span>, <span class="st">"X3"</span>)])</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>y <span class="ot">&lt;-</span> <span class="fu">matrix</span>(df<span class="sc">$</span>y, <span class="at">ncol =</span> <span class="dv">1</span>)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>k0 <span class="ot">&lt;-</span> <span class="dv">3</span>; k1 <span class="ot">&lt;-</span> <span class="dv">6</span>; k2 <span class="ot">&lt;-</span> <span class="dv">1</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>sigmoid <span class="ot">&lt;-</span> <span class="cf">function</span>(z) <span class="dv">1</span> <span class="sc">/</span> (<span class="dv">1</span> <span class="sc">+</span> <span class="fu">exp</span>(<span class="sc">-</span>z))</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">42</span>)</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>W1 <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">rnorm</span>(k0 <span class="sc">*</span> k1, <span class="at">sd =</span> <span class="fl">0.5</span>), <span class="at">nrow =</span> k0, <span class="at">ncol =</span> k1)</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>b1 <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="dv">0</span>, k1)</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>W2 <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">rnorm</span>(k1 <span class="sc">*</span> k2, <span class="at">sd =</span> <span class="fl">0.5</span>), <span class="at">nrow =</span> k1, <span class="at">ncol =</span> k2)</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>b2 <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="dv">0</span>, k2)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="forward-and-backward-pass" class="level2">
+<h2 class="anchored" data-anchor-id="forward-and-backward-pass">Forward and backward pass</h2>
+<p><code>forward_pass()</code> computes <span class="math inline">\(z^{(1)}\)</span>, <span class="math inline">\(h\)</span>, and <span class="math inline">\(\hat y\)</span> for every row of <span class="math inline">\(X\)</span> at once. <code>backward_pass()</code> is nothing but the <span class="math inline">\(\delta\)</span> recursion and the outer-product gradient formula derived above — <span class="math inline">\(\delta^{(2)} = -\frac{2}{n}(y-\hat y)\)</span>, <span class="math inline">\(\delta^{(1)} = (\delta^{(2)}W^{(2)\prime})\odot\sigma'(z^{(1)})\)</span>, and <span class="math inline">\(\partial L/\partial W^{(l)} = h^{(l-1)\prime}\delta^{(l)}\)</span>:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>forward_pass <span class="ot">&lt;-</span> <span class="cf">function</span>(X, W1, b1, W2, b2) {</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  n <span class="ot">&lt;-</span> <span class="fu">nrow</span>(X)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  Z1 <span class="ot">&lt;-</span> X <span class="sc">%*%</span> W1 <span class="sc">+</span> <span class="fu">matrix</span>(b1, n, <span class="fu">length</span>(b1), <span class="at">byrow =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  H  <span class="ot">&lt;-</span> <span class="fu">sigmoid</span>(Z1)</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  Yhat <span class="ot">&lt;-</span> H <span class="sc">%*%</span> W2 <span class="sc">+</span> <span class="fu">matrix</span>(b2, n, <span class="fu">length</span>(b2), <span class="at">byrow =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">Z1 =</span> Z1, <span class="at">H =</span> H, <span class="at">Yhat =</span> Yhat)</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>backward_pass <span class="ot">&lt;-</span> <span class="cf">function</span>(X, y, H, Yhat, W2) {</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>  n <span class="ot">&lt;-</span> <span class="fu">nrow</span>(X)</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>  delta2 <span class="ot">&lt;-</span> <span class="sc">-</span><span class="dv">2</span> <span class="sc">/</span> n <span class="sc">*</span> (y <span class="sc">-</span> Yhat)</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>  dW2 <span class="ot">&lt;-</span> <span class="fu">t</span>(H) <span class="sc">%*%</span> delta2</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>  db2 <span class="ot">&lt;-</span> <span class="fu">colSums</span>(delta2)</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>  delta1 <span class="ot">&lt;-</span> (delta2 <span class="sc">%*%</span> <span class="fu">t</span>(W2)) <span class="sc">*</span> (H <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> H))</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>  dW1 <span class="ot">&lt;-</span> <span class="fu">t</span>(X) <span class="sc">%*%</span> delta1</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>  db1 <span class="ot">&lt;-</span> <span class="fu">colSums</span>(delta1)</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">dW1 =</span> dW1, <span class="at">db1 =</span> db1, <span class="at">dW2 =</span> dW2, <span class="at">db2 =</span> db2)</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="one-single-iteration" class="level2">
+<h2 class="anchored" data-anchor-id="one-single-iteration">One single iteration</h2>
+<p>Before training, run the two functions once to see exactly what a single gradient computation produces from the randomly initialized weights:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>fwd <span class="ot">&lt;-</span> <span class="fu">forward_pass</span>(X, W1, b1, W2, b2)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Initial MSE:"</span>, <span class="fu">mean</span>((y <span class="sc">-</span> fwd<span class="sc">$</span>Yhat)<span class="sc">^</span><span class="dv">2</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Initial MSE: 7.025462 </code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>grad <span class="ot">&lt;-</span> <span class="fu">backward_pass</span>(X, y, fwd<span class="sc">$</span>H, fwd<span class="sc">$</span>Yhat, W2)</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"dL/dW1:</span><span class="sc">\n</span><span class="st">"</span>); <span class="fu">print</span>(<span class="fu">round</span>(grad<span class="sc">$</span>dW1, <span class="dv">4</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>dL/dW1:</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>     [,1]    [,2]    [,3]   [,4]   [,5]    [,6]
+X1 0.0414 -0.0482 -0.0044 0.0496 0.0022 -0.0369
+X2 0.1196 -0.0780  0.0159 0.0153 0.0093 -0.0489
+X3 0.4599 -0.2809  0.0346 0.1933 0.0334 -0.1195</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"dL/dW2:</span><span class="sc">\n</span><span class="st">"</span>); <span class="fu">print</span>(<span class="fu">round</span>(grad<span class="sc">$</span>dW2, <span class="dv">4</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>dL/dW2:</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>        [,1]
+[1,] -1.4594
+[2,] -1.3988
+[3,] -1.7333
+[4,] -1.8041
+[5,] -1.2826
+[6,] -0.9423</code></pre>
+</div>
+</div>
+<p>That’s the entire computation from the “Practical Example” section above, run on 200 rows at once instead of one row by hand. <code>backward_pass()</code> never does anything except the <span class="math inline">\(\delta\)</span> recursion and an outer product, no matter how many layers or rows are involved.</p>
+</section>
+<section id="training-to-convergence" class="level2">
+<h2 class="anchored" data-anchor-id="training-to-convergence">Training to convergence</h2>
+<p>One gradient step nudges the weights very slightly. Training just repeats the forward/backward pair, taking a small step down the gradient each time, until the loss stops moving:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>lr <span class="ot">&lt;-</span> <span class="fl">0.1</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>max_iter <span class="ot">&lt;-</span> <span class="dv">40000</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>tol <span class="ot">&lt;-</span> <span class="fl">1e-7</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>prev_loss <span class="ot">&lt;-</span> <span class="cn">Inf</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>loss_history <span class="ot">&lt;-</span> <span class="fu">numeric</span>(<span class="dv">0</span>)</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (iter <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>max_iter) {</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>  fwd <span class="ot">&lt;-</span> <span class="fu">forward_pass</span>(X, W1, b1, W2, b2)</span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>  loss <span class="ot">&lt;-</span> <span class="fu">mean</span>((y <span class="sc">-</span> fwd<span class="sc">$</span>Yhat)<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>  loss_history[iter] <span class="ot">&lt;-</span> loss</span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">abs</span>(prev_loss <span class="sc">-</span> loss) <span class="sc">&lt;</span> tol) <span class="cf">break</span></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>  prev_loss <span class="ot">&lt;-</span> loss</span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>  grad <span class="ot">&lt;-</span> <span class="fu">backward_pass</span>(X, y, fwd<span class="sc">$</span>H, fwd<span class="sc">$</span>Yhat, W2)</span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>  W1 <span class="ot">&lt;-</span> W1 <span class="sc">-</span> lr <span class="sc">*</span> grad<span class="sc">$</span>dW1</span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>  b1 <span class="ot">&lt;-</span> b1 <span class="sc">-</span> lr <span class="sc">*</span> grad<span class="sc">$</span>db1</span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>  W2 <span class="ot">&lt;-</span> W2 <span class="sc">-</span> lr <span class="sc">*</span> grad<span class="sc">$</span>dW2</span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>  b2 <span class="ot">&lt;-</span> b2 <span class="sc">-</span> lr <span class="sc">*</span> grad<span class="sc">$</span>db2</span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Converged after"</span>, iter, <span class="st">"iterations. Final MSE:"</span>, <span class="fu">round</span>(loss, <span class="dv">4</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Converged after 33544 iterations. Final MSE: 0.0966 </code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(loss_history, <span class="at">type =</span> <span class="st">"l"</span>, <span class="at">col =</span> <span class="st">"steelblue4"</span>, <span class="at">lwd =</span> <span class="fl">1.5</span>,</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="st">"iteration"</span>, <span class="at">ylab =</span> <span class="st">"MSE"</span>, <span class="at">main =</span> <span class="st">"Training loss"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="index_files/figure-html/unnamed-chunk-9-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>ols_fit <span class="ot">&lt;-</span> <span class="fu">lm</span>(y <span class="sc">~</span> X1 <span class="sc">+</span> X2 <span class="sc">+</span> X3, <span class="at">data =</span> df)</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"OLS MSE:    "</span>, <span class="fu">round</span>(<span class="fu">mean</span>(<span class="fu">residuals</span>(ols_fit)<span class="sc">^</span><span class="dv">2</span>), <span class="dv">4</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>OLS MSE:     4.2993 </code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Network MSE:"</span>, <span class="fu">round</span>(loss, <span class="dv">4</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Network MSE: 0.0966 </code></pre>
+</div>
+</div>
+<p>The network converges to roughly the noise floor (<span class="math inline">\(\text{sd}=0.3 \Rightarrow \text{Var}\approx 0.09\)</span>), while OLS is stuck far higher — a linear combination of <span class="math inline">\(X_1, X_2, X_3\)</span> has no way to represent <span class="math inline">\(X_1^2\)</span> or <span class="math inline">\(X_1 X_2\)</span>. The hidden layer built exactly the nonlinear features it needed, on its own, from data alone.</p>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/jeffwong\.github\.io");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

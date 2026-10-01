@@ -2,6 +2,7 @@
   {
     "listing": "/index.html",
     "items": [
+      "/posts/ratio_metrics/index.html",
       "/posts/linear_probability_model/index.html",
       "/posts/posterior_distribution_effect/index.html",
       "/posts/ols_to_deep_learning/index.html",

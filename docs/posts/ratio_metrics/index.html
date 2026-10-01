@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Jeffrey Wong">
+<meta name="dcterms.date" content="2026-09-28">
+
+<title>Inference on Ratio Metrics – From First Principles</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<script src="../../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap-158031087360bce0ff56dc785ce39e06.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../../styles.css">
+</head>
+
+<body class="nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top quarto-banner">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../../index.html">
+    <span class="navbar-title">From First Principles</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../../about.html"> 
+<span class="menu-text">About Me</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="https://linkedin.com/jeffctwong"> <i class="bi bi-linkedin" role="img">
+</i> 
+<span class="menu-text">LinkedIn</span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<header id="title-block-header" class="quarto-title-block default page-columns page-full">
+  <div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-body">
+      <h1 class="title">Inference on Ratio Metrics</h1>
+                                <div class="quarto-categories">
+                <div class="quarto-category">causal inference</div>
+                <div class="quarto-category">AB testing</div>
+                <div class="quarto-category">regression</div>
+              </div>
+                  </div>
+  </div>
+    
+  
+  <div class="quarto-title-meta">
+
+      <div>
+      <div class="quarto-title-meta-heading">Author</div>
+      <div class="quarto-title-meta-contents">
+               <p>Jeffrey Wong </p>
+            </div>
+    </div>
+      
+      <div>
+      <div class="quarto-title-meta-heading">Published</div>
+      <div class="quarto-title-meta-contents">
+        <p class="date">September 28, 2026</p>
+      </div>
+    </div>
+    
+      
+    </div>
+    
+  
+  </header><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#bivariate-model-in-ols" id="toc-bivariate-model-in-ols" class="nav-link active" data-scroll-target="#bivariate-model-in-ols">Bivariate Model in OLS</a>
+  <ul class="collapse">
+  <li><a href="#covariance-of-a-bivariate-model" id="toc-covariance-of-a-bivariate-model" class="nav-link" data-scroll-target="#covariance-of-a-bivariate-model">Covariance of a bivariate model</a></li>
+  </ul></li>
+  <li><a href="#variance-of-the-treatment-effect-with-the-delta-method" id="toc-variance-of-the-treatment-effect-with-the-delta-method" class="nav-link" data-scroll-target="#variance-of-the-treatment-effect-with-the-delta-method">Variance of the Treatment Effect with the Delta Method</a>
+  <ul class="collapse">
+  <li><a href="#step-1-the-ratio-within-each-arm" id="toc-step-1-the-ratio-within-each-arm" class="nav-link" data-scroll-target="#step-1-the-ratio-within-each-arm">Step 1: The Ratio Within Each Arm</a>
+  <ul class="collapse">
+  <li><a href="#sanity-check-the-base-case" id="toc-sanity-check-the-base-case" class="nav-link" data-scroll-target="#sanity-check-the-base-case">Sanity check the base case</a></li>
+  </ul></li>
+  <li><a href="#step-2-the-difference-of-ratios" id="toc-step-2-the-difference-of-ratios" class="nav-link" data-scroll-target="#step-2-the-difference-of-ratios">Step 2: The Difference of Ratios</a></li>
+  </ul></li>
+  <li><a href="#simulation-in-r" id="toc-simulation-in-r" class="nav-link" data-scroll-target="#simulation-in-r">Simulation in R</a>
+  <ul class="collapse">
+  <li><a href="#fitting-the-bivariate-model" id="toc-fitting-the-bivariate-model" class="nav-link" data-scroll-target="#fitting-the-bivariate-model">Fitting the Bivariate Model</a></li>
+  <li><a href="#point-estimate" id="toc-point-estimate" class="nav-link" data-scroll-target="#point-estimate">Point Estimate</a></li>
+  <li><a href="#step-1-variance-of-the-ratio-within-each-arm" id="toc-step-1-variance-of-the-ratio-within-each-arm" class="nav-link" data-scroll-target="#step-1-variance-of-the-ratio-within-each-arm">Step 1: Variance of the Ratio Within Each Arm</a></li>
+  <li><a href="#step-2-variance-of-the-difference-of-ratios" id="toc-step-2-variance-of-the-difference-of-ratios" class="nav-link" data-scroll-target="#step-2-variance-of-the-difference-of-ratios">Step 2: Variance of the Difference of Ratios</a></li>
+  <li><a href="#checking-the-variance-over-many-experiments" id="toc-checking-the-variance-over-many-experiments" class="nav-link" data-scroll-target="#checking-the-variance-over-many-experiments">Checking the Variance Over Many Experiments</a></li>
+  </ul></li>
+  <li><a href="#appendix" id="toc-appendix" class="nav-link" data-scroll-target="#appendix">Appendix</a>
+  <ul class="collapse">
+  <li><a href="#how-covariates-change-c_t" id="toc-how-covariates-change-c_t" class="nav-link" data-scroll-target="#how-covariates-change-c_t">How Covariates Change <span class="math inline">\(c_t\)</span></a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content quarto-banner-title-block" id="quarto-document-content">
+
+
+
+
+
+<p>Some business metrics need to be normalized. For example, a video streaming service might ask how many rebuffers a user experienced. But if the user played many videos, it will be better to normalize this metric by number of videos played. Another example is when we sum total revenue for a supplier, but we also need to normalize it for the number of product lines.</p>
+<p>In previous posts, we have talked about how to compute <a href="https://jeffwong.github.io/posts/relative_effects/">relative effects</a>, which is another type of normalization. In this case we divided the treatment mean by the control mean, both derived from a single model like OLS. For a ratio metric we divide 2 completely different random variables, derived from different models.</p>
+<section id="bivariate-model-in-ols" class="level1">
+<h1>Bivariate Model in OLS</h1>
+<p>Say the numerator metric is <span class="math inline">\(N\)</span>, and the denominator metric is <span class="math inline">\(D\)</span>. When we first studied how to divide a treatment mean by a control mean, we said that these two quantities have no covariance. It makes sense when the underlying OLS model is simply <span class="math inline">\(y = \beta_0 + T \beta_1 + \varepsilon\)</span> and <span class="math inline">\(T\)</span> is randomized. However, when thinking about two distinct metrics, which might affect one another, we will need to jointly model them.</p>
+<p>Consider the bivariate OLS model that jointly models</p>
+<p><span class="math display">\[[N, D] = \beta_0 + T \beta_1 + X \beta_2 + \varepsilon.\]</span></p>
+<p>In this case, the outcome <span class="math inline">\(Y = [N, D]\)</span> is a <span class="math inline">\(1 \times 2\)</span> row vector, so <span class="math inline">\(\beta_0 = [\beta_{0,N}, \beta_{0,D}]\)</span> is not a constant, it’s a vector. Likewise <span class="math inline">\(\beta_1 = [\beta_{1,N}, \beta_{1,D}]\)</span> is a vector, and when <span class="math inline">\(X\)</span> has <span class="math inline">\(p\)</span> columns <span class="math inline">\(\beta_2 = [\beta_{2,N}, \beta_{2,D}]\)</span> is a <span class="math inline">\(p \times 2\)</span> matrix. The noise <span class="math inline">\(\varepsilon = [\varepsilon_N, \varepsilon_D]\)</span> is also a vector, with covariance matrix <span class="math inline">\(\Sigma_\varepsilon\)</span>.</p>
+<p>Under this model, we define the mean of each metric in each arm by averaging the model over the covariates of all users</p>
+<p><span class="math display">\[\begin{align}
+\mu_{N,T} &amp;= E_X\big[E[N | T = 1, X]\big] = \beta_{0,N} + \beta_{1,N} + E[X] \beta_{2,N} \\
+\mu_{D,T} &amp;= E_X\big[E[D | T = 1, X]\big] = \beta_{0,D} + \beta_{1,D} + E[X] \beta_{2,D} \\
+\mu_{N,C} &amp;= E_X\big[E[N | T = 0, X]\big] = \beta_{0,N} + E[X] \beta_{2,N} \\
+\mu_{D,C} &amp;= E_X\big[E[D | T = 0, X]\big] = \beta_{0,D} + E[X] \beta_{2,D}
+\end{align}\]</span></p>
+<p>The treatment effect on the ratio metric is then</p>
+<p><span class="math display">\[\begin{align}
+\tau &amp;= \frac{\mu_{N,T}}{\mu_{D,T}} - \frac{\mu_{N,C}}{\mu_{D,C}}
+\end{align}\]</span></p>
+<p>The point estimate of the effect is derived from the coefficients of the models, replacing <span class="math inline">\(E[X]\)</span> with the sample average <span class="math inline">\(\bar{X}\)</span></p>
+<p><span class="math display">\[\begin{align}
+\frac{\hat{\mu}_{N,T}}{\hat{\mu}_{D,T}} &amp;= \frac{\hat{\beta}_{0,N} + \hat{\beta}_{1,N} + \bar{X} \hat{\beta}_{2,N}}{\hat{\beta}_{0,D} + \hat{\beta}_{1,D} + \bar{X} \hat{\beta}_{2,D}} \\
+\frac{\hat{\mu}_{N,C}}{\hat{\mu}_{D,C}} &amp;= \frac{\hat{\beta}_{0,N} + \bar{X} \hat{\beta}_{2,N}}{\hat{\beta}_{0,D} + \bar{X} \hat{\beta}_{2,D}}
+\end{align}\]</span></p>
+<p>Note that <span class="math inline">\(\tau\)</span> is built from a ratio of means: we first average the numerator and the denominator within each arm, then divide. This is different from averaging a per-user ratio, which has the same geometric-mean subtlety that we saw with the log linear model in the post on <a href="https://jeffwong.github.io/posts/relative_effects/">relative effects</a>.</p>
+<section id="covariance-of-a-bivariate-model" class="level2">
+<h2 class="anchored" data-anchor-id="covariance-of-a-bivariate-model">Covariance of a bivariate model</h2>
+<p>We are already familiar with how to model the covariance of the parameter estimates under a single outcome. In this formulation there are two error terms, and covariance between the two. The clever step here is if the covariates for <span class="math inline">\(N\)</span> are the same as the covariates for <span class="math inline">\(D\)</span>, e.g.&nbsp;<span class="math inline">\(Z = [1, T, X]\)</span> then we can express</p>
+<p><span class="math display">\[\begin{align}
+\text{Cov}(\text{vec}(\hat{B})) &amp;= \Sigma_\varepsilon \otimes (Z^\top Z)^{-1} = \begin{pmatrix} \sigma_N^2 (Z^\top Z)^{-1} &amp; \sigma_{ND} (Z^\top Z)^{-1} \\ \sigma_{ND} (Z^\top Z)^{-1} &amp; \sigma_D^2 (Z^\top Z)^{-1} \end{pmatrix} \\
+\Sigma_\varepsilon &amp;= \begin{pmatrix} \sigma_N^2 &amp; \sigma_{ND} \\ \sigma_{ND} &amp; \sigma_D^2 \end{pmatrix} \\
+\hat{\sigma}_N^2 &amp;= \frac{1}{n-k} \sum_{i=1}^n \hat{\varepsilon}_{N,i}^2 \\
+\hat{\sigma}_D^2 &amp;= \frac{1}{n-k} \sum_{i=1}^n \hat{\varepsilon}_{D,i}^2 \\
+\hat{\sigma}_{ND} &amp;= \frac{1}{n-k} \sum_{i=1}^n \hat{\varepsilon}_{N,i} \hat{\varepsilon}_{D,i}
+\end{align}\]</span></p>
+</section>
+</section>
+<section id="variance-of-the-treatment-effect-with-the-delta-method" class="level1">
+<h1>Variance of the Treatment Effect with the Delta Method</h1>
+<p>We will get the variance of <span class="math inline">\(\hat{\tau}\)</span> in two steps. First we apply the delta method within each arm to get the variance of each arm’s ratio. Then we apply it again to the difference of the two ratios.</p>
+<section id="step-1-the-ratio-within-each-arm" class="level2">
+<h2 class="anchored" data-anchor-id="step-1-the-ratio-within-each-arm">Step 1: The Ratio Within Each Arm</h2>
+<p>The estimated means in each arm are linear combinations of the coefficients. Define the <a href="https://arxiv.org/pdf/2412.08788">baseline vectors</a> <span class="math inline">\(b_T = (1, 1, \bar{X})\)</span> and <span class="math inline">\(b_C = (1, 0, \bar{X})\)</span>. Then</p>
+<p><span class="math display">\[\begin{align}
+\hat{\mu}_{N,T} &amp;= b_T \hat{\beta}_N &amp; \hat{\mu}_{D,T} &amp;= b_T \hat{\beta}_D \\
+\hat{\mu}_{N,C} &amp;= b_C \hat{\beta}_N &amp; \hat{\mu}_{D,C} &amp;= b_C \hat{\beta}_D
+\end{align}\]</span></p>
+<p>To get the covariance of these means, it helps to recall the case of a single outcome. For the regression <span class="math inline">\(y = Z\beta + \varepsilon\)</span> with <span class="math inline">\(\text{Var}(\varepsilon) = \sigma^2\)</span>, the estimated mean of arm <span class="math inline">\(t \in \{T, C\}\)</span> is simply <span class="math inline">\(\hat{\mu}_t = b_t \hat{\beta}\)</span>. Its variance can be compactly written in terms of a fixed variable from the observed data, and <span class="math inline">\(\sigma^2\)</span>.</p>
+<p><span class="math display">\[\begin{align}
+c_t &amp;= b_t (Z^\top Z)^{-1} b_t^\top \\
+\text{Var}(\hat{\mu}_t) &amp;= b_t \text{Cov}(\hat{\beta}) b_t^\top \\
+&amp;= b_t \sigma^2 (Z^\top Z)^{-1} b_t^\top \\
+&amp;= \sigma^2 c_t
+\end{align}\]</span></p>
+<p>In the bivariate model, we need the full <span class="math inline">\(2 \times 2\)</span> covariance of <span class="math inline">\((\hat{\mu}_{N,t}, \hat{\mu}_{D,t}) = (b_t \hat{\beta}_N, b_t \hat{\beta}_D)\)</span>. The elements are governed by</p>
+<p><span class="math display">\[\begin{align}
+\text{Var}(\hat{\mu}_{N,t}) &amp;= b_t \text{Cov}(\hat{\beta}_N) b_t^\top &amp;= b_t \sigma_N^2 (Z^\top Z)^{-1} b_t^\top &amp;= c_t \sigma_N^2 \\
+\text{Var}(\hat{\mu}_{D,t}) &amp;= b_t \text{Cov}(\hat{\beta}_D) b_t^\top &amp;= b_t \sigma_D^2 (Z^\top Z)^{-1} b_t^\top &amp;= c_t \sigma_D^2 \\
+\text{Cov}(\hat{\mu}_{N,t}, \hat{\mu}_{D,t}) &amp;= b_t  \text{Cov}(\hat{\beta}_N, \hat{\beta}_D) b_t^\top &amp;= b_t \sigma_{ND} (Z^\top Z)^{-1} b_t^\top &amp;= c_t \sigma_{ND}
+\end{align}\]</span></p>
+<p>Hence we can write <span class="math display">\[\text{Cov}\begin{pmatrix} \hat{\mu}_{N,t} \\ \hat{\mu}_{D,t} \end{pmatrix} = c_t \, \Sigma_\varepsilon.\]</span></p>
+<p>The ratio in arm <span class="math inline">\(t\)</span> is <span class="math inline">\(R_t = g(\mu_{N,t}, \mu_{D,t}) = \frac{\mu_{N,t}}{\mu_{D,t}}\)</span>, with gradient</p>
+<p><span class="math display">\[\nabla g_t = \left(\frac{1}{\mu_{D,t}},\ -\frac{\mu_{N,t}}{\mu_{D,t}^2}\right).\]</span></p>
+<p>Applying the <a href="https://jeffwong.github.io/posts/relative_effects/">delta method</a>, <span class="math inline">\(\text{Var}(\hat{R}_t) \approx \nabla g_t^\top (c_t \Sigma_\varepsilon) \nabla g_t\)</span>, it expands to</p>
+<p><span class="math display">\[\boxed{\text{Var}(\hat{R}_t) \approx \frac{c_t}{\mu_{D,t}^2}\left(\sigma_N^2 - 2 R_t \sigma_{ND} + R_t^2 \sigma_D^2\right)}\]</span></p>
+<p>The covariance term, <span class="math inline">\(-2 R_t \sigma_{ND}\)</span>, is critical. When the numerator and denominator are positively correlated, ignoring their covariance overstates the variance of the ratio, sometimes by a large factor.</p>
+<section id="sanity-check-the-base-case" class="level3">
+<h3 class="anchored" data-anchor-id="sanity-check-the-base-case">Sanity check the base case</h3>
+<p>As a sanity check, consider the case with no covariates, so <span class="math inline">\(Z = [1, T]\)</span>. The baseline vectors are <span class="math inline">\(b_T = (1, 1)\)</span> and <span class="math inline">\(b_C = (1, 0)\)</span>, and</p>
+<p><span class="math display">\[Z^\top Z = \begin{pmatrix} n &amp; n_T \\ n_T &amp; n_T \end{pmatrix}, \qquad (Z^\top Z)^{-1} = \frac{1}{n_T n_C} \begin{pmatrix} n_T &amp; -n_T \\ -n_T &amp; n \end{pmatrix}.\]</span></p>
+<p>Then <span class="math inline">\(c_T = \frac{n_T - 2 n_T + n}{n_T n_C} = \frac{1}{n_T}\)</span> and <span class="math inline">\(c_C = \frac{n_T}{n_T n_C} = \frac{1}{n_C}\)</span>. <span class="math inline">\(c_t\)</span> now plays the role of the very familiar <span class="math inline">\(1/n_t\)</span> multiplier in the variance of a mean. The formula for <span class="math inline">\(\text{Var}(\hat{R}_T)\)</span> reduces to the familiar variance of a ratio of means,</p>
+<p><span class="math display">\[\text{Var}(\hat{R}_T) \approx \frac{1}{n_T \mu_{D,T}^2}\left(\sigma_N^2 - 2 R_T \sigma_{ND} + R_T^2 \sigma_D^2\right).\]</span></p>
+<p>When there are covariates, <span class="math inline">\(c_T\)</span> is no longer exactly <span class="math inline">\(1/n_T\)</span>, but when <span class="math inline">\(T\)</span> is randomized it remains very close to it. We explain this in the appendix.</p>
+</section>
+</section>
+<section id="step-2-the-difference-of-ratios" class="level2">
+<h2 class="anchored" data-anchor-id="step-2-the-difference-of-ratios">Step 2: The Difference of Ratios</h2>
+<p>The treatment effect is <span class="math inline">\(\tau = R_T - R_C\)</span>, so</p>
+<p><span class="math display">\[\text{Var}(\hat{\tau}) = \text{Var}(\hat{R}_T) + \text{Var}(\hat{R}_C) - 2 \text{Cov}(\hat{R}_T, \hat{R}_C).\]</span></p>
+<p>The two arms share <span class="math inline">\(\beta_2\)</span>, so in general their ratios are not independent. The covariance between the estimated ratios of the two arms is</p>
+<p><span class="math display">\[\text{Cov}\left(\begin{pmatrix} \hat{\mu}_{N,T} \\ \hat{\mu}_{D,T} \end{pmatrix}, \begin{pmatrix} \hat{\mu}_{N,C} \\ \hat{\mu}_{D,C} \end{pmatrix}\right) = c_{TC} \, \Sigma_\varepsilon, \qquad c_{TC} = b_T (Z^\top Z)^{-1} b_C^\top,\]</span></p>
+<p>yielding</p>
+<p><span class="math display">\[\begin{align}
+\text{Cov}(\hat{R}_T, \hat{R}_C) \approx c_{TC} \nabla g_T^\top \Sigma_\varepsilon \nabla g_C \\
+\boxed{\text{Var}(\hat{\tau}) \approx \text{Var}(\hat{R}_T) + \text{Var}(\hat{R}_C) - 2 c_{TC} \, \nabla g_T^\top \Sigma_\varepsilon \nabla g_C}
+\end{align}\]</span></p>
+<p>In practice the cross term is tiny. When there are no covariates, <span class="math inline">\(c_{TC} = 0\)</span> exactly, and the two arms’ ratios are uncorrelated. With covariates, the arms are only linked through the shared estimate <span class="math inline">\(\hat{\beta}_2\)</span>, and <span class="math inline">\(c_{TC}\)</span> shrinks at the rate <span class="math inline">\(1/n^2\)</span> while <span class="math inline">\(c_T\)</span> and <span class="math inline">\(c_C\)</span> shrink at the rate <span class="math inline">\(1/n\)</span>.</p>
+</section>
+</section>
+<section id="simulation-in-r" class="level1">
+<h1>Simulation in R</h1>
+<p>We now execute the math above on simulated data. Continuing the video streaming example, the numerator <span class="math inline">\(N\)</span> is the number of rebuffers and the denominator <span class="math inline">\(D\)</span> is the number of videos played. Each user has <span class="math inline">\(p = 2\)</span> pretreatment covariates, <span class="math inline">\(X_1\)</span> = plays in the pre-period and <span class="math inline">\(X_2\)</span> = rebuffers in the pre-period, and the treatment <span class="math inline">\(T\)</span> is randomized with probability 0.5. The treatment increases plays, but it increases rebuffers by proportionally more, so rebuffers per play go up.</p>
+<p>The noise terms <span class="math inline">\(\varepsilon_N\)</span> and <span class="math inline">\(\varepsilon_D\)</span> are positively correlated, with <span class="math inline">\(\sigma_{ND} = \rho \, \sigma_N \sigma_D\)</span>.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>simulate_experiment <span class="ot">&lt;-</span> <span class="cf">function</span>(n) {</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Pretreatment covariates</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  X_1 <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(n, <span class="at">mean =</span> <span class="dv">20</span>, <span class="at">sd =</span> <span class="dv">5</span>)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  X_2 <span class="ot">&lt;-</span> <span class="fl">0.1</span> <span class="sc">*</span> X_1 <span class="sc">+</span> <span class="fu">rnorm</span>(n, <span class="at">mean =</span> <span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">1</span>)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  X <span class="ot">&lt;-</span> <span class="fu">cbind</span>(X_1, X_2)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Randomized treatment. Note that this masks R's shorthand T for TRUE</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>  T <span class="ot">&lt;-</span> <span class="fu">rbinom</span>(n, <span class="dv">1</span>, <span class="fl">0.5</span>)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Correlated noise</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>  eps <span class="ot">&lt;-</span> <span class="fu">mvrnorm</span>(n, <span class="at">mu =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>), <span class="at">Sigma =</span> Sigma_eps)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>  N <span class="ot">&lt;-</span> beta_0[<span class="st">"N"</span>] <span class="sc">+</span> T <span class="sc">*</span> beta_1[<span class="st">"N"</span>] <span class="sc">+</span> <span class="fu">drop</span>(X <span class="sc">%*%</span> beta_2[, <span class="st">"N"</span>]) <span class="sc">+</span> eps[, <span class="dv">1</span>]</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>  D <span class="ot">&lt;-</span> beta_0[<span class="st">"D"</span>] <span class="sc">+</span> T <span class="sc">*</span> beta_1[<span class="st">"D"</span>] <span class="sc">+</span> <span class="fu">drop</span>(X <span class="sc">%*%</span> beta_2[, <span class="st">"D"</span>]) <span class="sc">+</span> eps[, <span class="dv">2</span>]</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">N =</span> N, <span class="at">D =</span> D, <span class="at">T =</span> T, <span class="at">X =</span> X)</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="co"># True coefficients, one column per metric</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>beta_0 <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="at">N =</span> <span class="fl">0.5</span>, <span class="at">D =</span> <span class="dv">5</span>)</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>beta_1 <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="at">N =</span> <span class="fl">0.3</span>, <span class="at">D =</span> <span class="dv">1</span>)</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>beta_2 <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="at">N =</span> <span class="fu">c</span>(<span class="fl">0.05</span>, <span class="fl">0.6</span>), <span class="at">D =</span> <span class="fu">c</span>(<span class="fl">0.8</span>, <span class="dv">0</span>))</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a><span class="co"># True noise covariance</span></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>sigma_N <span class="ot">&lt;-</span> <span class="fl">1.5</span></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>sigma_D <span class="ot">&lt;-</span> <span class="dv">4</span></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>rho <span class="ot">&lt;-</span> <span class="fl">0.6</span></span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>sigma_ND <span class="ot">&lt;-</span> rho <span class="sc">*</span> sigma_N <span class="sc">*</span> sigma_D</span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>Sigma_eps <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(sigma_N<span class="sc">^</span><span class="dv">2</span>, sigma_ND,</span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>                      sigma_ND, sigma_D<span class="sc">^</span><span class="dv">2</span>), <span class="dv">2</span>, <span class="dv">2</span>,</span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>                    <span class="at">dimnames =</span> <span class="fu">list</span>(<span class="fu">c</span>(<span class="st">"N"</span>, <span class="st">"D"</span>), <span class="fu">c</span>(<span class="st">"N"</span>, <span class="st">"D"</span>)))</span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">100</span>)</span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">20000</span></span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>sim <span class="ot">&lt;-</span> <span class="fu">simulate_experiment</span>(n)</span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>N <span class="ot">&lt;-</span> sim<span class="sc">$</span>N</span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>D <span class="ot">&lt;-</span> sim<span class="sc">$</span>D</span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a>T <span class="ot">&lt;-</span> sim<span class="sc">$</span>T</span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a>X <span class="ot">&lt;-</span> sim<span class="sc">$</span>X</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+<p>Since we know the true coefficients, we can compute the true <span class="math inline">\(\tau\)</span> by plugging <span class="math inline">\(E[X] = (20, 2)\)</span> into the definitions of <span class="math inline">\(\mu_{N,T}\)</span>, <span class="math inline">\(\mu_{D,T}\)</span>, <span class="math inline">\(\mu_{N,C}\)</span> and <span class="math inline">\(\mu_{D,C}\)</span>.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>E_X <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">20</span>, <span class="dv">2</span>)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>mu_N_T <span class="ot">&lt;-</span> <span class="fu">unname</span>(beta_0[<span class="st">"N"</span>] <span class="sc">+</span> beta_1[<span class="st">"N"</span>] <span class="sc">+</span> <span class="fu">sum</span>(E_X <span class="sc">*</span> beta_2[, <span class="st">"N"</span>]))</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>mu_D_T <span class="ot">&lt;-</span> <span class="fu">unname</span>(beta_0[<span class="st">"D"</span>] <span class="sc">+</span> beta_1[<span class="st">"D"</span>] <span class="sc">+</span> <span class="fu">sum</span>(E_X <span class="sc">*</span> beta_2[, <span class="st">"D"</span>]))</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>mu_N_C <span class="ot">&lt;-</span> <span class="fu">unname</span>(beta_0[<span class="st">"N"</span>] <span class="sc">+</span> <span class="fu">sum</span>(E_X <span class="sc">*</span> beta_2[, <span class="st">"N"</span>]))</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>mu_D_C <span class="ot">&lt;-</span> <span class="fu">unname</span>(beta_0[<span class="st">"D"</span>] <span class="sc">+</span> <span class="fu">sum</span>(E_X <span class="sc">*</span> beta_2[, <span class="st">"D"</span>]))</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>tau <span class="ot">&lt;-</span> mu_N_T <span class="sc">/</span> mu_D_T <span class="sc">-</span> mu_N_C <span class="sc">/</span> mu_D_C</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="at">R_T =</span> mu_N_T <span class="sc">/</span> mu_D_T, <span class="at">R_C =</span> mu_N_C <span class="sc">/</span> mu_D_C, <span class="at">tau =</span> tau)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>        R_T         R_C         tau 
+0.136363636 0.128571429 0.007792208 </code></pre>
+</div>
+</div>
+<section id="fitting-the-bivariate-model" class="level2">
+<h2 class="anchored" data-anchor-id="fitting-the-bivariate-model">Fitting the Bivariate Model</h2>
+<p>In R, passing <code>cbind(N, D)</code> as the outcome fits the bivariate OLS model. The coefficient matrix <span class="math inline">\(\hat{B}\)</span> has one column per metric, <span class="math inline">\(\hat{\beta}_N\)</span> and <span class="math inline">\(\hat{\beta}_D\)</span>.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">lm</span>(<span class="fu">cbind</span>(N, D) <span class="sc">~</span> T <span class="sc">+</span> X)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>B_hat <span class="ot">&lt;-</span> <span class="fu">coef</span>(fit)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>beta_N_hat <span class="ot">&lt;-</span> B_hat[, <span class="st">"N"</span>]</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>beta_D_hat <span class="ot">&lt;-</span> B_hat[, <span class="st">"D"</span>]</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>B_hat</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>                     N           D
+(Intercept) 0.49823977  4.98934922
+T           0.32121636  0.99843562
+XX_1        0.04858011  0.80016834
+XX_2        0.59871457 -0.01325133</code></pre>
+</div>
+</div>
+<p>Next we estimate <span class="math inline">\(\Sigma_\varepsilon\)</span> from the residuals, using the formulas for <span class="math inline">\(\hat{\sigma}_N^2\)</span>, <span class="math inline">\(\hat{\sigma}_D^2\)</span> and <span class="math inline">\(\hat{\sigma}_{ND}\)</span>. The matrix product <span class="math inline">\(\hat{\varepsilon}^\top \hat{\varepsilon}\)</span> computes all three sums at once.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>Z <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(fit)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>k <span class="ot">&lt;-</span> <span class="fu">ncol</span>(Z)</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>eps_hat <span class="ot">&lt;-</span> <span class="fu">resid</span>(fit)</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>Sigma_eps_hat <span class="ot">&lt;-</span> <span class="fu">crossprod</span>(eps_hat) <span class="sc">/</span> (n <span class="sc">-</span> k)</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>Sigma_eps_hat</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>         N         D
+N 2.260786  3.604297
+D 3.604297 15.966950</code></pre>
+</div>
+</div>
+<p>The estimate is close to the true <span class="math inline">\(\Sigma_\varepsilon\)</span>, which has <span class="math inline">\(\sigma_N^2 = 2.25\)</span>, <span class="math inline">\(\sigma_{ND} = 3.6\)</span> and <span class="math inline">\(\sigma_D^2 = 16\)</span>. We can also verify that <span class="math inline">\(\text{Cov}(\text{vec}(\hat{B})) = \Sigma_\varepsilon \otimes (Z^\top Z)^{-1}\)</span> agrees with the covariance matrix that R reports for the bivariate model.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>ZtZ_inv <span class="ot">&lt;-</span> <span class="fu">solve</span>(<span class="fu">crossprod</span>(Z))</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>cov_vec_B_hat <span class="ot">&lt;-</span> <span class="fu">kronecker</span>(Sigma_eps_hat, ZtZ_inv)</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="fu">max</span>(<span class="fu">abs</span>(cov_vec_B_hat <span class="sc">-</span> <span class="fu">vcov</span>(fit)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 2.494532e-15</code></pre>
+</div>
+</div>
+</section>
+<section id="point-estimate" class="level2">
+<h2 class="anchored" data-anchor-id="point-estimate">Point Estimate</h2>
+<p>The estimated means use the baseline vectors <span class="math inline">\(b_T = (1, 1, \bar{X})\)</span> and <span class="math inline">\(b_C = (1, 0, \bar{X})\)</span>, where both arms use the same overall average <span class="math inline">\(\bar{X}\)</span>.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>X_bar <span class="ot">&lt;-</span> <span class="fu">colMeans</span>(X)</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>b_T <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>, X_bar)</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>b_C <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">0</span>, X_bar)</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>mu_N_T_hat <span class="ot">&lt;-</span> <span class="fu">sum</span>(b_T <span class="sc">*</span> beta_N_hat)</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>mu_D_T_hat <span class="ot">&lt;-</span> <span class="fu">sum</span>(b_T <span class="sc">*</span> beta_D_hat)</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>mu_N_C_hat <span class="ot">&lt;-</span> <span class="fu">sum</span>(b_C <span class="sc">*</span> beta_N_hat)</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>mu_D_C_hat <span class="ot">&lt;-</span> <span class="fu">sum</span>(b_C <span class="sc">*</span> beta_D_hat)</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>R_T_hat <span class="ot">&lt;-</span> mu_N_T_hat <span class="sc">/</span> mu_D_T_hat</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>R_C_hat <span class="ot">&lt;-</span> mu_N_C_hat <span class="sc">/</span> mu_D_C_hat</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>tau_hat <span class="ot">&lt;-</span> R_T_hat <span class="sc">-</span> R_C_hat</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="at">R_T_hat =</span> R_T_hat, <span class="at">R_C_hat =</span> R_C_hat, <span class="at">tau_hat =</span> tau_hat)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>    R_T_hat     R_C_hat     tau_hat 
+0.135977298 0.127125333 0.008851965 </code></pre>
+</div>
+</div>
+</section>
+<section id="step-1-variance-of-the-ratio-within-each-arm" class="level2">
+<h2 class="anchored" data-anchor-id="step-1-variance-of-the-ratio-within-each-arm">Step 1: Variance of the Ratio Within Each Arm</h2>
+<p>First we compute <span class="math inline">\(c_T = b_T (Z^\top Z)^{-1} b_T^\top\)</span> and <span class="math inline">\(c_C = b_C (Z^\top Z)^{-1} b_C^\top\)</span>. Since <span class="math inline">\(T\)</span> is randomized, they are very close to <span class="math inline">\(1/n_T\)</span> and <span class="math inline">\(1/n_C\)</span>.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>n_T <span class="ot">&lt;-</span> <span class="fu">sum</span>(T)</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>n_C <span class="ot">&lt;-</span> n <span class="sc">-</span> n_T</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>c_T <span class="ot">&lt;-</span> <span class="fu">drop</span>(<span class="fu">t</span>(b_T) <span class="sc">%*%</span> ZtZ_inv <span class="sc">%*%</span> b_T)</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>c_C <span class="ot">&lt;-</span> <span class="fu">drop</span>(<span class="fu">t</span>(b_C) <span class="sc">%*%</span> ZtZ_inv <span class="sc">%*%</span> b_C)</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="at">c_T =</span> c_T, <span class="at">one_over_n_T =</span> <span class="dv">1</span> <span class="sc">/</span> n_T, <span class="at">c_C =</span> c_C, <span class="at">one_over_n_C =</span> <span class="dv">1</span> <span class="sc">/</span> n_C)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>         c_T one_over_n_T          c_C one_over_n_C 
+1.001907e-04 1.001904e-04 9.981071e-05 9.981036e-05 </code></pre>
+</div>
+</div>
+<p>Then we apply the delta method, <span class="math inline">\(\text{Var}(\hat{R}_t) \approx \nabla g_t^\top (c_t \Sigma_\varepsilon) \nabla g_t\)</span>, using the gradient <span class="math inline">\(\nabla g_t = \left(\frac{1}{\mu_{D,t}}, -\frac{\mu_{N,t}}{\mu_{D,t}^2}\right)\)</span>.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>grad_g_T <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span> <span class="sc">/</span> mu_D_T_hat, <span class="sc">-</span>mu_N_T_hat <span class="sc">/</span> mu_D_T_hat<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>grad_g_C <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span> <span class="sc">/</span> mu_D_C_hat, <span class="sc">-</span>mu_N_C_hat <span class="sc">/</span> mu_D_C_hat<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>var_R_T_hat <span class="ot">&lt;-</span> <span class="fu">drop</span>(<span class="fu">t</span>(grad_g_T) <span class="sc">%*%</span> (c_T <span class="sc">*</span> Sigma_eps_hat) <span class="sc">%*%</span> grad_g_T)</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>var_R_C_hat <span class="ot">&lt;-</span> <span class="fu">drop</span>(<span class="fu">t</span>(grad_g_C) <span class="sc">%*%</span> (c_C <span class="sc">*</span> Sigma_eps_hat) <span class="sc">%*%</span> grad_g_C)</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="at">var_R_T_hat =</span> var_R_T_hat, <span class="at">var_R_C_hat =</span> var_R_C_hat)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code> var_R_T_hat  var_R_C_hat 
+3.277250e-07 3.643962e-07 </code></pre>
+</div>
+</div>
+<p>The expanded form of the boxed formula, <span class="math inline">\(\frac{c_t}{\mu_{D,t}^2}\left(\sigma_N^2 - 2 R_t \sigma_{ND} + R_t^2 \sigma_D^2\right)\)</span>, gives the same answer.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>sigma_N_sq_hat <span class="ot">&lt;-</span> Sigma_eps_hat[<span class="st">"N"</span>, <span class="st">"N"</span>]</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>sigma_D_sq_hat <span class="ot">&lt;-</span> Sigma_eps_hat[<span class="st">"D"</span>, <span class="st">"D"</span>]</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>sigma_ND_hat <span class="ot">&lt;-</span> Sigma_eps_hat[<span class="st">"N"</span>, <span class="st">"D"</span>]</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>c_T <span class="sc">/</span> mu_D_T_hat<span class="sc">^</span><span class="dv">2</span> <span class="sc">*</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>  (sigma_N_sq_hat <span class="sc">-</span> <span class="dv">2</span> <span class="sc">*</span> R_T_hat <span class="sc">*</span> sigma_ND_hat <span class="sc">+</span> R_T_hat<span class="sc">^</span><span class="dv">2</span> <span class="sc">*</span> sigma_D_sq_hat)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 3.27725e-07</code></pre>
+</div>
+</div>
+</section>
+<section id="step-2-variance-of-the-difference-of-ratios" class="level2">
+<h2 class="anchored" data-anchor-id="step-2-variance-of-the-difference-of-ratios">Step 2: Variance of the Difference of Ratios</h2>
+<p>Finally we compute the cross term using <span class="math inline">\(c_{TC} = b_T (Z^\top Z)^{-1} b_C^\top\)</span>, and combine everything into <span class="math inline">\(\text{Var}(\hat{\tau})\)</span>.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>c_TC <span class="ot">&lt;-</span> <span class="fu">drop</span>(<span class="fu">t</span>(b_T) <span class="sc">%*%</span> ZtZ_inv <span class="sc">%*%</span> b_C)</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>cov_R_T_R_C_hat <span class="ot">&lt;-</span> c_TC <span class="sc">*</span> <span class="fu">drop</span>(<span class="fu">t</span>(grad_g_T) <span class="sc">%*%</span> Sigma_eps_hat <span class="sc">%*%</span> grad_g_C)</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>var_tau_hat <span class="ot">&lt;-</span> var_R_T_hat <span class="sc">+</span> var_R_C_hat <span class="sc">-</span> <span class="dv">2</span> <span class="sc">*</span> cov_R_T_R_C_hat</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>se_tau_hat <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(var_tau_hat)</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="at">c_TC =</span> c_TC, <span class="at">cov_R_T_R_C_hat =</span> cov_R_T_R_C_hat,</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">var_tau_hat =</span> var_tau_hat, <span class="at">se_tau_hat =</span> se_tau_hat)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>           c_TC cov_R_T_R_C_hat     var_tau_hat      se_tau_hat 
+  -3.552744e-10   -1.227291e-12    6.921236e-07    8.319396e-04 </code></pre>
+</div>
+</div>
+<p>As expected, <span class="math inline">\(c_{TC}\)</span> is several orders of magnitude smaller than <span class="math inline">\(c_T\)</span> and <span class="math inline">\(c_C\)</span>, so the cross term barely moves the variance. With the standard error in hand, we can report a confidence interval and p value.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="at">tau_hat =</span> tau_hat,</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">lower =</span> tau_hat <span class="sc">-</span> <span class="fu">qnorm</span>(<span class="fl">0.975</span>) <span class="sc">*</span> se_tau_hat,</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">upper =</span> tau_hat <span class="sc">+</span> <span class="fu">qnorm</span>(<span class="fl">0.975</span>) <span class="sc">*</span> se_tau_hat,</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">p_value =</span> <span class="dv">2</span> <span class="sc">*</span> <span class="fu">pnorm</span>(<span class="sc">-</span><span class="fu">abs</span>(tau_hat <span class="sc">/</span> se_tau_hat)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>     tau_hat        lower        upper      p_value 
+8.851965e-03 7.221393e-03 1.048254e-02 1.938121e-26 </code></pre>
+</div>
+</div>
+<p>We said that the two step calculation is identical to applying the delta method once to <span class="math inline">\(\tau\)</span> as a function of the full coefficient vector <span class="math inline">\(\text{vec}(\hat{B})\)</span>. The gradient of <span class="math inline">\(\tau = \frac{b_T \beta_N}{b_T \beta_D} - \frac{b_C \beta_N}{b_C \beta_D}\)</span> with respect to <span class="math inline">\((\beta_N, \beta_D)\)</span> is <span class="math inline">\(\left(\frac{b_T}{\mu_{D,T}} - \frac{b_C}{\mu_{D,C}}, \ -\frac{\mu_{N,T}}{\mu_{D,T}^2} b_T + \frac{\mu_{N,C}}{\mu_{D,C}^2} b_C\right)\)</span>, and it gives the same variance.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>grad_tau <span class="ot">&lt;-</span> <span class="fu">c</span>(b_T <span class="sc">/</span> mu_D_T_hat <span class="sc">-</span> b_C <span class="sc">/</span> mu_D_C_hat,</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>              <span class="sc">-</span>mu_N_T_hat <span class="sc">/</span> mu_D_T_hat<span class="sc">^</span><span class="dv">2</span> <span class="sc">*</span> b_T <span class="sc">+</span> mu_N_C_hat <span class="sc">/</span> mu_D_C_hat<span class="sc">^</span><span class="dv">2</span> <span class="sc">*</span> b_C)</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="at">one_shot =</span> <span class="fu">drop</span>(<span class="fu">t</span>(grad_tau) <span class="sc">%*%</span> cov_vec_B_hat <span class="sc">%*%</span> grad_tau),</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">two_step =</span> var_tau_hat)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>    one_shot     two_step 
+6.921236e-07 6.921236e-07 </code></pre>
+</div>
+</div>
+</section>
+<section id="checking-the-variance-over-many-experiments" class="level2">
+<h2 class="anchored" data-anchor-id="checking-the-variance-over-many-experiments">Checking the Variance Over Many Experiments</h2>
+<p>A single experiment cannot tell us whether <span class="math inline">\(\widehat{\text{Var}}(\hat{\tau})\)</span> is correct. To check it, we repeat the experiment 1,000 times and compare the standard deviation of <span class="math inline">\(\hat{\tau}\)</span> across experiments to the average estimated standard error. We also compute a naive standard error that ignores the covariance between the numerator and the denominator, by setting <span class="math inline">\(\hat{\sigma}_{ND} = 0\)</span>, which is what we would get from two separate regressions.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>estimate_tau <span class="ot">&lt;-</span> <span class="cf">function</span>(N, D, T, X) {</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>  fit <span class="ot">&lt;-</span> <span class="fu">lm</span>(<span class="fu">cbind</span>(N, D) <span class="sc">~</span> T <span class="sc">+</span> X)</span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>  B_hat <span class="ot">&lt;-</span> <span class="fu">coef</span>(fit)</span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>  Z <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(fit)</span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>  ZtZ_inv <span class="ot">&lt;-</span> <span class="fu">solve</span>(<span class="fu">crossprod</span>(Z))</span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>  Sigma_eps_hat <span class="ot">&lt;-</span> <span class="fu">crossprod</span>(<span class="fu">resid</span>(fit)) <span class="sc">/</span> (<span class="fu">nrow</span>(Z) <span class="sc">-</span> <span class="fu">ncol</span>(Z))</span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>  X_bar <span class="ot">&lt;-</span> <span class="fu">colMeans</span>(X)</span>
+<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a>  b_T <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>, X_bar)</span>
+<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a>  b_C <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">0</span>, X_bar)</span>
+<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a>  mu_T_hat <span class="ot">&lt;-</span> <span class="fu">drop</span>(b_T <span class="sc">%*%</span> B_hat)  <span class="co"># (mu_N_T_hat, mu_D_T_hat)</span></span>
+<span id="cb24-12"><a href="#cb24-12" aria-hidden="true" tabindex="-1"></a>  mu_C_hat <span class="ot">&lt;-</span> <span class="fu">drop</span>(b_C <span class="sc">%*%</span> B_hat)  <span class="co"># (mu_N_C_hat, mu_D_C_hat)</span></span>
+<span id="cb24-13"><a href="#cb24-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-14"><a href="#cb24-14" aria-hidden="true" tabindex="-1"></a>  grad_g_T <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span> <span class="sc">/</span> mu_T_hat[<span class="st">"D"</span>], <span class="sc">-</span>mu_T_hat[<span class="st">"N"</span>] <span class="sc">/</span> mu_T_hat[<span class="st">"D"</span>]<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb24-15"><a href="#cb24-15" aria-hidden="true" tabindex="-1"></a>  grad_g_C <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span> <span class="sc">/</span> mu_C_hat[<span class="st">"D"</span>], <span class="sc">-</span>mu_C_hat[<span class="st">"N"</span>] <span class="sc">/</span> mu_C_hat[<span class="st">"D"</span>]<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb24-16"><a href="#cb24-16" aria-hidden="true" tabindex="-1"></a>  c_T <span class="ot">&lt;-</span> <span class="fu">drop</span>(<span class="fu">t</span>(b_T) <span class="sc">%*%</span> ZtZ_inv <span class="sc">%*%</span> b_T)</span>
+<span id="cb24-17"><a href="#cb24-17" aria-hidden="true" tabindex="-1"></a>  c_C <span class="ot">&lt;-</span> <span class="fu">drop</span>(<span class="fu">t</span>(b_C) <span class="sc">%*%</span> ZtZ_inv <span class="sc">%*%</span> b_C)</span>
+<span id="cb24-18"><a href="#cb24-18" aria-hidden="true" tabindex="-1"></a>  c_TC <span class="ot">&lt;-</span> <span class="fu">drop</span>(<span class="fu">t</span>(b_T) <span class="sc">%*%</span> ZtZ_inv <span class="sc">%*%</span> b_C)</span>
+<span id="cb24-19"><a href="#cb24-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-20"><a href="#cb24-20" aria-hidden="true" tabindex="-1"></a>  var_tau <span class="ot">&lt;-</span> <span class="cf">function</span>(Sigma) {</span>
+<span id="cb24-21"><a href="#cb24-21" aria-hidden="true" tabindex="-1"></a>    c_T <span class="sc">*</span> <span class="fu">drop</span>(<span class="fu">t</span>(grad_g_T) <span class="sc">%*%</span> Sigma <span class="sc">%*%</span> grad_g_T) <span class="sc">+</span></span>
+<span id="cb24-22"><a href="#cb24-22" aria-hidden="true" tabindex="-1"></a>      c_C <span class="sc">*</span> <span class="fu">drop</span>(<span class="fu">t</span>(grad_g_C) <span class="sc">%*%</span> Sigma <span class="sc">%*%</span> grad_g_C) <span class="sc">-</span></span>
+<span id="cb24-23"><a href="#cb24-23" aria-hidden="true" tabindex="-1"></a>      <span class="dv">2</span> <span class="sc">*</span> c_TC <span class="sc">*</span> <span class="fu">drop</span>(<span class="fu">t</span>(grad_g_T) <span class="sc">%*%</span> Sigma <span class="sc">%*%</span> grad_g_C)</span>
+<span id="cb24-24"><a href="#cb24-24" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb24-25"><a href="#cb24-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-26"><a href="#cb24-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">c</span>(<span class="at">tau_hat =</span> <span class="fu">unname</span>(mu_T_hat[<span class="st">"N"</span>] <span class="sc">/</span> mu_T_hat[<span class="st">"D"</span>] <span class="sc">-</span> mu_C_hat[<span class="st">"N"</span>] <span class="sc">/</span> mu_C_hat[<span class="st">"D"</span>]),</span>
+<span id="cb24-27"><a href="#cb24-27" aria-hidden="true" tabindex="-1"></a>    <span class="at">se_tau_hat =</span> <span class="fu">sqrt</span>(<span class="fu">var_tau</span>(Sigma_eps_hat)),</span>
+<span id="cb24-28"><a href="#cb24-28" aria-hidden="true" tabindex="-1"></a>    <span class="at">se_tau_hat_naive =</span> <span class="fu">sqrt</span>(<span class="fu">var_tau</span>(<span class="fu">diag</span>(<span class="fu">diag</span>(Sigma_eps_hat)))))</span>
+<span id="cb24-29"><a href="#cb24-29" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb24-30"><a href="#cb24-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-31"><a href="#cb24-31" aria-hidden="true" tabindex="-1"></a>sims <span class="ot">&lt;-</span> <span class="fu">t</span>(<span class="fu">replicate</span>(<span class="dv">1000</span>, {</span>
+<span id="cb24-32"><a href="#cb24-32" aria-hidden="true" tabindex="-1"></a>  sim <span class="ot">&lt;-</span> <span class="fu">simulate_experiment</span>(n)</span>
+<span id="cb24-33"><a href="#cb24-33" aria-hidden="true" tabindex="-1"></a>  <span class="fu">estimate_tau</span>(sim<span class="sc">$</span>N, sim<span class="sc">$</span>D, sim<span class="sc">$</span>T, sim<span class="sc">$</span>X)</span>
+<span id="cb24-34"><a href="#cb24-34" aria-hidden="true" tabindex="-1"></a>}))</span>
+<span id="cb24-35"><a href="#cb24-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-36"><a href="#cb24-36" aria-hidden="true" tabindex="-1"></a>z <span class="ot">&lt;-</span> <span class="fu">qnorm</span>(<span class="fl">0.975</span>)</span>
+<span id="cb24-37"><a href="#cb24-37" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="at">tau =</span> tau,</span>
+<span id="cb24-38"><a href="#cb24-38" aria-hidden="true" tabindex="-1"></a>  <span class="at">mean_tau_hat =</span> <span class="fu">mean</span>(sims[, <span class="st">"tau_hat"</span>]),</span>
+<span id="cb24-39"><a href="#cb24-39" aria-hidden="true" tabindex="-1"></a>  <span class="at">sd_tau_hat =</span> <span class="fu">sd</span>(sims[, <span class="st">"tau_hat"</span>]),</span>
+<span id="cb24-40"><a href="#cb24-40" aria-hidden="true" tabindex="-1"></a>  <span class="at">mean_se_tau_hat =</span> <span class="fu">mean</span>(sims[, <span class="st">"se_tau_hat"</span>]),</span>
+<span id="cb24-41"><a href="#cb24-41" aria-hidden="true" tabindex="-1"></a>  <span class="at">mean_se_tau_hat_naive =</span> <span class="fu">mean</span>(sims[, <span class="st">"se_tau_hat_naive"</span>]),</span>
+<span id="cb24-42"><a href="#cb24-42" aria-hidden="true" tabindex="-1"></a>  <span class="at">coverage =</span> <span class="fu">mean</span>(<span class="fu">abs</span>(sims[, <span class="st">"tau_hat"</span>] <span class="sc">-</span> tau) <span class="sc">&lt;=</span> z <span class="sc">*</span> sims[, <span class="st">"se_tau_hat"</span>]),</span>
+<span id="cb24-43"><a href="#cb24-43" aria-hidden="true" tabindex="-1"></a>  <span class="at">coverage_naive =</span> <span class="fu">mean</span>(<span class="fu">abs</span>(sims[, <span class="st">"tau_hat"</span>] <span class="sc">-</span> tau) <span class="sc">&lt;=</span> z <span class="sc">*</span> sims[, <span class="st">"se_tau_hat_naive"</span>]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>                  tau          mean_tau_hat            sd_tau_hat 
+          0.007792208           0.007762030           0.000809931 
+      mean_se_tau_hat mean_se_tau_hat_naive              coverage 
+          0.000827188           0.001047469           0.951000000 
+       coverage_naive 
+          0.985000000 </code></pre>
+</div>
+</div>
+<p>The average of <span class="math inline">\(\hat{\tau}\)</span> is close to the true <span class="math inline">\(\tau\)</span>, and the average standard error from the delta method matches the actual standard deviation of <span class="math inline">\(\hat{\tau}\)</span> across experiments, so the 95% confidence interval covers the true <span class="math inline">\(\tau\)</span> about 95% of the time. The naive standard error, which ignores <span class="math inline">\(\sigma_{ND}\)</span>, is too large, and its confidence interval is overly conservative. When the numerator and denominator are positively correlated, jointly modeling them gives a more precise, and still correct, measure of uncertainty.</p>
+</section>
+</section>
+<section id="appendix" class="level1">
+<h1>Appendix</h1>
+<section id="how-covariates-change-c_t" class="level2">
+<h2 class="anchored" data-anchor-id="how-covariates-change-c_t">How Covariates Change <span class="math inline">\(c_t\)</span></h2>
+<p>To see what covariates do to <span class="math inline">\(c_T\)</span>, we return to a single outcome <span class="math inline">\(y = \beta_0 + T \beta_1 + X \beta_2 + \varepsilon\)</span> with <span class="math inline">\(\text{Var}(\varepsilon) = \sigma^2\)</span>. We will find a different way to express <span class="math inline">\(c_T\)</span>, as a sum of <span class="math inline">\(1/n_T\)</span> and another term that is a function of covariate imbalance.</p>
+<p>Because the model contains an intercept and <span class="math inline">\(T\)</span>, the residuals sum to zero within each arm, so the fitted model passes through each arm’s own averages. For the treatment arm, the raw average of <span class="math inline">\(y\)</span> equals the fitted value at the arm’s own covariate average, <span class="math inline">\(\bar{y}_T = \hat{\beta}_0 + \hat{\beta}_1 + \bar{X}_T \hat{\beta}_2\)</span>, where <span class="math inline">\(\bar{y}_T\)</span> and <span class="math inline">\(\bar{X}_T\)</span> are the averages of <span class="math inline">\(y\)</span> and <span class="math inline">\(X\)</span> over treated users. Subtracting this from <span class="math inline">\(\hat{\mu}_T = b_T \hat{\beta} = \hat{\beta}_0 + \hat{\beta}_1 + \bar{X} \hat{\beta}_2\)</span> gives</p>
+<p><span class="math display">\[\hat{\mu}_T = \bar{y}_T + \Delta_T \hat{\beta}_2, \qquad \Delta_T = \bar{X} - \bar{X}_T.\]</span></p>
+<p>The estimated treatment mean is the raw treatment average, adjusted for how far the treatment arm’s covariates are from the overall average <span class="math inline">\(\bar{X}\)</span>. Note that under randomization <span class="math inline">\(\bar{X}_T\)</span> is close to <span class="math inline">\(\bar{X}\)</span>, and the gap shrinks as the sample grows, but in any finite sample they differ.</p>
+<p>Since <span class="math inline">\(\hat{\mu}_T\)</span> is a sum of two random quantities, <span class="math inline">\(\bar{y}_T\)</span> and <span class="math inline">\(\hat{\beta}_2\)</span>, its variance in general has three terms</p>
+<p><span class="math display">\[\text{Var}(\hat{\mu}_T) = \text{Var}(\bar{y}_T) + \Delta_T \, \text{Var}(\hat{\beta}_2) \, \Delta_T^\top + 2 \Delta_T \, \text{Cov}(\hat{\beta}_2, \bar{y}_T).\]</span></p>
+<p>The first two terms are familiar. The average of <span class="math inline">\(n_T\)</span> independent outcomes has <span class="math inline">\(\text{Var}(\bar{y}_T) = \sigma^2 / n_T\)</span>. For the second term, the Frisch-Waugh-Lovell theorem says that <span class="math inline">\(\hat{\beta}_2\)</span> is the coefficient from regressing <span class="math inline">\(y\)</span> on <span class="math inline">\(\tilde{X}\)</span>, the covariates demeaned within each arm, so <span class="math inline">\(\hat{\beta}_2 = (\tilde{X}^\top \tilde{X})^{-1} \tilde{X}^\top y\)</span> and <span class="math inline">\(\text{Var}(\hat{\beta}_2) = \sigma^2 (\tilde{X}^\top \tilde{X})^{-1}\)</span>.</p>
+<p>The third term, the cross term, is exactly zero. Let <span class="math inline">\(1_T\)</span> be the vector that is 1 for treated users and 0 otherwise, so that <span class="math inline">\(\bar{y}_T = \frac{1}{n_T} 1_T^\top y\)</span>. Both <span class="math inline">\(\bar{y}_T\)</span> and <span class="math inline">\(\hat{\beta}_2\)</span> are linear in <span class="math inline">\(y\)</span>, and <span class="math inline">\(\text{Cov}(y) = \sigma^2 I\)</span>, so</p>
+<p><span class="math display">\[\text{Cov}(\hat{\beta}_2, \bar{y}_T) = (\tilde{X}^\top \tilde{X})^{-1} \tilde{X}^\top \, \sigma^2 I \, \frac{1_T}{n_T} = \frac{\sigma^2}{n_T} (\tilde{X}^\top \tilde{X})^{-1} \tilde{X}^\top 1_T.\]</span></p>
+<p>The product <span class="math inline">\(\tilde{X}^\top 1_T\)</span> is the sum of the demeaned covariates over the treated users. Since each treated user’s covariates were demeaned by the treatment arm’s own average, <span class="math inline">\(\tilde{X}^\top 1_T = \sum_{i \in T} (X_i - \bar{X}_T)^\top = 0\)</span>. This is why the demeaning must be done within each arm. If we demeaned by the overall average <span class="math inline">\(\bar{X}\)</span> instead, the sum would be <span class="math inline">\(n_T (\bar{X}_T - \bar{X})^\top\)</span>, which is not zero.</p>
+<p>With the cross term gone, the variance is the sum of the first two terms</p>
+<p><span class="math display">\[\text{Var}(\hat{\mu}_T) = \frac{\sigma^2}{n_T} + \Delta_T \, \sigma^2 (\tilde{X}^\top \tilde{X})^{-1} \Delta_T^\top.\]</span></p>
+<p>Earlier we showed that <span class="math inline">\(\text{Var}(\hat{\mu}_T) = \sigma^2 c_T\)</span>. Both expressions are the variance of the same estimator, so setting them equal and canceling <span class="math inline">\(\sigma^2\)</span> gives an alternative formula for <span class="math inline">\(c_T\)</span>,</p>
+<p><span class="math display">\[\boxed{c_T = \frac{1}{n_T} + \Delta_T (\tilde{X}^\top \tilde{X})^{-1} \Delta_T^\top}\]</span></p>
+<p>The second term is a quadratic form, so it is never negative: <span class="math inline">\(c_T \geq 1/n_T\)</span>, with equality only when the treatment arm’s covariates average exactly to <span class="math inline">\(\bar{X}\)</span>. It is a penalty for covariate imbalance, and it measures how far the model has to extrapolate the treatment mean from <span class="math inline">\(\bar{X}_T\)</span> to <span class="math inline">\(\bar{X}\)</span>. The same argument applies to <span class="math inline">\(c_C\)</span> with <span class="math inline">\(\Delta_C = \bar{X} - \bar{X}_C\)</span>.</p>
+<p>Under randomization the penalty is very small, for two reasons:</p>
+<ul>
+<li><span class="math inline">\(\Delta_T = \frac{n_C}{n}(\bar{X}_C - \bar{X}_T)\)</span> is a difference between two sample means that have the same expected value. It is centered at zero, and its magnitude shrinks at the rate <span class="math inline">\(1/\sqrt{n}\)</span>.</li>
+<li><span class="math inline">\(\tilde{X}^\top \tilde{X}\)</span> is a sum over all <span class="math inline">\(n\)</span> users, roughly <span class="math inline">\(n \, \text{Var}(X)\)</span>, so its inverse shrinks at the rate <span class="math inline">\(1/n\)</span>.</li>
+</ul>
+<p>Together the penalty shrinks at the rate <span class="math inline">\(1/n^2\)</span>, while <span class="math inline">\(1/n_T\)</span> shrinks at the rate <span class="math inline">\(1/n\)</span>. Taking expectations, the relative excess <span class="math inline">\(n_T c_T - 1\)</span> is roughly <span class="math inline">\(p \, n_C / n^2\)</span> when <span class="math inline">\(X\)</span> has <span class="math inline">\(p\)</span> columns, which is negligible for any reasonably sized experiment.</p>
+<p>This breaks down without randomization. If treated users have systematically different covariates, then <span class="math inline">\(\Delta_T\)</span> does not shrink, the penalty is on the same order as <span class="math inline">\(1/n_T\)</span>, and the variance of <span class="math inline">\(\hat{\mu}_T\)</span> can be much larger than <span class="math inline">\(\sigma^2 / n_T\)</span>.</p>
+<p>Finally, this does not mean covariates are harmful. The variance of each mean is <span class="math inline">\(c_t\)</span> times the noise variance. Adding covariates increases <span class="math inline">\(c_t\)</span> by a negligible amount, but can greatly reduce the residual variances <span class="math inline">\(\sigma_N^2\)</span> and <span class="math inline">\(\sigma_D^2\)</span>, and with them the variance of the ratio. This is the same tradeoff that makes CUPED effective.</p>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/jeffwong\.github\.io");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

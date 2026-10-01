@@ -10,7 +10,1475 @@
 <atom:link href="https://jeffwong.github.io/index.xml" rel="self" type="application/rss+xml"/>
 <description>Data science innovation from first principles.</description>
 <generator>quarto-1.9.38</generator>
-<lastBuildDate>Thu, 09 Jul 2026 07:00:00 GMT</lastBuildDate>
+<lastBuildDate>Mon, 28 Sep 2026 07:00:00 GMT</lastBuildDate>
+<item>
+  <title>Inference on Ratio Metrics</title>
+  <dc:creator>Jeffrey Wong</dc:creator>
+  <link>https://jeffwong.github.io/posts/ratio_metrics/</link>
+  <description><![CDATA[ 
+
+
+
+
+
+<p>Some business metrics need to be normalized. For example, a video streaming service might ask how many rebuffers a user experienced. But if the user played many videos, it will be better to normalize this metric by number of videos played. Another example is when we sum total revenue for a supplier, but we also need to normalize it for the number of product lines.</p>
+<p>In previous posts, we have talked about how to compute <a href="https://jeffwong.github.io/posts/relative_effects/">relative effects</a>, which is another type of normalization. In this case we divided the treatment mean by the control mean, both derived from a single model like OLS. For a ratio metric we divide 2 completely different random variables, derived from different models.</p>
+<section id="bivariate-model-in-ols" class="level1">
+<h1>Bivariate Model in OLS</h1>
+<p>Say the numerator metric is <img src="https://latex.codecogs.com/png.latex?N">, and the denominator metric is <img src="https://latex.codecogs.com/png.latex?D">. When we first studied how to divide a treatment mean by a control mean, we said that these two quantities have no covariance. It makes sense when the underlying OLS model is simply <img src="https://latex.codecogs.com/png.latex?y%20=%20%5Cbeta_0%20+%20T%20%5Cbeta_1%20+%20%5Cvarepsilon"> and <img src="https://latex.codecogs.com/png.latex?T"> is randomized. However, when thinking about two distinct metrics, which might affect one another, we will need to jointly model them.</p>
+<p>Consider the bivariate OLS model that jointly models</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5BN,%20D%5D%20=%20%5Cbeta_0%20+%20T%20%5Cbeta_1%20+%20X%20%5Cbeta_2%20+%20%5Cvarepsilon."></p>
+<p>In this case, the outcome <img src="https://latex.codecogs.com/png.latex?Y%20=%20%5BN,%20D%5D"> is a <img src="https://latex.codecogs.com/png.latex?1%20%5Ctimes%202"> row vector, so <img src="https://latex.codecogs.com/png.latex?%5Cbeta_0%20=%20%5B%5Cbeta_%7B0,N%7D,%20%5Cbeta_%7B0,D%7D%5D"> is not a constant, it’s a vector. Likewise <img src="https://latex.codecogs.com/png.latex?%5Cbeta_1%20=%20%5B%5Cbeta_%7B1,N%7D,%20%5Cbeta_%7B1,D%7D%5D"> is a vector, and when <img src="https://latex.codecogs.com/png.latex?X"> has <img src="https://latex.codecogs.com/png.latex?p"> columns <img src="https://latex.codecogs.com/png.latex?%5Cbeta_2%20=%20%5B%5Cbeta_%7B2,N%7D,%20%5Cbeta_%7B2,D%7D%5D"> is a <img src="https://latex.codecogs.com/png.latex?p%20%5Ctimes%202"> matrix. The noise <img src="https://latex.codecogs.com/png.latex?%5Cvarepsilon%20=%20%5B%5Cvarepsilon_N,%20%5Cvarepsilon_D%5D"> is also a vector, with covariance matrix <img src="https://latex.codecogs.com/png.latex?%5CSigma_%5Cvarepsilon">.</p>
+<p>Under this model, we define the mean of each metric in each arm by averaging the model over the covariates of all users</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0A%5Cmu_%7BN,T%7D%20&amp;=%20E_X%5Cbig%5BE%5BN%20%7C%20T%20=%201,%20X%5D%5Cbig%5D%20=%20%5Cbeta_%7B0,N%7D%20+%20%5Cbeta_%7B1,N%7D%20+%20E%5BX%5D%20%5Cbeta_%7B2,N%7D%20%5C%5C%0A%5Cmu_%7BD,T%7D%20&amp;=%20E_X%5Cbig%5BE%5BD%20%7C%20T%20=%201,%20X%5D%5Cbig%5D%20=%20%5Cbeta_%7B0,D%7D%20+%20%5Cbeta_%7B1,D%7D%20+%20E%5BX%5D%20%5Cbeta_%7B2,D%7D%20%5C%5C%0A%5Cmu_%7BN,C%7D%20&amp;=%20E_X%5Cbig%5BE%5BN%20%7C%20T%20=%200,%20X%5D%5Cbig%5D%20=%20%5Cbeta_%7B0,N%7D%20+%20E%5BX%5D%20%5Cbeta_%7B2,N%7D%20%5C%5C%0A%5Cmu_%7BD,C%7D%20&amp;=%20E_X%5Cbig%5BE%5BD%20%7C%20T%20=%200,%20X%5D%5Cbig%5D%20=%20%5Cbeta_%7B0,D%7D%20+%20E%5BX%5D%20%5Cbeta_%7B2,D%7D%0A%5Cend%7Balign%7D"></p>
+<p>The treatment effect on the ratio metric is then</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0A%5Ctau%20&amp;=%20%5Cfrac%7B%5Cmu_%7BN,T%7D%7D%7B%5Cmu_%7BD,T%7D%7D%20-%20%5Cfrac%7B%5Cmu_%7BN,C%7D%7D%7B%5Cmu_%7BD,C%7D%7D%0A%5Cend%7Balign%7D"></p>
+<p>The point estimate of the effect is derived from the coefficients of the models, replacing <img src="https://latex.codecogs.com/png.latex?E%5BX%5D"> with the sample average <img src="https://latex.codecogs.com/png.latex?%5Cbar%7BX%7D"></p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0A%5Cfrac%7B%5Chat%7B%5Cmu%7D_%7BN,T%7D%7D%7B%5Chat%7B%5Cmu%7D_%7BD,T%7D%7D%20&amp;=%20%5Cfrac%7B%5Chat%7B%5Cbeta%7D_%7B0,N%7D%20+%20%5Chat%7B%5Cbeta%7D_%7B1,N%7D%20+%20%5Cbar%7BX%7D%20%5Chat%7B%5Cbeta%7D_%7B2,N%7D%7D%7B%5Chat%7B%5Cbeta%7D_%7B0,D%7D%20+%20%5Chat%7B%5Cbeta%7D_%7B1,D%7D%20+%20%5Cbar%7BX%7D%20%5Chat%7B%5Cbeta%7D_%7B2,D%7D%7D%20%5C%5C%0A%5Cfrac%7B%5Chat%7B%5Cmu%7D_%7BN,C%7D%7D%7B%5Chat%7B%5Cmu%7D_%7BD,C%7D%7D%20&amp;=%20%5Cfrac%7B%5Chat%7B%5Cbeta%7D_%7B0,N%7D%20+%20%5Cbar%7BX%7D%20%5Chat%7B%5Cbeta%7D_%7B2,N%7D%7D%7B%5Chat%7B%5Cbeta%7D_%7B0,D%7D%20+%20%5Cbar%7BX%7D%20%5Chat%7B%5Cbeta%7D_%7B2,D%7D%7D%0A%5Cend%7Balign%7D"></p>
+<p>Note that <img src="https://latex.codecogs.com/png.latex?%5Ctau"> is built from a ratio of means: we first average the numerator and the denominator within each arm, then divide. This is different from averaging a per-user ratio, which has the same geometric-mean subtlety that we saw with the log linear model in the post on <a href="https://jeffwong.github.io/posts/relative_effects/">relative effects</a>.</p>
+<section id="covariance-of-a-bivariate-model" class="level2">
+<h2 class="anchored" data-anchor-id="covariance-of-a-bivariate-model">Covariance of a bivariate model</h2>
+<p>We are already familiar with how to model the covariance of the parameter estimates under a single outcome. In this formulation there are two error terms, and covariance between the two. The clever step here is if the covariates for <img src="https://latex.codecogs.com/png.latex?N"> are the same as the covariates for <img src="https://latex.codecogs.com/png.latex?D">, e.g.&nbsp;<img src="https://latex.codecogs.com/png.latex?Z%20=%20%5B1,%20T,%20X%5D"> then we can express</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0A%5Ctext%7BCov%7D(%5Ctext%7Bvec%7D(%5Chat%7BB%7D))%20&amp;=%20%5CSigma_%5Cvarepsilon%20%5Cotimes%20(Z%5E%5Ctop%20Z)%5E%7B-1%7D%20=%20%5Cbegin%7Bpmatrix%7D%20%5Csigma_N%5E2%20(Z%5E%5Ctop%20Z)%5E%7B-1%7D%20&amp;%20%5Csigma_%7BND%7D%20(Z%5E%5Ctop%20Z)%5E%7B-1%7D%20%5C%5C%20%5Csigma_%7BND%7D%20(Z%5E%5Ctop%20Z)%5E%7B-1%7D%20&amp;%20%5Csigma_D%5E2%20(Z%5E%5Ctop%20Z)%5E%7B-1%7D%20%5Cend%7Bpmatrix%7D%20%5C%5C%0A%5CSigma_%5Cvarepsilon%20&amp;=%20%5Cbegin%7Bpmatrix%7D%20%5Csigma_N%5E2%20&amp;%20%5Csigma_%7BND%7D%20%5C%5C%20%5Csigma_%7BND%7D%20&amp;%20%5Csigma_D%5E2%20%5Cend%7Bpmatrix%7D%20%5C%5C%0A%5Chat%7B%5Csigma%7D_N%5E2%20&amp;=%20%5Cfrac%7B1%7D%7Bn-k%7D%20%5Csum_%7Bi=1%7D%5En%20%5Chat%7B%5Cvarepsilon%7D_%7BN,i%7D%5E2%20%5C%5C%0A%5Chat%7B%5Csigma%7D_D%5E2%20&amp;=%20%5Cfrac%7B1%7D%7Bn-k%7D%20%5Csum_%7Bi=1%7D%5En%20%5Chat%7B%5Cvarepsilon%7D_%7BD,i%7D%5E2%20%5C%5C%0A%5Chat%7B%5Csigma%7D_%7BND%7D%20&amp;=%20%5Cfrac%7B1%7D%7Bn-k%7D%20%5Csum_%7Bi=1%7D%5En%20%5Chat%7B%5Cvarepsilon%7D_%7BN,i%7D%20%5Chat%7B%5Cvarepsilon%7D_%7BD,i%7D%0A%5Cend%7Balign%7D"></p>
+</section>
+</section>
+<section id="variance-of-the-treatment-effect-with-the-delta-method" class="level1">
+<h1>Variance of the Treatment Effect with the Delta Method</h1>
+<p>We will get the variance of <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Ctau%7D"> in two steps. First we apply the delta method within each arm to get the variance of each arm’s ratio. Then we apply it again to the difference of the two ratios.</p>
+<section id="step-1-the-ratio-within-each-arm" class="level2">
+<h2 class="anchored" data-anchor-id="step-1-the-ratio-within-each-arm">Step 1: The Ratio Within Each Arm</h2>
+<p>The estimated means in each arm are linear combinations of the coefficients. Define the <a href="https://arxiv.org/pdf/2412.08788">baseline vectors</a> <img src="https://latex.codecogs.com/png.latex?b_T%20=%20(1,%201,%20%5Cbar%7BX%7D)"> and <img src="https://latex.codecogs.com/png.latex?b_C%20=%20(1,%200,%20%5Cbar%7BX%7D)">. Then</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0A%5Chat%7B%5Cmu%7D_%7BN,T%7D%20&amp;=%20b_T%20%5Chat%7B%5Cbeta%7D_N%20&amp;%20%5Chat%7B%5Cmu%7D_%7BD,T%7D%20&amp;=%20b_T%20%5Chat%7B%5Cbeta%7D_D%20%5C%5C%0A%5Chat%7B%5Cmu%7D_%7BN,C%7D%20&amp;=%20b_C%20%5Chat%7B%5Cbeta%7D_N%20&amp;%20%5Chat%7B%5Cmu%7D_%7BD,C%7D%20&amp;=%20b_C%20%5Chat%7B%5Cbeta%7D_D%0A%5Cend%7Balign%7D"></p>
+<p>To get the covariance of these means, it helps to recall the case of a single outcome. For the regression <img src="https://latex.codecogs.com/png.latex?y%20=%20Z%5Cbeta%20+%20%5Cvarepsilon"> with <img src="https://latex.codecogs.com/png.latex?%5Ctext%7BVar%7D(%5Cvarepsilon)%20=%20%5Csigma%5E2">, the estimated mean of arm <img src="https://latex.codecogs.com/png.latex?t%20%5Cin%20%5C%7BT,%20C%5C%7D"> is simply <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Cmu%7D_t%20=%20b_t%20%5Chat%7B%5Cbeta%7D">. Its variance can be compactly written in terms of a fixed variable from the observed data, and <img src="https://latex.codecogs.com/png.latex?%5Csigma%5E2">.</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0Ac_t%20&amp;=%20b_t%20(Z%5E%5Ctop%20Z)%5E%7B-1%7D%20b_t%5E%5Ctop%20%5C%5C%0A%5Ctext%7BVar%7D(%5Chat%7B%5Cmu%7D_t)%20&amp;=%20b_t%20%5Ctext%7BCov%7D(%5Chat%7B%5Cbeta%7D)%20b_t%5E%5Ctop%20%5C%5C%0A&amp;=%20b_t%20%5Csigma%5E2%20(Z%5E%5Ctop%20Z)%5E%7B-1%7D%20b_t%5E%5Ctop%20%5C%5C%0A&amp;=%20%5Csigma%5E2%20c_t%0A%5Cend%7Balign%7D"></p>
+<p>In the bivariate model, we need the full <img src="https://latex.codecogs.com/png.latex?2%20%5Ctimes%202"> covariance of <img src="https://latex.codecogs.com/png.latex?(%5Chat%7B%5Cmu%7D_%7BN,t%7D,%20%5Chat%7B%5Cmu%7D_%7BD,t%7D)%20=%20(b_t%20%5Chat%7B%5Cbeta%7D_N,%20b_t%20%5Chat%7B%5Cbeta%7D_D)">. The elements are governed by</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0A%5Ctext%7BVar%7D(%5Chat%7B%5Cmu%7D_%7BN,t%7D)%20&amp;=%20b_t%20%5Ctext%7BCov%7D(%5Chat%7B%5Cbeta%7D_N)%20b_t%5E%5Ctop%20&amp;=%20b_t%20%5Csigma_N%5E2%20(Z%5E%5Ctop%20Z)%5E%7B-1%7D%20b_t%5E%5Ctop%20&amp;=%20c_t%20%5Csigma_N%5E2%20%5C%5C%0A%5Ctext%7BVar%7D(%5Chat%7B%5Cmu%7D_%7BD,t%7D)%20&amp;=%20b_t%20%5Ctext%7BCov%7D(%5Chat%7B%5Cbeta%7D_D)%20b_t%5E%5Ctop%20&amp;=%20b_t%20%5Csigma_D%5E2%20(Z%5E%5Ctop%20Z)%5E%7B-1%7D%20b_t%5E%5Ctop%20&amp;=%20c_t%20%5Csigma_D%5E2%20%5C%5C%0A%5Ctext%7BCov%7D(%5Chat%7B%5Cmu%7D_%7BN,t%7D,%20%5Chat%7B%5Cmu%7D_%7BD,t%7D)%20&amp;=%20b_t%20%20%5Ctext%7BCov%7D(%5Chat%7B%5Cbeta%7D_N,%20%5Chat%7B%5Cbeta%7D_D)%20b_t%5E%5Ctop%20&amp;=%20b_t%20%5Csigma_%7BND%7D%20(Z%5E%5Ctop%20Z)%5E%7B-1%7D%20b_t%5E%5Ctop%20&amp;=%20c_t%20%5Csigma_%7BND%7D%0A%5Cend%7Balign%7D"></p>
+<p>Hence we can write <img src="https://latex.codecogs.com/png.latex?%5Ctext%7BCov%7D%5Cbegin%7Bpmatrix%7D%20%5Chat%7B%5Cmu%7D_%7BN,t%7D%20%5C%5C%20%5Chat%7B%5Cmu%7D_%7BD,t%7D%20%5Cend%7Bpmatrix%7D%20=%20c_t%20%5C,%20%5CSigma_%5Cvarepsilon."></p>
+<p>The ratio in arm <img src="https://latex.codecogs.com/png.latex?t"> is <img src="https://latex.codecogs.com/png.latex?R_t%20=%20g(%5Cmu_%7BN,t%7D,%20%5Cmu_%7BD,t%7D)%20=%20%5Cfrac%7B%5Cmu_%7BN,t%7D%7D%7B%5Cmu_%7BD,t%7D%7D">, with gradient</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cnabla%20g_t%20=%20%5Cleft(%5Cfrac%7B1%7D%7B%5Cmu_%7BD,t%7D%7D,%5C%20-%5Cfrac%7B%5Cmu_%7BN,t%7D%7D%7B%5Cmu_%7BD,t%7D%5E2%7D%5Cright)."></p>
+<p>Applying the <a href="https://jeffwong.github.io/posts/relative_effects/">delta method</a>, <img src="https://latex.codecogs.com/png.latex?%5Ctext%7BVar%7D(%5Chat%7BR%7D_t)%20%5Capprox%20%5Cnabla%20g_t%5E%5Ctop%20(c_t%20%5CSigma_%5Cvarepsilon)%20%5Cnabla%20g_t">, it expands to</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cboxed%7B%5Ctext%7BVar%7D(%5Chat%7BR%7D_t)%20%5Capprox%20%5Cfrac%7Bc_t%7D%7B%5Cmu_%7BD,t%7D%5E2%7D%5Cleft(%5Csigma_N%5E2%20-%202%20R_t%20%5Csigma_%7BND%7D%20+%20R_t%5E2%20%5Csigma_D%5E2%5Cright)%7D"></p>
+<p>The covariance term, <img src="https://latex.codecogs.com/png.latex?-2%20R_t%20%5Csigma_%7BND%7D">, is critical. When the numerator and denominator are positively correlated, ignoring their covariance overstates the variance of the ratio, sometimes by a large factor.</p>
+<section id="sanity-check-the-base-case" class="level3">
+<h3 class="anchored" data-anchor-id="sanity-check-the-base-case">Sanity check the base case</h3>
+<p>As a sanity check, consider the case with no covariates, so <img src="https://latex.codecogs.com/png.latex?Z%20=%20%5B1,%20T%5D">. The baseline vectors are <img src="https://latex.codecogs.com/png.latex?b_T%20=%20(1,%201)"> and <img src="https://latex.codecogs.com/png.latex?b_C%20=%20(1,%200)">, and</p>
+<p><img src="https://latex.codecogs.com/png.latex?Z%5E%5Ctop%20Z%20=%20%5Cbegin%7Bpmatrix%7D%20n%20&amp;%20n_T%20%5C%5C%20n_T%20&amp;%20n_T%20%5Cend%7Bpmatrix%7D,%20%5Cqquad%20(Z%5E%5Ctop%20Z)%5E%7B-1%7D%20=%20%5Cfrac%7B1%7D%7Bn_T%20n_C%7D%20%5Cbegin%7Bpmatrix%7D%20n_T%20&amp;%20-n_T%20%5C%5C%20-n_T%20&amp;%20n%20%5Cend%7Bpmatrix%7D."></p>
+<p>Then <img src="https://latex.codecogs.com/png.latex?c_T%20=%20%5Cfrac%7Bn_T%20-%202%20n_T%20+%20n%7D%7Bn_T%20n_C%7D%20=%20%5Cfrac%7B1%7D%7Bn_T%7D"> and <img src="https://latex.codecogs.com/png.latex?c_C%20=%20%5Cfrac%7Bn_T%7D%7Bn_T%20n_C%7D%20=%20%5Cfrac%7B1%7D%7Bn_C%7D">. <img src="https://latex.codecogs.com/png.latex?c_t"> now plays the role of the very familiar <img src="https://latex.codecogs.com/png.latex?1/n_t"> multiplier in the variance of a mean. The formula for <img src="https://latex.codecogs.com/png.latex?%5Ctext%7BVar%7D(%5Chat%7BR%7D_T)"> reduces to the familiar variance of a ratio of means,</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Ctext%7BVar%7D(%5Chat%7BR%7D_T)%20%5Capprox%20%5Cfrac%7B1%7D%7Bn_T%20%5Cmu_%7BD,T%7D%5E2%7D%5Cleft(%5Csigma_N%5E2%20-%202%20R_T%20%5Csigma_%7BND%7D%20+%20R_T%5E2%20%5Csigma_D%5E2%5Cright)."></p>
+<p>When there are covariates, <img src="https://latex.codecogs.com/png.latex?c_T"> is no longer exactly <img src="https://latex.codecogs.com/png.latex?1/n_T">, but when <img src="https://latex.codecogs.com/png.latex?T"> is randomized it remains very close to it. We explain this in the appendix.</p>
+</section>
+</section>
+<section id="step-2-the-difference-of-ratios" class="level2">
+<h2 class="anchored" data-anchor-id="step-2-the-difference-of-ratios">Step 2: The Difference of Ratios</h2>
+<p>The treatment effect is <img src="https://latex.codecogs.com/png.latex?%5Ctau%20=%20R_T%20-%20R_C">, so</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Ctext%7BVar%7D(%5Chat%7B%5Ctau%7D)%20=%20%5Ctext%7BVar%7D(%5Chat%7BR%7D_T)%20+%20%5Ctext%7BVar%7D(%5Chat%7BR%7D_C)%20-%202%20%5Ctext%7BCov%7D(%5Chat%7BR%7D_T,%20%5Chat%7BR%7D_C)."></p>
+<p>The two arms share <img src="https://latex.codecogs.com/png.latex?%5Cbeta_2">, so in general their ratios are not independent. The covariance between the estimated ratios of the two arms is</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Ctext%7BCov%7D%5Cleft(%5Cbegin%7Bpmatrix%7D%20%5Chat%7B%5Cmu%7D_%7BN,T%7D%20%5C%5C%20%5Chat%7B%5Cmu%7D_%7BD,T%7D%20%5Cend%7Bpmatrix%7D,%20%5Cbegin%7Bpmatrix%7D%20%5Chat%7B%5Cmu%7D_%7BN,C%7D%20%5C%5C%20%5Chat%7B%5Cmu%7D_%7BD,C%7D%20%5Cend%7Bpmatrix%7D%5Cright)%20=%20c_%7BTC%7D%20%5C,%20%5CSigma_%5Cvarepsilon,%20%5Cqquad%20c_%7BTC%7D%20=%20b_T%20(Z%5E%5Ctop%20Z)%5E%7B-1%7D%20b_C%5E%5Ctop,"></p>
+<p>yielding</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0A%5Ctext%7BCov%7D(%5Chat%7BR%7D_T,%20%5Chat%7BR%7D_C)%20%5Capprox%20c_%7BTC%7D%20%5Cnabla%20g_T%5E%5Ctop%20%5CSigma_%5Cvarepsilon%20%5Cnabla%20g_C%20%5C%5C%0A%5Cboxed%7B%5Ctext%7BVar%7D(%5Chat%7B%5Ctau%7D)%20%5Capprox%20%5Ctext%7BVar%7D(%5Chat%7BR%7D_T)%20+%20%5Ctext%7BVar%7D(%5Chat%7BR%7D_C)%20-%202%20c_%7BTC%7D%20%5C,%20%5Cnabla%20g_T%5E%5Ctop%20%5CSigma_%5Cvarepsilon%20%5Cnabla%20g_C%7D%0A%5Cend%7Balign%7D"></p>
+<p>In practice the cross term is tiny. When there are no covariates, <img src="https://latex.codecogs.com/png.latex?c_%7BTC%7D%20=%200"> exactly, and the two arms’ ratios are uncorrelated. With covariates, the arms are only linked through the shared estimate <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Cbeta%7D_2">, and <img src="https://latex.codecogs.com/png.latex?c_%7BTC%7D"> shrinks at the rate <img src="https://latex.codecogs.com/png.latex?1/n%5E2"> while <img src="https://latex.codecogs.com/png.latex?c_T"> and <img src="https://latex.codecogs.com/png.latex?c_C"> shrink at the rate <img src="https://latex.codecogs.com/png.latex?1/n">.</p>
+</section>
+</section>
+<section id="simulation-in-r" class="level1">
+<h1>Simulation in R</h1>
+<p>We now execute the math above on simulated data. Continuing the video streaming example, the numerator <img src="https://latex.codecogs.com/png.latex?N"> is the number of rebuffers and the denominator <img src="https://latex.codecogs.com/png.latex?D"> is the number of videos played. Each user has <img src="https://latex.codecogs.com/png.latex?p%20=%202"> pretreatment covariates, <img src="https://latex.codecogs.com/png.latex?X_1"> = plays in the pre-period and <img src="https://latex.codecogs.com/png.latex?X_2"> = rebuffers in the pre-period, and the treatment <img src="https://latex.codecogs.com/png.latex?T"> is randomized with probability 0.5. The treatment increases plays, but it increases rebuffers by proportionally more, so rebuffers per play go up.</p>
+<p>The noise terms <img src="https://latex.codecogs.com/png.latex?%5Cvarepsilon_N"> and <img src="https://latex.codecogs.com/png.latex?%5Cvarepsilon_D"> are positively correlated, with <img src="https://latex.codecogs.com/png.latex?%5Csigma_%7BND%7D%20=%20%5Crho%20%5C,%20%5Csigma_N%20%5Csigma_D">.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1">simulate_experiment <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">function</span>(n) {</span>
+<span id="cb1-2">  <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># Pretreatment covariates</span></span>
+<span id="cb1-3">  X_1 <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rnorm</span>(n, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">mean =</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">20</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">sd =</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">5</span>)</span>
+<span id="cb1-4">  X_2 <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.1</span> <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> X_1 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rnorm</span>(n, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">mean =</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">sd =</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>)</span>
+<span id="cb1-5">  X <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">cbind</span>(X_1, X_2)</span>
+<span id="cb1-6"></span>
+<span id="cb1-7">  <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># Randomized treatment. Note that this masks R's shorthand T for TRUE</span></span>
+<span id="cb1-8">  T <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rbinom</span>(n, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>, <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.5</span>)</span>
+<span id="cb1-9"></span>
+<span id="cb1-10">  <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># Correlated noise</span></span>
+<span id="cb1-11">  eps <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mvrnorm</span>(n, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">mu =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>), <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">Sigma =</span> Sigma_eps)</span>
+<span id="cb1-12"></span>
+<span id="cb1-13">  N <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> beta_0[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"N"</span>] <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> T <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> beta_1[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"N"</span>] <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">drop</span>(X <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> beta_2[, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"N"</span>]) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> eps[, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>]</span>
+<span id="cb1-14">  D <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> beta_0[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"D"</span>] <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> T <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> beta_1[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"D"</span>] <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">drop</span>(X <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> beta_2[, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"D"</span>]) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> eps[, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>]</span>
+<span id="cb1-15">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">list</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">N =</span> N, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">D =</span> D, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">T =</span> T, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">X =</span> X)</span>
+<span id="cb1-16">}</span>
+<span id="cb1-17"></span>
+<span id="cb1-18"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># True coefficients, one column per metric</span></span>
+<span id="cb1-19">beta_0 <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">N =</span> <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.5</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">D =</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">5</span>)</span>
+<span id="cb1-20">beta_1 <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">N =</span> <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.3</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">D =</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>)</span>
+<span id="cb1-21">beta_2 <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">cbind</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">N =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.05</span>, <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.6</span>), <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">D =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.8</span>, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>))</span>
+<span id="cb1-22"></span>
+<span id="cb1-23"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># True noise covariance</span></span>
+<span id="cb1-24">sigma_N <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1.5</span></span>
+<span id="cb1-25">sigma_D <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">4</span></span>
+<span id="cb1-26">rho <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.6</span></span>
+<span id="cb1-27">sigma_ND <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> rho <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> sigma_N <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> sigma_D</span>
+<span id="cb1-28">Sigma_eps <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">matrix</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(sigma_N<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">^</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>, sigma_ND,</span>
+<span id="cb1-29">                      sigma_ND, sigma_D<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">^</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>), <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>,</span>
+<span id="cb1-30">                    <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">dimnames =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">list</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"N"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"D"</span>), <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"N"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"D"</span>)))</span>
+<span id="cb1-31"></span>
+<span id="cb1-32"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">set.seed</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">100</span>)</span>
+<span id="cb1-33">n <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">20000</span></span>
+<span id="cb1-34">sim <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">simulate_experiment</span>(n)</span>
+<span id="cb1-35">N <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> sim<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>N</span>
+<span id="cb1-36">D <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> sim<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>D</span>
+<span id="cb1-37">T <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> sim<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>T</span>
+<span id="cb1-38">X <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> sim<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>X</span></code></pre></div></div>
+</details>
+</div>
+<p>Since we know the true coefficients, we can compute the true <img src="https://latex.codecogs.com/png.latex?%5Ctau"> by plugging <img src="https://latex.codecogs.com/png.latex?E%5BX%5D%20=%20(20,%202)"> into the definitions of <img src="https://latex.codecogs.com/png.latex?%5Cmu_%7BN,T%7D">, <img src="https://latex.codecogs.com/png.latex?%5Cmu_%7BD,T%7D">, <img src="https://latex.codecogs.com/png.latex?%5Cmu_%7BN,C%7D"> and <img src="https://latex.codecogs.com/png.latex?%5Cmu_%7BD,C%7D">.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1">E_X <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">20</span>, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>)</span>
+<span id="cb2-2">mu_N_T <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">unname</span>(beta_0[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"N"</span>] <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> beta_1[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"N"</span>] <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sum</span>(E_X <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> beta_2[, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"N"</span>]))</span>
+<span id="cb2-3">mu_D_T <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">unname</span>(beta_0[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"D"</span>] <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> beta_1[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"D"</span>] <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sum</span>(E_X <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> beta_2[, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"D"</span>]))</span>
+<span id="cb2-4">mu_N_C <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">unname</span>(beta_0[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"N"</span>] <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sum</span>(E_X <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> beta_2[, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"N"</span>]))</span>
+<span id="cb2-5">mu_D_C <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">unname</span>(beta_0[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"D"</span>] <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sum</span>(E_X <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> beta_2[, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"D"</span>]))</span>
+<span id="cb2-6">tau <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> mu_N_T <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> mu_D_T <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> mu_N_C <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> mu_D_C</span>
+<span id="cb2-7"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">R_T =</span> mu_N_T <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> mu_D_T, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">R_C =</span> mu_N_C <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> mu_D_C, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">tau =</span> tau)</span></code></pre></div></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>        R_T         R_C         tau 
+0.136363636 0.128571429 0.007792208 </code></pre>
+</div>
+</div>
+<section id="fitting-the-bivariate-model" class="level2">
+<h2 class="anchored" data-anchor-id="fitting-the-bivariate-model">Fitting the Bivariate Model</h2>
+<p>In R, passing <code>cbind(N, D)</code> as the outcome fits the bivariate OLS model. The coefficient matrix <img src="https://latex.codecogs.com/png.latex?%5Chat%7BB%7D"> has one column per metric, <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Cbeta%7D_N"> and <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Cbeta%7D_D">.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1">fit <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">lm</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">cbind</span>(N, D) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">~</span> T <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> X)</span>
+<span id="cb4-2">B_hat <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">coef</span>(fit)</span>
+<span id="cb4-3">beta_N_hat <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> B_hat[, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"N"</span>]</span>
+<span id="cb4-4">beta_D_hat <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> B_hat[, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"D"</span>]</span>
+<span id="cb4-5">B_hat</span></code></pre></div></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>                     N           D
+(Intercept) 0.49823977  4.98934922
+T           0.32121636  0.99843562
+XX_1        0.04858011  0.80016834
+XX_2        0.59871457 -0.01325133</code></pre>
+</div>
+</div>
+<p>Next we estimate <img src="https://latex.codecogs.com/png.latex?%5CSigma_%5Cvarepsilon"> from the residuals, using the formulas for <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Csigma%7D_N%5E2">, <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Csigma%7D_D%5E2"> and <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Csigma%7D_%7BND%7D">. The matrix product <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Cvarepsilon%7D%5E%5Ctop%20%5Chat%7B%5Cvarepsilon%7D"> computes all three sums at once.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1">Z <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">model.matrix</span>(fit)</span>
+<span id="cb6-2">k <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ncol</span>(Z)</span>
+<span id="cb6-3">eps_hat <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">resid</span>(fit)</span>
+<span id="cb6-4">Sigma_eps_hat <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">crossprod</span>(eps_hat) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> (n <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> k)</span>
+<span id="cb6-5">Sigma_eps_hat</span></code></pre></div></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>         N         D
+N 2.260786  3.604297
+D 3.604297 15.966950</code></pre>
+</div>
+</div>
+<p>The estimate is close to the true <img src="https://latex.codecogs.com/png.latex?%5CSigma_%5Cvarepsilon">, which has <img src="https://latex.codecogs.com/png.latex?%5Csigma_N%5E2%20=%202.25">, <img src="https://latex.codecogs.com/png.latex?%5Csigma_%7BND%7D%20=%203.6"> and <img src="https://latex.codecogs.com/png.latex?%5Csigma_D%5E2%20=%2016">. We can also verify that <img src="https://latex.codecogs.com/png.latex?%5Ctext%7BCov%7D(%5Ctext%7Bvec%7D(%5Chat%7BB%7D))%20=%20%5CSigma_%5Cvarepsilon%20%5Cotimes%20(Z%5E%5Ctop%20Z)%5E%7B-1%7D"> agrees with the covariance matrix that R reports for the bivariate model.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1">ZtZ_inv <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">solve</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">crossprod</span>(Z))</span>
+<span id="cb8-2">cov_vec_B_hat <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">kronecker</span>(Sigma_eps_hat, ZtZ_inv)</span>
+<span id="cb8-3"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">max</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">abs</span>(cov_vec_B_hat <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">vcov</span>(fit)))</span></code></pre></div></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 2.494532e-15</code></pre>
+</div>
+</div>
+</section>
+<section id="point-estimate" class="level2">
+<h2 class="anchored" data-anchor-id="point-estimate">Point Estimate</h2>
+<p>The estimated means use the baseline vectors <img src="https://latex.codecogs.com/png.latex?b_T%20=%20(1,%201,%20%5Cbar%7BX%7D)"> and <img src="https://latex.codecogs.com/png.latex?b_C%20=%20(1,%200,%20%5Cbar%7BX%7D)">, where both arms use the same overall average <img src="https://latex.codecogs.com/png.latex?%5Cbar%7BX%7D">.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1">X_bar <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">colMeans</span>(X)</span>
+<span id="cb10-2">b_T <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>, X_bar)</span>
+<span id="cb10-3">b_C <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, X_bar)</span>
+<span id="cb10-4"></span>
+<span id="cb10-5">mu_N_T_hat <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sum</span>(b_T <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> beta_N_hat)</span>
+<span id="cb10-6">mu_D_T_hat <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sum</span>(b_T <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> beta_D_hat)</span>
+<span id="cb10-7">mu_N_C_hat <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sum</span>(b_C <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> beta_N_hat)</span>
+<span id="cb10-8">mu_D_C_hat <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sum</span>(b_C <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> beta_D_hat)</span>
+<span id="cb10-9"></span>
+<span id="cb10-10">R_T_hat <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> mu_N_T_hat <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> mu_D_T_hat</span>
+<span id="cb10-11">R_C_hat <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> mu_N_C_hat <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> mu_D_C_hat</span>
+<span id="cb10-12">tau_hat <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> R_T_hat <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> R_C_hat</span>
+<span id="cb10-13"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">R_T_hat =</span> R_T_hat, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">R_C_hat =</span> R_C_hat, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">tau_hat =</span> tau_hat)</span></code></pre></div></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>    R_T_hat     R_C_hat     tau_hat 
+0.135977298 0.127125333 0.008851965 </code></pre>
+</div>
+</div>
+</section>
+<section id="step-1-variance-of-the-ratio-within-each-arm" class="level2">
+<h2 class="anchored" data-anchor-id="step-1-variance-of-the-ratio-within-each-arm">Step 1: Variance of the Ratio Within Each Arm</h2>
+<p>First we compute <img src="https://latex.codecogs.com/png.latex?c_T%20=%20b_T%20(Z%5E%5Ctop%20Z)%5E%7B-1%7D%20b_T%5E%5Ctop"> and <img src="https://latex.codecogs.com/png.latex?c_C%20=%20b_C%20(Z%5E%5Ctop%20Z)%5E%7B-1%7D%20b_C%5E%5Ctop">. Since <img src="https://latex.codecogs.com/png.latex?T"> is randomized, they are very close to <img src="https://latex.codecogs.com/png.latex?1/n_T"> and <img src="https://latex.codecogs.com/png.latex?1/n_C">.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1">n_T <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sum</span>(T)</span>
+<span id="cb12-2">n_C <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> n <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> n_T</span>
+<span id="cb12-3">c_T <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">drop</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">t</span>(b_T) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> ZtZ_inv <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> b_T)</span>
+<span id="cb12-4">c_C <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">drop</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">t</span>(b_C) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> ZtZ_inv <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> b_C)</span>
+<span id="cb12-5"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">c_T =</span> c_T, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">one_over_n_T =</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span> <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> n_T, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">c_C =</span> c_C, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">one_over_n_C =</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span> <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> n_C)</span></code></pre></div></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>         c_T one_over_n_T          c_C one_over_n_C 
+1.001907e-04 1.001904e-04 9.981071e-05 9.981036e-05 </code></pre>
+</div>
+</div>
+<p>Then we apply the delta method, <img src="https://latex.codecogs.com/png.latex?%5Ctext%7BVar%7D(%5Chat%7BR%7D_t)%20%5Capprox%20%5Cnabla%20g_t%5E%5Ctop%20(c_t%20%5CSigma_%5Cvarepsilon)%20%5Cnabla%20g_t">, using the gradient <img src="https://latex.codecogs.com/png.latex?%5Cnabla%20g_t%20=%20%5Cleft(%5Cfrac%7B1%7D%7B%5Cmu_%7BD,t%7D%7D,%20-%5Cfrac%7B%5Cmu_%7BN,t%7D%7D%7B%5Cmu_%7BD,t%7D%5E2%7D%5Cright)">.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1">grad_g_T <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span> <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> mu_D_T_hat, <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span>mu_N_T_hat <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> mu_D_T_hat<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">^</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>)</span>
+<span id="cb14-2">grad_g_C <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span> <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> mu_D_C_hat, <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span>mu_N_C_hat <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> mu_D_C_hat<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">^</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>)</span>
+<span id="cb14-3"></span>
+<span id="cb14-4">var_R_T_hat <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">drop</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">t</span>(grad_g_T) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> (c_T <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> Sigma_eps_hat) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> grad_g_T)</span>
+<span id="cb14-5">var_R_C_hat <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">drop</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">t</span>(grad_g_C) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> (c_C <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> Sigma_eps_hat) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> grad_g_C)</span>
+<span id="cb14-6"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">var_R_T_hat =</span> var_R_T_hat, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">var_R_C_hat =</span> var_R_C_hat)</span></code></pre></div></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code> var_R_T_hat  var_R_C_hat 
+3.277250e-07 3.643962e-07 </code></pre>
+</div>
+</div>
+<p>The expanded form of the boxed formula, <img src="https://latex.codecogs.com/png.latex?%5Cfrac%7Bc_t%7D%7B%5Cmu_%7BD,t%7D%5E2%7D%5Cleft(%5Csigma_N%5E2%20-%202%20R_t%20%5Csigma_%7BND%7D%20+%20R_t%5E2%20%5Csigma_D%5E2%5Cright)">, gives the same answer.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1">sigma_N_sq_hat <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> Sigma_eps_hat[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"N"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"N"</span>]</span>
+<span id="cb16-2">sigma_D_sq_hat <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> Sigma_eps_hat[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"D"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"D"</span>]</span>
+<span id="cb16-3">sigma_ND_hat <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> Sigma_eps_hat[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"N"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"D"</span>]</span>
+<span id="cb16-4"></span>
+<span id="cb16-5">c_T <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> mu_D_T_hat<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">^</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span> <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span></span>
+<span id="cb16-6">  (sigma_N_sq_hat <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span> <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> R_T_hat <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> sigma_ND_hat <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> R_T_hat<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">^</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span> <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> sigma_D_sq_hat)</span></code></pre></div></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 3.27725e-07</code></pre>
+</div>
+</div>
+</section>
+<section id="step-2-variance-of-the-difference-of-ratios" class="level2">
+<h2 class="anchored" data-anchor-id="step-2-variance-of-the-difference-of-ratios">Step 2: Variance of the Difference of Ratios</h2>
+<p>Finally we compute the cross term using <img src="https://latex.codecogs.com/png.latex?c_%7BTC%7D%20=%20b_T%20(Z%5E%5Ctop%20Z)%5E%7B-1%7D%20b_C%5E%5Ctop">, and combine everything into <img src="https://latex.codecogs.com/png.latex?%5Ctext%7BVar%7D(%5Chat%7B%5Ctau%7D)">.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1">c_TC <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">drop</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">t</span>(b_T) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> ZtZ_inv <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> b_C)</span>
+<span id="cb18-2">cov_R_T_R_C_hat <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> c_TC <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">drop</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">t</span>(grad_g_T) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> Sigma_eps_hat <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> grad_g_C)</span>
+<span id="cb18-3"></span>
+<span id="cb18-4">var_tau_hat <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> var_R_T_hat <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> var_R_C_hat <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span> <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> cov_R_T_R_C_hat</span>
+<span id="cb18-5">se_tau_hat <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sqrt</span>(var_tau_hat)</span>
+<span id="cb18-6"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">c_TC =</span> c_TC, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">cov_R_T_R_C_hat =</span> cov_R_T_R_C_hat,</span>
+<span id="cb18-7">  <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">var_tau_hat =</span> var_tau_hat, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">se_tau_hat =</span> se_tau_hat)</span></code></pre></div></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>           c_TC cov_R_T_R_C_hat     var_tau_hat      se_tau_hat 
+  -3.552744e-10   -1.227291e-12    6.921236e-07    8.319396e-04 </code></pre>
+</div>
+</div>
+<p>As expected, <img src="https://latex.codecogs.com/png.latex?c_%7BTC%7D"> is several orders of magnitude smaller than <img src="https://latex.codecogs.com/png.latex?c_T"> and <img src="https://latex.codecogs.com/png.latex?c_C">, so the cross term barely moves the variance. With the standard error in hand, we can report a confidence interval and p value.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">tau_hat =</span> tau_hat,</span>
+<span id="cb20-2">  <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">lower =</span> tau_hat <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">qnorm</span>(<span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.975</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> se_tau_hat,</span>
+<span id="cb20-3">  <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">upper =</span> tau_hat <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">qnorm</span>(<span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.975</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> se_tau_hat,</span>
+<span id="cb20-4">  <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">p_value =</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span> <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">pnorm</span>(<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">abs</span>(tau_hat <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> se_tau_hat)))</span></code></pre></div></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>     tau_hat        lower        upper      p_value 
+8.851965e-03 7.221393e-03 1.048254e-02 1.938121e-26 </code></pre>
+</div>
+</div>
+<p>We said that the two step calculation is identical to applying the delta method once to <img src="https://latex.codecogs.com/png.latex?%5Ctau"> as a function of the full coefficient vector <img src="https://latex.codecogs.com/png.latex?%5Ctext%7Bvec%7D(%5Chat%7BB%7D)">. The gradient of <img src="https://latex.codecogs.com/png.latex?%5Ctau%20=%20%5Cfrac%7Bb_T%20%5Cbeta_N%7D%7Bb_T%20%5Cbeta_D%7D%20-%20%5Cfrac%7Bb_C%20%5Cbeta_N%7D%7Bb_C%20%5Cbeta_D%7D"> with respect to <img src="https://latex.codecogs.com/png.latex?(%5Cbeta_N,%20%5Cbeta_D)"> is <img src="https://latex.codecogs.com/png.latex?%5Cleft(%5Cfrac%7Bb_T%7D%7B%5Cmu_%7BD,T%7D%7D%20-%20%5Cfrac%7Bb_C%7D%7B%5Cmu_%7BD,C%7D%7D,%20%5C%20-%5Cfrac%7B%5Cmu_%7BN,T%7D%7D%7B%5Cmu_%7BD,T%7D%5E2%7D%20b_T%20+%20%5Cfrac%7B%5Cmu_%7BN,C%7D%7D%7B%5Cmu_%7BD,C%7D%5E2%7D%20b_C%5Cright)">, and it gives the same variance.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb22" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1">grad_tau <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(b_T <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> mu_D_T_hat <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> b_C <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> mu_D_C_hat,</span>
+<span id="cb22-2">              <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span>mu_N_T_hat <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> mu_D_T_hat<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">^</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span> <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> b_T <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> mu_N_C_hat <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> mu_D_C_hat<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">^</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span> <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> b_C)</span>
+<span id="cb22-3"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">one_shot =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">drop</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">t</span>(grad_tau) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> cov_vec_B_hat <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> grad_tau),</span>
+<span id="cb22-4">  <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">two_step =</span> var_tau_hat)</span></code></pre></div></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>    one_shot     two_step 
+6.921236e-07 6.921236e-07 </code></pre>
+</div>
+</div>
+</section>
+<section id="checking-the-variance-over-many-experiments" class="level2">
+<h2 class="anchored" data-anchor-id="checking-the-variance-over-many-experiments">Checking the Variance Over Many Experiments</h2>
+<p>A single experiment cannot tell us whether <img src="https://latex.codecogs.com/png.latex?%5Cwidehat%7B%5Ctext%7BVar%7D%7D(%5Chat%7B%5Ctau%7D)"> is correct. To check it, we repeat the experiment 1,000 times and compare the standard deviation of <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Ctau%7D"> across experiments to the average estimated standard error. We also compute a naive standard error that ignores the covariance between the numerator and the denominator, by setting <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Csigma%7D_%7BND%7D%20=%200">, which is what we would get from two separate regressions.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb24" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1">estimate_tau <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">function</span>(N, D, T, X) {</span>
+<span id="cb24-2">  fit <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">lm</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">cbind</span>(N, D) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">~</span> T <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> X)</span>
+<span id="cb24-3">  B_hat <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">coef</span>(fit)</span>
+<span id="cb24-4">  Z <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">model.matrix</span>(fit)</span>
+<span id="cb24-5">  ZtZ_inv <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">solve</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">crossprod</span>(Z))</span>
+<span id="cb24-6">  Sigma_eps_hat <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">crossprod</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">resid</span>(fit)) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> (<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">nrow</span>(Z) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ncol</span>(Z))</span>
+<span id="cb24-7"></span>
+<span id="cb24-8">  X_bar <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">colMeans</span>(X)</span>
+<span id="cb24-9">  b_T <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>, X_bar)</span>
+<span id="cb24-10">  b_C <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, X_bar)</span>
+<span id="cb24-11">  mu_T_hat <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">drop</span>(b_T <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> B_hat)  <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># (mu_N_T_hat, mu_D_T_hat)</span></span>
+<span id="cb24-12">  mu_C_hat <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">drop</span>(b_C <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> B_hat)  <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># (mu_N_C_hat, mu_D_C_hat)</span></span>
+<span id="cb24-13"></span>
+<span id="cb24-14">  grad_g_T <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span> <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> mu_T_hat[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"D"</span>], <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span>mu_T_hat[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"N"</span>] <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> mu_T_hat[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"D"</span>]<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">^</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>)</span>
+<span id="cb24-15">  grad_g_C <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span> <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> mu_C_hat[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"D"</span>], <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span>mu_C_hat[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"N"</span>] <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> mu_C_hat[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"D"</span>]<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">^</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>)</span>
+<span id="cb24-16">  c_T <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">drop</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">t</span>(b_T) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> ZtZ_inv <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> b_T)</span>
+<span id="cb24-17">  c_C <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">drop</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">t</span>(b_C) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> ZtZ_inv <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> b_C)</span>
+<span id="cb24-18">  c_TC <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">drop</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">t</span>(b_T) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> ZtZ_inv <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> b_C)</span>
+<span id="cb24-19"></span>
+<span id="cb24-20">  var_tau <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">function</span>(Sigma) {</span>
+<span id="cb24-21">    c_T <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">drop</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">t</span>(grad_g_T) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> Sigma <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> grad_g_T) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span></span>
+<span id="cb24-22">      c_C <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">drop</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">t</span>(grad_g_C) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> Sigma <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> grad_g_C) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span></span>
+<span id="cb24-23">      <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span> <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> c_TC <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">drop</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">t</span>(grad_g_T) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> Sigma <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> grad_g_C)</span>
+<span id="cb24-24">  }</span>
+<span id="cb24-25"></span>
+<span id="cb24-26">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">tau_hat =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">unname</span>(mu_T_hat[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"N"</span>] <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> mu_T_hat[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"D"</span>] <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> mu_C_hat[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"N"</span>] <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> mu_C_hat[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"D"</span>]),</span>
+<span id="cb24-27">    <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">se_tau_hat =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sqrt</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">var_tau</span>(Sigma_eps_hat)),</span>
+<span id="cb24-28">    <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">se_tau_hat_naive =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sqrt</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">var_tau</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">diag</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">diag</span>(Sigma_eps_hat)))))</span>
+<span id="cb24-29">}</span>
+<span id="cb24-30"></span>
+<span id="cb24-31">sims <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">t</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">replicate</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1000</span>, {</span>
+<span id="cb24-32">  sim <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">simulate_experiment</span>(n)</span>
+<span id="cb24-33">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">estimate_tau</span>(sim<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>N, sim<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>D, sim<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>T, sim<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>X)</span>
+<span id="cb24-34">}))</span>
+<span id="cb24-35"></span>
+<span id="cb24-36">z <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">qnorm</span>(<span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.975</span>)</span>
+<span id="cb24-37"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">tau =</span> tau,</span>
+<span id="cb24-38">  <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">mean_tau_hat =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mean</span>(sims[, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"tau_hat"</span>]),</span>
+<span id="cb24-39">  <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">sd_tau_hat =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sd</span>(sims[, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"tau_hat"</span>]),</span>
+<span id="cb24-40">  <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">mean_se_tau_hat =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mean</span>(sims[, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"se_tau_hat"</span>]),</span>
+<span id="cb24-41">  <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">mean_se_tau_hat_naive =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mean</span>(sims[, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"se_tau_hat_naive"</span>]),</span>
+<span id="cb24-42">  <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">coverage =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mean</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">abs</span>(sims[, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"tau_hat"</span>] <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> tau) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">&lt;=</span> z <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> sims[, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"se_tau_hat"</span>]),</span>
+<span id="cb24-43">  <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">coverage_naive =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mean</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">abs</span>(sims[, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"tau_hat"</span>] <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> tau) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">&lt;=</span> z <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> sims[, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"se_tau_hat_naive"</span>]))</span></code></pre></div></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>                  tau          mean_tau_hat            sd_tau_hat 
+          0.007792208           0.007762030           0.000809931 
+      mean_se_tau_hat mean_se_tau_hat_naive              coverage 
+          0.000827188           0.001047469           0.951000000 
+       coverage_naive 
+          0.985000000 </code></pre>
+</div>
+</div>
+<p>The average of <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Ctau%7D"> is close to the true <img src="https://latex.codecogs.com/png.latex?%5Ctau">, and the average standard error from the delta method matches the actual standard deviation of <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Ctau%7D"> across experiments, so the 95% confidence interval covers the true <img src="https://latex.codecogs.com/png.latex?%5Ctau"> about 95% of the time. The naive standard error, which ignores <img src="https://latex.codecogs.com/png.latex?%5Csigma_%7BND%7D">, is too large, and its confidence interval is overly conservative. When the numerator and denominator are positively correlated, jointly modeling them gives a more precise, and still correct, measure of uncertainty.</p>
+</section>
+</section>
+<section id="appendix" class="level1">
+<h1>Appendix</h1>
+<section id="how-covariates-change-c_t" class="level2">
+<h2 class="anchored" data-anchor-id="how-covariates-change-c_t">How Covariates Change <img src="https://latex.codecogs.com/png.latex?c_t"></h2>
+<p>To see what covariates do to <img src="https://latex.codecogs.com/png.latex?c_T">, we return to a single outcome <img src="https://latex.codecogs.com/png.latex?y%20=%20%5Cbeta_0%20+%20T%20%5Cbeta_1%20+%20X%20%5Cbeta_2%20+%20%5Cvarepsilon"> with <img src="https://latex.codecogs.com/png.latex?%5Ctext%7BVar%7D(%5Cvarepsilon)%20=%20%5Csigma%5E2">. We will find a different way to express <img src="https://latex.codecogs.com/png.latex?c_T">, as a sum of <img src="https://latex.codecogs.com/png.latex?1/n_T"> and another term that is a function of covariate imbalance.</p>
+<p>Because the model contains an intercept and <img src="https://latex.codecogs.com/png.latex?T">, the residuals sum to zero within each arm, so the fitted model passes through each arm’s own averages. For the treatment arm, the raw average of <img src="https://latex.codecogs.com/png.latex?y"> equals the fitted value at the arm’s own covariate average, <img src="https://latex.codecogs.com/png.latex?%5Cbar%7By%7D_T%20=%20%5Chat%7B%5Cbeta%7D_0%20+%20%5Chat%7B%5Cbeta%7D_1%20+%20%5Cbar%7BX%7D_T%20%5Chat%7B%5Cbeta%7D_2">, where <img src="https://latex.codecogs.com/png.latex?%5Cbar%7By%7D_T"> and <img src="https://latex.codecogs.com/png.latex?%5Cbar%7BX%7D_T"> are the averages of <img src="https://latex.codecogs.com/png.latex?y"> and <img src="https://latex.codecogs.com/png.latex?X"> over treated users. Subtracting this from <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Cmu%7D_T%20=%20b_T%20%5Chat%7B%5Cbeta%7D%20=%20%5Chat%7B%5Cbeta%7D_0%20+%20%5Chat%7B%5Cbeta%7D_1%20+%20%5Cbar%7BX%7D%20%5Chat%7B%5Cbeta%7D_2"> gives</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Cmu%7D_T%20=%20%5Cbar%7By%7D_T%20+%20%5CDelta_T%20%5Chat%7B%5Cbeta%7D_2,%20%5Cqquad%20%5CDelta_T%20=%20%5Cbar%7BX%7D%20-%20%5Cbar%7BX%7D_T."></p>
+<p>The estimated treatment mean is the raw treatment average, adjusted for how far the treatment arm’s covariates are from the overall average <img src="https://latex.codecogs.com/png.latex?%5Cbar%7BX%7D">. Note that under randomization <img src="https://latex.codecogs.com/png.latex?%5Cbar%7BX%7D_T"> is close to <img src="https://latex.codecogs.com/png.latex?%5Cbar%7BX%7D">, and the gap shrinks as the sample grows, but in any finite sample they differ.</p>
+<p>Since <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Cmu%7D_T"> is a sum of two random quantities, <img src="https://latex.codecogs.com/png.latex?%5Cbar%7By%7D_T"> and <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Cbeta%7D_2">, its variance in general has three terms</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Ctext%7BVar%7D(%5Chat%7B%5Cmu%7D_T)%20=%20%5Ctext%7BVar%7D(%5Cbar%7By%7D_T)%20+%20%5CDelta_T%20%5C,%20%5Ctext%7BVar%7D(%5Chat%7B%5Cbeta%7D_2)%20%5C,%20%5CDelta_T%5E%5Ctop%20+%202%20%5CDelta_T%20%5C,%20%5Ctext%7BCov%7D(%5Chat%7B%5Cbeta%7D_2,%20%5Cbar%7By%7D_T)."></p>
+<p>The first two terms are familiar. The average of <img src="https://latex.codecogs.com/png.latex?n_T"> independent outcomes has <img src="https://latex.codecogs.com/png.latex?%5Ctext%7BVar%7D(%5Cbar%7By%7D_T)%20=%20%5Csigma%5E2%20/%20n_T">. For the second term, the Frisch-Waugh-Lovell theorem says that <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Cbeta%7D_2"> is the coefficient from regressing <img src="https://latex.codecogs.com/png.latex?y"> on <img src="https://latex.codecogs.com/png.latex?%5Ctilde%7BX%7D">, the covariates demeaned within each arm, so <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Cbeta%7D_2%20=%20(%5Ctilde%7BX%7D%5E%5Ctop%20%5Ctilde%7BX%7D)%5E%7B-1%7D%20%5Ctilde%7BX%7D%5E%5Ctop%20y"> and <img src="https://latex.codecogs.com/png.latex?%5Ctext%7BVar%7D(%5Chat%7B%5Cbeta%7D_2)%20=%20%5Csigma%5E2%20(%5Ctilde%7BX%7D%5E%5Ctop%20%5Ctilde%7BX%7D)%5E%7B-1%7D">.</p>
+<p>The third term, the cross term, is exactly zero. Let <img src="https://latex.codecogs.com/png.latex?1_T"> be the vector that is 1 for treated users and 0 otherwise, so that <img src="https://latex.codecogs.com/png.latex?%5Cbar%7By%7D_T%20=%20%5Cfrac%7B1%7D%7Bn_T%7D%201_T%5E%5Ctop%20y">. Both <img src="https://latex.codecogs.com/png.latex?%5Cbar%7By%7D_T"> and <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Cbeta%7D_2"> are linear in <img src="https://latex.codecogs.com/png.latex?y">, and <img src="https://latex.codecogs.com/png.latex?%5Ctext%7BCov%7D(y)%20=%20%5Csigma%5E2%20I">, so</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Ctext%7BCov%7D(%5Chat%7B%5Cbeta%7D_2,%20%5Cbar%7By%7D_T)%20=%20(%5Ctilde%7BX%7D%5E%5Ctop%20%5Ctilde%7BX%7D)%5E%7B-1%7D%20%5Ctilde%7BX%7D%5E%5Ctop%20%5C,%20%5Csigma%5E2%20I%20%5C,%20%5Cfrac%7B1_T%7D%7Bn_T%7D%20=%20%5Cfrac%7B%5Csigma%5E2%7D%7Bn_T%7D%20(%5Ctilde%7BX%7D%5E%5Ctop%20%5Ctilde%7BX%7D)%5E%7B-1%7D%20%5Ctilde%7BX%7D%5E%5Ctop%201_T."></p>
+<p>The product <img src="https://latex.codecogs.com/png.latex?%5Ctilde%7BX%7D%5E%5Ctop%201_T"> is the sum of the demeaned covariates over the treated users. Since each treated user’s covariates were demeaned by the treatment arm’s own average, <img src="https://latex.codecogs.com/png.latex?%5Ctilde%7BX%7D%5E%5Ctop%201_T%20=%20%5Csum_%7Bi%20%5Cin%20T%7D%20(X_i%20-%20%5Cbar%7BX%7D_T)%5E%5Ctop%20=%200">. This is why the demeaning must be done within each arm. If we demeaned by the overall average <img src="https://latex.codecogs.com/png.latex?%5Cbar%7BX%7D"> instead, the sum would be <img src="https://latex.codecogs.com/png.latex?n_T%20(%5Cbar%7BX%7D_T%20-%20%5Cbar%7BX%7D)%5E%5Ctop">, which is not zero.</p>
+<p>With the cross term gone, the variance is the sum of the first two terms</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Ctext%7BVar%7D(%5Chat%7B%5Cmu%7D_T)%20=%20%5Cfrac%7B%5Csigma%5E2%7D%7Bn_T%7D%20+%20%5CDelta_T%20%5C,%20%5Csigma%5E2%20(%5Ctilde%7BX%7D%5E%5Ctop%20%5Ctilde%7BX%7D)%5E%7B-1%7D%20%5CDelta_T%5E%5Ctop."></p>
+<p>Earlier we showed that <img src="https://latex.codecogs.com/png.latex?%5Ctext%7BVar%7D(%5Chat%7B%5Cmu%7D_T)%20=%20%5Csigma%5E2%20c_T">. Both expressions are the variance of the same estimator, so setting them equal and canceling <img src="https://latex.codecogs.com/png.latex?%5Csigma%5E2"> gives an alternative formula for <img src="https://latex.codecogs.com/png.latex?c_T">,</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cboxed%7Bc_T%20=%20%5Cfrac%7B1%7D%7Bn_T%7D%20+%20%5CDelta_T%20(%5Ctilde%7BX%7D%5E%5Ctop%20%5Ctilde%7BX%7D)%5E%7B-1%7D%20%5CDelta_T%5E%5Ctop%7D"></p>
+<p>The second term is a quadratic form, so it is never negative: <img src="https://latex.codecogs.com/png.latex?c_T%20%5Cgeq%201/n_T">, with equality only when the treatment arm’s covariates average exactly to <img src="https://latex.codecogs.com/png.latex?%5Cbar%7BX%7D">. It is a penalty for covariate imbalance, and it measures how far the model has to extrapolate the treatment mean from <img src="https://latex.codecogs.com/png.latex?%5Cbar%7BX%7D_T"> to <img src="https://latex.codecogs.com/png.latex?%5Cbar%7BX%7D">. The same argument applies to <img src="https://latex.codecogs.com/png.latex?c_C"> with <img src="https://latex.codecogs.com/png.latex?%5CDelta_C%20=%20%5Cbar%7BX%7D%20-%20%5Cbar%7BX%7D_C">.</p>
+<p>Under randomization the penalty is very small, for two reasons:</p>
+<ul>
+<li><img src="https://latex.codecogs.com/png.latex?%5CDelta_T%20=%20%5Cfrac%7Bn_C%7D%7Bn%7D(%5Cbar%7BX%7D_C%20-%20%5Cbar%7BX%7D_T)"> is a difference between two sample means that have the same expected value. It is centered at zero, and its magnitude shrinks at the rate <img src="https://latex.codecogs.com/png.latex?1/%5Csqrt%7Bn%7D">.</li>
+<li><img src="https://latex.codecogs.com/png.latex?%5Ctilde%7BX%7D%5E%5Ctop%20%5Ctilde%7BX%7D"> is a sum over all <img src="https://latex.codecogs.com/png.latex?n"> users, roughly <img src="https://latex.codecogs.com/png.latex?n%20%5C,%20%5Ctext%7BVar%7D(X)">, so its inverse shrinks at the rate <img src="https://latex.codecogs.com/png.latex?1/n">.</li>
+</ul>
+<p>Together the penalty shrinks at the rate <img src="https://latex.codecogs.com/png.latex?1/n%5E2">, while <img src="https://latex.codecogs.com/png.latex?1/n_T"> shrinks at the rate <img src="https://latex.codecogs.com/png.latex?1/n">. Taking expectations, the relative excess <img src="https://latex.codecogs.com/png.latex?n_T%20c_T%20-%201"> is roughly <img src="https://latex.codecogs.com/png.latex?p%20%5C,%20n_C%20/%20n%5E2"> when <img src="https://latex.codecogs.com/png.latex?X"> has <img src="https://latex.codecogs.com/png.latex?p"> columns, which is negligible for any reasonably sized experiment.</p>
+<p>This breaks down without randomization. If treated users have systematically different covariates, then <img src="https://latex.codecogs.com/png.latex?%5CDelta_T"> does not shrink, the penalty is on the same order as <img src="https://latex.codecogs.com/png.latex?1/n_T">, and the variance of <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Cmu%7D_T"> can be much larger than <img src="https://latex.codecogs.com/png.latex?%5Csigma%5E2%20/%20n_T">.</p>
+<p>Finally, this does not mean covariates are harmful. The variance of each mean is <img src="https://latex.codecogs.com/png.latex?c_t"> times the noise variance. Adding covariates increases <img src="https://latex.codecogs.com/png.latex?c_t"> by a negligible amount, but can greatly reduce the residual variances <img src="https://latex.codecogs.com/png.latex?%5Csigma_N%5E2"> and <img src="https://latex.codecogs.com/png.latex?%5Csigma_D%5E2">, and with them the variance of the ratio. This is the same tradeoff that makes CUPED effective.</p>
+
+
+</section>
+</section>
+
+ ]]></description>
+  <category>causal inference</category>
+  <category>AB testing</category>
+  <category>regression</category>
+  <guid>https://jeffwong.github.io/posts/ratio_metrics/</guid>
+  <pubDate>Mon, 28 Sep 2026 07:00:00 GMT</pubDate>
+</item>
 <item>
   <title>It’s OK to let least squares output a probability</title>
   <dc:creator>Jeff Wong</dc:creator>

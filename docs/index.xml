@@ -10,7 +10,2358 @@
 <atom:link href="https://jeffwong.github.io/index.xml" rel="self" type="application/rss+xml"/>
 <description>Data science innovation from first principles.</description>
 <generator>quarto-1.9.38</generator>
-<lastBuildDate>Mon, 28 Sep 2026 07:00:00 GMT</lastBuildDate>
+<lastBuildDate>Thu, 01 Oct 2026 07:00:00 GMT</lastBuildDate>
+<item>
+  <title>What does it mean to be the average effect?</title>
+  <dc:creator>Jeffrey Wong</dc:creator>
+  <link>https://jeffwong.github.io/posts/what_is_an_average/</link>
+  <description><![CDATA[ 
+
+
+
+
+
+<p>Oh what’s in a name?</p>
+<p>The term “average treatment effect” embodies two concepts - the treatment effect, which has a distribution, and its average over users. It is very precise, and yet the term is used loosely in the industry. This post will drill down into the mathematical underpinnings of what it means to be an average treatment effect, and explore its many variations such as the conditional effect, the marginal and relative effects, the incremental effect, the intent to treat effect and the local effect.</p>
+<section id="grounding-the-mathematical-foundations" class="level1">
+<h1>Grounding the mathematical foundations</h1>
+<section id="what-is-an-average" class="level2">
+<h2 class="anchored" data-anchor-id="what-is-an-average">What is an Average?</h2>
+<p>Say that we have a random variable <img src="https://latex.codecogs.com/png.latex?Y">. It is able to take values in a set <img src="https://latex.codecogs.com/png.latex?%5Cmathcal%7BY%7D">, and it has probability density <img src="https://latex.codecogs.com/png.latex?f(y)">. Then the mathematical definition of an average has two parts, the value <img src="https://latex.codecogs.com/png.latex?y">, and its probability density. It is computed as</p>
+<p><img src="https://latex.codecogs.com/png.latex?E%5BY%5D%20=%20%5Cint_%7B%5Cmathcal%7BY%7D%7D%20y%20f(y)%20dy."></p>
+<p>Transformations of the random variable, for example <img src="https://latex.codecogs.com/png.latex?q(Y)">, have mean</p>
+<p><img src="https://latex.codecogs.com/png.latex?E%5Bq(Y)%5D%20=%20%5Cint_%7B%5Cmathcal%7BY%7D%7D%20q(y)%20f(y)%20dy."></p>
+<p>As we go over different types of effects, we will consolidate them all into the form</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cint%20q(...)%20f(%20...)%20d%20...,%20%5Cqquad%20f(...)%20%5Cgeq%200,%20%5Cqquad%20%5Cint%20f(...)%20d...%20=%201"> again emphasizing the product of a value and a probability weight.</p>
+</section>
+<section id="averages-that-vary-with-covariates" class="level2">
+<h2 class="anchored" data-anchor-id="averages-that-vary-with-covariates">Averages that Vary with Covariates</h2>
+<p>So far the value of <img src="https://latex.codecogs.com/png.latex?Y"> varied randomly. Now say that it can vary as a function of covariates <img src="https://latex.codecogs.com/png.latex?X">, which have their own probability density <img src="https://latex.codecogs.com/png.latex?f(x)">, and the distribution of <img src="https://latex.codecogs.com/png.latex?Y"> depends on <img src="https://latex.codecogs.com/png.latex?X"> through the conditional probability density <img src="https://latex.codecogs.com/png.latex?f(y%20%7C%20x)">. At this point there are three probability densities to remember, <img src="https://latex.codecogs.com/png.latex?f(x)">, <img src="https://latex.codecogs.com/png.latex?f(y)">, and <img src="https://latex.codecogs.com/png.latex?f(y%20%7C%20x)">. In experiment analyses we can assume that we are given a fixed <img src="https://latex.codecogs.com/png.latex?X%20=%20x"> value. The conditional mean for <img src="https://latex.codecogs.com/png.latex?Y"> becomes</p>
+<p><img src="https://latex.codecogs.com/png.latex?E%5BY%20%7C%20X%20=%20x%5D%20=%20%5Cint%20y%20%5C,%20f(y%20%7C%20x)%20%5C,%20dy."></p>
+<p>The quantity is still <img src="https://latex.codecogs.com/png.latex?y">, but the probability weight is now <img src="https://latex.codecogs.com/png.latex?f(y%20%7C%20x)">. For each <img src="https://latex.codecogs.com/png.latex?x"> <img src="https://latex.codecogs.com/png.latex?E%5BY%20%7C%20X%20=%20x%5D"> outputs a number. As <img src="https://latex.codecogs.com/png.latex?x"> varies, <img src="https://latex.codecogs.com/png.latex?E%5BY%20%7C%20X%20=%20x%5D"> is a function of <img src="https://latex.codecogs.com/png.latex?x">.</p>
+<p>The unconditional average can be rebuilt from the conditional ones. The marginal probability density of <img src="https://latex.codecogs.com/png.latex?Y"> is the conditional probability density averaged over <img src="https://latex.codecogs.com/png.latex?X">, <img src="https://latex.codecogs.com/png.latex?f(y)%20=%20%5Cint%20f(y%20%7C%20x)%20f(x)%20%5C,%20dx">. We substitute this into the definition of <img src="https://latex.codecogs.com/png.latex?E%5BY%5D">, then swap the order of integration, which is allowed when <img src="https://latex.codecogs.com/png.latex?E%7CY%7C%20%3C%20%5Cinfty">:</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0AE%5BY%5D%20&amp;=%20%5Cint%20y%20%5Cleft%5B%20%5Cint%20f(y%20%7C%20x)%20f(x)%20%5C,%20dx%20%5Cright%5D%20dy%20%5C%5C%0A%20%20&amp;=%20%5Cint%20%5Cleft%5B%20%5Cint%20y%20%5C,%20f(y%20%7C%20x)%20%5C,%20dy%20%5Cright%5D%20f(x)%20%5C,%20dx%20%5C%5C%0A%20%20&amp;=%20%5Cint%20E%5BY%20%7C%20X%20=%20x%5D%20%5C,%20f(x)%20%5C,%20dx.%0A%5Cend%7Balign%7D"></p>
+<p>This is the law of iterated expectations. In our notation, the quantity is now the conditional average <img src="https://latex.codecogs.com/png.latex?E%5BY%20%7C%20X%20=%20x%5D"> and the probability weight is <img src="https://latex.codecogs.com/png.latex?f(x)">. Averaging happens in two stages: first within the users who share the same <img src="https://latex.codecogs.com/png.latex?x">, then across values of <img src="https://latex.codecogs.com/png.latex?x">, weighted by how common each <img src="https://latex.codecogs.com/png.latex?x"> is.</p>
+<p>Most of the subtlety in this post is identifying the value and the probability weight. If we keep the quantity <img src="https://latex.codecogs.com/png.latex?E%5BY%20%7C%20X%20=%20x%5D"> but replace the probability weight <img src="https://latex.codecogs.com/png.latex?f(x)"> with a different probability density, for example <img src="https://latex.codecogs.com/png.latex?f(x%20%7C%20T%20=%201)">, the probability density of covariates among treated users, we get a different average, one over the covariates of treated users rather than of all users.</p>
+</section>
+<section id="the-difference-in-expectations" class="level2">
+<h2 class="anchored" data-anchor-id="the-difference-in-expectations">The Difference in Expectations</h2>
+<p>Now we apply this to an AB test. Each user <img src="https://latex.codecogs.com/png.latex?i"> has two potential outcomes: <img src="https://latex.codecogs.com/png.latex?y_i(1)">, the outcome if treated, and <img src="https://latex.codecogs.com/png.latex?y_i(0)">, the outcome if not treated. When treated, user <img src="https://latex.codecogs.com/png.latex?i"> receives an individual effect <img src="https://latex.codecogs.com/png.latex?%5Ctau(x_i)"> that depends on their covariates,</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0Ay_i(0)%20&amp;=%20%5Cmu_0(x_i)%20+%20%5Cvarepsilon_i%20%5C%5C%0Ay_i(1)%20&amp;=%20y_i(0)%20+%20%5Ctau(x_i).%0A%5Cend%7Balign%7D"></p>
+<p>Here <img src="https://latex.codecogs.com/png.latex?%5Cmu_0(x)%20=%20E%5By(0)%20%7C%20X%20=%20x%5D"> is the baseline, a scalar function of <img src="https://latex.codecogs.com/png.latex?x">, so the noise satisfies <img src="https://latex.codecogs.com/png.latex?E%5B%5Cvarepsilon%20%7C%20X%20=%20x%5D%20=%200">. We also write <img src="https://latex.codecogs.com/png.latex?%5Cmu_1(x)%20=%20E%5By(1)%20%7C%20X%20=%20x%5D">. Taking the conditional expectation of the second line gives <img src="https://latex.codecogs.com/png.latex?%5Cmu_1(x)%20=%20%5Cmu_0(x)%20+%20%5Ctau(x)">.</p>
+<p>We only ever observe one of the two potential outcomes. With <img src="https://latex.codecogs.com/png.latex?T_i%20%5Cin%20%5C%7B0,%201%5C%7D"> indicating whether user <img src="https://latex.codecogs.com/png.latex?i"> was treated, the observed outcome is</p>
+<p><img src="https://latex.codecogs.com/png.latex?y_i%20=%20T_i%20%5C,%20y_i(1)%20+%20(1%20-%20T_i)%20%5C,%20y_i(0)%20=%20%5Cmu_0(x_i)%20+%20T_i%20%5C,%20%5Ctau(x_i)%20+%20%5Cvarepsilon_i."></p>
+<p>This is the model from the post on <a href="https://jeffwong.github.io/posts/controlled_randomization/">controlled randomization</a>, with a heterogeneous effect <img src="https://latex.codecogs.com/png.latex?%5Ctau(x)"> and a baseline that varies with covariates.</p>
+<p>The difference in expectations compares the average outcome of treated users with the average outcome of untreated users. We apply the law of iterated expectations again within each arm, using that arm’s own covariate probability density, and then substitute the model for <img src="https://latex.codecogs.com/png.latex?y">:</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0AE%5By%20%7C%20T%20=%201%5D%20&amp;=%20%5Cint%20E%5By%20%7C%20T%20=%201,%20X%20=%20x%5D%20%5C,%20f(x%20%7C%20T%20=%201)%20%5C,%20dx%20%5C%5C%0A%20%20&amp;=%20%5Cint%20%5Cbig(%20%5Cmu_0(x)%20+%20%5Ctau(x)%20+%20E%5B%5Cvarepsilon%20%7C%20T%20=%201,%20X%20=%20x%5D%20%5Cbig)%20f(x%20%7C%20T%20=%201)%20%5C,%20dx%20%5C%5C%0AE%5By%20%7C%20T%20=%200%5D%20&amp;=%20%5Cint%20E%5By%20%7C%20T%20=%200,%20X%20=%20x%5D%20%5C,%20f(x%20%7C%20T%20=%200)%20%5C,%20dx%20%5C%5C%0A&amp;=%20%5Cint%20%5Cbig(%20%5Cmu_0(x)%20+%20E%5B%5Cvarepsilon%20%7C%20T%20=%200,%20X%20=%20x%5D%20%5Cbig)%20f(x%20%7C%20T%20=%200)%20%5C,%20dx%20%5C%5C%0AE%5By%20%7C%20T%20=%201%5D%20-%20E%5By%20%7C%20T%20=%200%5D%20&amp;=%20%5Cint%20%5Cbig(%20%5Cmu_0(x)%20+%20%5Ctau(x)%20+%20E%5B%5Cvarepsilon%20%7C%20T%20=%201,%20X%20=%20x%5D%20%5Cbig)%20f(x%20%7C%20T%20=%201)%20%5C,%20dx%20%5C%5C%0A%20%20&amp;%5Cquad%20-%20%5Cint%20%5Cbig(%20%5Cmu_0(x)%20+%20E%5B%5Cvarepsilon%20%7C%20T%20=%200,%20X%20=%20x%5D%20%5Cbig)%20f(x%20%7C%20T%20=%200)%20%5C,%20dx%0A%5Cend%7Balign%7D"></p>
+<p>So the difference in expectations is a difference of two integrals. Randomization means <img src="https://latex.codecogs.com/png.latex?T"> is independent of both <img src="https://latex.codecogs.com/png.latex?X"> and <img src="https://latex.codecogs.com/png.latex?%5Cvarepsilon">, which has two consequences:</p>
+<ol type="1">
+<li><img src="https://latex.codecogs.com/png.latex?f(x%20%7C%20T%20=%201)%20=%20f(x%20%7C%20T%20=%200)%20=%20f(x)">, so both integrals use the same probability weight.</li>
+<li><img src="https://latex.codecogs.com/png.latex?E%5B%5Cvarepsilon%20%7C%20T%20=%20t,%20X%20=%20x%5D%20=%20E%5B%5Cvarepsilon%20%7C%20X%20=%20x%5D%20=%200">, so the noise terms vanish.</li>
+</ol>
+<p>With a shared probability weight, linearity of the integral gives the reduction</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cboxed%7B%5Ctau%20=%20E%5By%20%7C%20T%20=%201%5D%20-%20E%5By%20%7C%20T%20=%200%5D%20=%20%5Cint%20%5Ctau(x)%20%5C,%20f(x)%20%5C,%20dx%7D"></p>
+<p>This is our grounding for the word “average” in “average treatment effect”. The quantity is the personalized effect <img src="https://latex.codecogs.com/png.latex?%5Ctau(x)">, and the probability weight is <img src="https://latex.codecogs.com/png.latex?f(x)">, the probability density of covariates.</p>
+<p>Note that without randomization, the two integrals use different probability weights, <img src="https://latex.codecogs.com/png.latex?f(x%20%7C%20T%20=%201)%20%5Cneq%20f(x%20%7C%20T%20=%200)"> and the reduction breaks!</p>
+</section>
+</section>
+<section id="what-does-it-mean-to-be-a-treatment-effect" class="level1">
+<h1>What does it mean to be a treatment effect?</h1>
+<p>Within the science of cause and effect, there are actually many different types of effects that we can report. Average effects, incremental effects, conditional effects, and relative effects. It can be daunting to manage the nuances of all of these different types of treatment effects, but actually we can consolidate them all under one roof. Mathematically, they are all different variations of an average.</p>
+<section id="individual-effects-and-conditional-average-treatment-effect" class="level2">
+<h2 class="anchored" data-anchor-id="individual-effects-and-conditional-average-treatment-effect">Individual Effects and Conditional Average Treatment Effect</h2>
+<p>We start with the finest grained effect possible, then build our way up. The individual effect of user <img src="https://latex.codecogs.com/png.latex?i"> is <img src="https://latex.codecogs.com/png.latex?y_i(1)%20-%20y_i(0)">, which we can never truly observe. The conditional average treatment effect (CATE) averages the individual effects among users who share the same covariates,</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Ctau(x)%20=%20E%5By(1)%20-%20y(0)%20%7C%20X%20=%20x%5D%20=%20%5Cmu_1(x)%20-%20%5Cmu_0(x)."></p>
+<p>As an average, the quantity is the individual effect and the probability weight is the conditional probability density of individual effects among users with <img src="https://latex.codecogs.com/png.latex?X%20=%20x">. Let <img src="https://latex.codecogs.com/png.latex?t"> denote a value of the individual effect <img src="https://latex.codecogs.com/png.latex?y(1)%20-%20y(0)">, and let <img src="https://latex.codecogs.com/png.latex?f(t%20%7C%20x)"> be its probability density among users with <img src="https://latex.codecogs.com/png.latex?X%20=%20x">. Then</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Ctau(x)%20=%20%5Cint%20t%20%5C,%20f(t%20%7C%20x)%20%5C,%20dt."></p>
+<p>This is the same form as <img src="https://latex.codecogs.com/png.latex?E%5BY%20%7C%20X%20=%20x%5D%20=%20%5Cint%20y%20%5C,%20f(y%20%7C%20x)%20%5C,%20dy">, with the individual effect in place of <img src="https://latex.codecogs.com/png.latex?Y">.</p>
+</section>
+<section id="average-treatment-effect" class="level2">
+<h2 class="anchored" data-anchor-id="average-treatment-effect">Average Treatment Effect</h2>
+<p>Just as the CATE is the average of individual effects, the average treatment effect (ATE) is an average of the CATE over the covariate probability density,</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Ctau%20=%20E%5By(1)%20-%20y(0)%5D%20=%20%5Cint%20%5Ctau(x)%20%5C,%20f(x)%20%5C,%20dx."></p>
+<p>The ATE is an average with respect to <img src="https://latex.codecogs.com/png.latex?f(x)">, the covariate probability density of the population the experiment samples from. Here, it is very important to note who qualifies to be in the population. If an experiment only enrolls users who visit a certain page, then <img src="https://latex.codecogs.com/png.latex?f(x)"> is the probability density among those visitors, and <img src="https://latex.codecogs.com/png.latex?%5Ctau"> is the average effect for visitors, not for all users.</p>
+</section>
+<section id="marginal-effect-and-relative-effects" class="level2">
+<h2 class="anchored" data-anchor-id="marginal-effect-and-relative-effects">Marginal Effect and Relative Effects</h2>
+<p>Given two mean functions, <img src="https://latex.codecogs.com/png.latex?%5Cmu_1(x)"> and <img src="https://latex.codecogs.com/png.latex?%5Cmu_0(x)">, there are two aggregation strategies that turn these functions into a single number for experimentation reporting.</p>
+<p>The classic ATE computes <img src="https://latex.codecogs.com/png.latex?%5Ctau(x)%20=%20%5Cmu_1(x)%20-%20%5Cmu_0(x)"> at each <img src="https://latex.codecogs.com/png.latex?x">, then averages. It starts from the granular level then aggregates. Uniquely, it’s fine to reverse the order of operations.</p>
+<p>The other approach is to compute averages first, and then compare. We saw the importance of this in the post on <a href="https://jeffwong.github.io/posts/ratio_metrics/">ratio metrics</a>.</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0A%5Cmu_1%20&amp;=%20E%5By(1)%5D%20=%20%5Cint%20%5Cmu_1(x)%20%5C,%20f(x)%20%5C,%20dx%20%5C%5C%0A%5Cmu_0%20&amp;=%20E%5By(0)%5D%20=%20%5Cint%20%5Cmu_0(x)%20%5C,%20f(x)%20%5C,%20dx%20%5C%5C%0AR%20&amp;=%20%5Cfrac%7B%5Cmu_1%7D%7B%5Cmu_0%7D%20-%201%0A%5Cend%7Balign%7D"></p>
+<p>and the marginal effect is a contrast of <img src="https://latex.codecogs.com/png.latex?%5Cmu_1"> and <img src="https://latex.codecogs.com/png.latex?%5Cmu_0">. This prompts an interesting thought though, is the relative effect an outlier in this taxonomy on averages? We will explain below that it is not.</p>
+<section id="the-difference-order-does-not-matter" class="level3">
+<h3 class="anchored" data-anchor-id="the-difference-order-does-not-matter">The Difference: Order Does Not Matter</h3>
+<p>For the difference contrast, both orders give the same number. Using the linearity of the integral and then the definition of <img src="https://latex.codecogs.com/png.latex?%5Ctau(x)">,</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cmu_1%20-%20%5Cmu_0%20=%20%5Cint%20%5Cmu_1(x)%20f(x)%20%5C,%20dx%20-%20%5Cint%20%5Cmu_0(x)%20f(x)%20%5C,%20dx%20=%20%5Cint%20%5Cbig(%20%5Cmu_1(x)%20-%20%5Cmu_0(x)%20%5Cbig)%20f(x)%20%5C,%20dx%20=%20%5Cint%20%5Ctau(x)%20f(x)%20%5C,%20dx%20=%20%5Ctau."></p>
+</section>
+<section id="the-relative-effect-order-matters" class="level3">
+<h3 class="anchored" data-anchor-id="the-relative-effect-order-matters">The Relative Effect: Order Matters</h3>
+<p>For a nonlinear contrast, the two orders can give different numbers. The clearest example is the relative effect. The post on <a href="https://jeffwong.github.io/posts/relative_effects/">relative effects</a> described an experiment with a few power users and many casual users, where the metric goes down for power users but up for casual users. To make it concrete, say power users make up 10% of users and have a baseline of 100, while casual users make up 90% and have a baseline of 1. The treatment lowers the metric of power users by 1% and raises the metric of casual users by 10%.</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Segment</th>
+<th>Share</th>
+<th>Baseline</th>
+<th>Relative effect</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Power users</td>
+<td>0.1</td>
+<td>100</td>
+<td><img src="https://latex.codecogs.com/png.latex?-1%5C%25"></td>
+</tr>
+<tr class="even">
+<td>Casual users</td>
+<td>0.9</td>
+<td>1</td>
+<td><img src="https://latex.codecogs.com/png.latex?+10%5C%25"></td>
+</tr>
+</tbody>
+</table>
+<p>Did the treatment move the metric up or down? There are two natural ways to answer.</p>
+<ol type="1">
+<li><strong>How did the typical user change?</strong> We compute the relative effect within each segment, then average across users: <img src="https://latex.codecogs.com/png.latex?0.1(-1%5C%25)%20+%200.9(10%5C%25)%20=%20+8.9%5C%25">. Most users improved by 10%, so the answer is up.</li>
+<li><strong>How did the total change?</strong> We average the metric within each arm first, then compute the relative change. The control mean is <img src="https://latex.codecogs.com/png.latex?0.1(100)%20+%200.9(1)%20=%2010.9"> and the treatment mean is <img src="https://latex.codecogs.com/png.latex?0.1(99)%20+%200.9(1.1)%20=%2010.89">, so the relative change is <img src="https://latex.codecogs.com/png.latex?%5Cfrac%7B10.89%7D%7B10.9%7D%20-%201%20=%20-0.09%5C%25">. Power users carry most of the volume, so the answer is down.</li>
+</ol>
+<p>Neither answer is wrong, and neither is better. They are different interpretations of the same experiment. The first counts users, and the second counts volume. A team that wants to help as many users as possible is asking the first question. A team that reports total revenue is asking the second.</p>
+<p>To see how the two are related, we write them in general. Assume <img src="https://latex.codecogs.com/png.latex?%5Cmu_0(x)%20%3E%200"> for all <img src="https://latex.codecogs.com/png.latex?x">. The conditional relative effect is a function of <img src="https://latex.codecogs.com/png.latex?x">,</p>
+<p><img src="https://latex.codecogs.com/png.latex?r(x)%20=%20%5Cfrac%7B%5Cmu_1(x)%7D%7B%5Cmu_0(x)%7D%20-%201%20=%20%5Cfrac%7B%5Ctau(x)%7D%7B%5Cmu_0(x)%7D."></p>
+<p>In the example, <img src="https://latex.codecogs.com/png.latex?x"> is the segment, and <img src="https://latex.codecogs.com/png.latex?r(x)"> is the last column of the table. With a discrete covariate, an integral against <img src="https://latex.codecogs.com/png.latex?f(x)"> becomes a sum over segments, weighted by their shares. The two answers generalize to</p>
+<ol type="1">
+<li>Contrast first, then average. The average of the conditional relative effects is <img src="https://latex.codecogs.com/png.latex?%5Cbar%7Br%7D%20=%20%5Cint%20r(x)%20%5C,%20f(x)%20%5C,%20dx">.</li>
+<li>Average first, then contrast. The marginal relative effect is <img src="https://latex.codecogs.com/png.latex?R%20=%20%5Cfrac%7B%5Cmu_1%7D%7B%5Cmu_0%7D%20-%201">.</li>
+</ol>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbar%7Br%7D"> is already an average of <img src="https://latex.codecogs.com/png.latex?r(x)">. At first glance <img src="https://latex.codecogs.com/png.latex?R"> is a ratio of two averages rather than an average of anything. But it shares the same root, <img src="https://latex.codecogs.com/png.latex?r(x)">. First we write <img src="https://latex.codecogs.com/png.latex?R%20=%20%5Cfrac%7B%5Cmu_1%20-%20%5Cmu_0%7D%7B%5Cmu_0%7D"> and replace the numerator with <img src="https://latex.codecogs.com/png.latex?%5Cint%20%5Ctau(x)%20f(x)%20%5C,%20dx">. Then we multiply and divide the integrand by <img src="https://latex.codecogs.com/png.latex?%5Cmu_0(x)">, which is allowed because <img src="https://latex.codecogs.com/png.latex?%5Cmu_0(x)%20%3E%200">:</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0AR%20&amp;=%20%5Cfrac%7B1%7D%7B%5Cmu_0%7D%20%5Cint%20%5Ctau(x)%20%5C,%20f(x)%20%5C,%20dx%20%5C%5C%0A%20%20&amp;=%20%5Cint%20%5Cfrac%7B%5Ctau(x)%7D%7B%5Cmu_0(x)%7D%20%5Ccdot%20%5Cfrac%7B%5Cmu_0(x)%20f(x)%7D%7B%5Cmu_0%7D%20%5C,%20dx%20%5C%5C%0A%20%20&amp;=%20%5Cint%20r(x)%20%5C,%20w(x)%20%5C,%20dx,%20%5Cqquad%20w(x)%20=%20%5Cfrac%7B%5Cmu_0(x)%20f(x)%7D%7B%5Cmu_0%7D.%0A%5Cend%7Balign%7D"></p>
+<p>The probability weight <img src="https://latex.codecogs.com/png.latex?w(x)"> is a valid probability density. It is nonnegative because <img src="https://latex.codecogs.com/png.latex?%5Cmu_0(x)%20%3E%200">, and it integrates to <img src="https://latex.codecogs.com/png.latex?%5Cfrac%7B1%7D%7B%5Cmu_0%7D%20%5Cint%20%5Cmu_0(x)%20f(x)%20%5C,%20dx%20=%201"> by the definition of <img src="https://latex.codecogs.com/png.latex?%5Cmu_0">. Therefore the two approaches now have something in common</p>
+<p><img src="https://latex.codecogs.com/png.latex?R%20=%20%5Cint%20r(x)%20%5C,%20%5Cfrac%7B%5Cmu_0(x)%20f(x)%7D%7B%5Cint%20%5Cmu_0(x')%20f(x')%20%5C,%20dx'%7D%20%5C,%20dx,%20%5Cqquad%20%5Cbar%7Br%7D%20=%20%5Cint%20r(x)%20%5C,%20f(x)%20%5C,%20dx"></p>
+<p>Both relative effects are averages of the same quantity, <img src="https://latex.codecogs.com/png.latex?r(x)">. They differ only in the probability weight. <img src="https://latex.codecogs.com/png.latex?%5Cbar%7Br%7D"> uses <img src="https://latex.codecogs.com/png.latex?f(x)">, which counts each user once. <img src="https://latex.codecogs.com/png.latex?R"> uses <img src="https://latex.codecogs.com/png.latex?w(x)">, which counts each user in proportion to their baseline volume. In the example, the probability weights for <img src="https://latex.codecogs.com/png.latex?R"> are <img src="https://latex.codecogs.com/png.latex?%5Cfrac%7B0.1%20%5Ccdot%20100%7D%7B10.9%7D%20=%200.917"> for power users and <img src="https://latex.codecogs.com/png.latex?%5Cfrac%7B0.9%20%5Ccdot%201%7D%7B10.9%7D%20=%200.083"> for casual users, and <img src="https://latex.codecogs.com/png.latex?0.917(-1%5C%25)%20+%200.083(10%5C%25)%20=%20-0.09%5C%25"> recovers the second answer. So choosing how to express the relative effect is simply choosing a probability weight.</p>
+<p>The choice only matters when the relative effect is related to the baseline. The gap between the two is</p>
+<p><img src="https://latex.codecogs.com/png.latex?R%20-%20%5Cbar%7Br%7D%20=%20%5Cint%20r(x)%20%5Cbig(%20w(x)%20-%20f(x)%20%5Cbig)%20%5C,%20dx%20=%20%5Cfrac%7BE%5Br(X)%20%5Cmu_0(X)%5D%20-%20E%5Br(X)%5D%20%5C,%20%5Cmu_0%7D%7B%5Cmu_0%7D%20=%20%5Cfrac%7B%5Ctext%7BCov%7D%5Cbig(r(X),%20%5Cmu_0(X)%5Cbig)%7D%7B%5Cmu_0%7D,"></p>
+<p>where the expectations and the covariance are over <img src="https://latex.codecogs.com/png.latex?X%20%5Csim%20f(x)">, and we used <img src="https://latex.codecogs.com/png.latex?%5Cint%20r(x)%20%5Cmu_0(x)%20f(x)%20%5C,%20dx%20=%20E%5Br(X)%20%5Cmu_0(X)%5D"> and <img src="https://latex.codecogs.com/png.latex?%5Cint%20%5Cmu_0(x)%20f(x)%20%5C,%20dx%20=%20%5Cmu_0">. When the relative effect is unrelated to the baseline, the two probability weights give the same answer. In the example, the users with large baselines have the worst relative effects, so the covariance is negative and <img src="https://latex.codecogs.com/png.latex?R%20%3C%20%5Cbar%7Br%7D">.</p>
+</section>
+</section>
+<section id="the-incremental-effect" class="level2">
+<h2 class="anchored" data-anchor-id="the-incremental-effect">The Incremental Effect</h2>
+<p>So far we have discussed treatments and controls as binary. The incremental effect concerns treatments given in multiple doses. It measures the effect of providing an additional dose of the treatment.</p>
+<section id="a-curve-of-potential-outcomes" class="level3">
+<h3 class="anchored" data-anchor-id="a-curve-of-potential-outcomes">A Curve of Potential Outcomes</h3>
+<p>Say each user <img src="https://latex.codecogs.com/png.latex?i"> enters the experiment having already received <img src="https://latex.codecogs.com/png.latex?S_i"> doses, which we call their prior dose, using <img src="https://latex.codecogs.com/png.latex?S"> for the starting point. Different users have different prior doses, so <img src="https://latex.codecogs.com/png.latex?S_i"> is a pre-treatment covariate, and we write <img src="https://latex.codecogs.com/png.latex?f(s,%20x)"> for the joint probability density of <img src="https://latex.codecogs.com/png.latex?S"> and the other covariates <img src="https://latex.codecogs.com/png.latex?X">. The experiment randomizes an increment <img src="https://latex.codecogs.com/png.latex?K_i%20%5Cin%20%5C%7B0,%201,%20%5Cdots,%20%5Cbar%7Bk%7D%5C%7D">, and user <img src="https://latex.codecogs.com/png.latex?i"> receives a total dose of <img src="https://latex.codecogs.com/png.latex?S_i%20+%20K_i">. Users in the control arm, <img src="https://latex.codecogs.com/png.latex?K%20=%200">, continue with <img src="https://latex.codecogs.com/png.latex?S_i%20+%200"> doses. Users in the top arm receive <img src="https://latex.codecogs.com/png.latex?S_i%20+%20%5Cbar%7Bk%7D"> doses, and the arms in between receive <img src="https://latex.codecogs.com/png.latex?S_i%20+%201,%20S_i%20+%202">, and so on.</p>
+<p>In the binary case, each user had two potential outcomes, <img src="https://latex.codecogs.com/png.latex?y_i(0)"> and <img src="https://latex.codecogs.com/png.latex?y_i(1)">. Now each user has a potential outcome for every dose <img src="https://latex.codecogs.com/png.latex?d">, so <img src="https://latex.codecogs.com/png.latex?y_i(d)"> is a curve. From here on, the argument of <img src="https://latex.codecogs.com/png.latex?y_i(%5Ccdot)"> is a number of doses, so <img src="https://latex.codecogs.com/png.latex?y_i(1)"> is the outcome with one dose. The conditional mean of that curve is</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cmu(d%20%5Cmid%20s,%20x)%20=%20E%5By(d)%20%5Cmid%20S%20=%20s,%20X%20=%20x%5D,"></p>
+<p>a scalar for each dose <img src="https://latex.codecogs.com/png.latex?d">, prior dose <img src="https://latex.codecogs.com/png.latex?s"> and covariate value <img src="https://latex.codecogs.com/png.latex?x">. It conditions on <img src="https://latex.codecogs.com/png.latex?s"> because two users with the same covariates <img src="https://latex.codecogs.com/png.latex?x"> but different prior doses can respond differently to the same dose.</p>
+</section>
+<section id="the-incremental-effect-is-an-average" class="level3">
+<h3 class="anchored" data-anchor-id="the-incremental-effect-is-an-average">The Incremental Effect is an Average</h3>
+<p>Today, the users in our sample have a distribution of prior doses. Say some users have 1 dose, some have 2, and some have 3. A natural question is: what happens if we give everyone one extra dose, which shifts them to 2, 3 and 4 doses? For user <img src="https://latex.codecogs.com/png.latex?i">, the answer is the difference between their outcome with one extra dose and their outcome at their current dose, <img src="https://latex.codecogs.com/png.latex?y_i(S_i%20+%201)%20-%20y_i(S_i)">. With <img src="https://latex.codecogs.com/png.latex?k"> extra doses, the individual effect is <img src="https://latex.codecogs.com/png.latex?y_i(S_i%20+%20k)%20-%20y_i(S_i)">.</p>
+<p>Averaging these individual effects among users who share the same prior dose <img src="https://latex.codecogs.com/png.latex?s"> and covariates <img src="https://latex.codecogs.com/png.latex?x"> gives a conditional effect, which plays the role of the CATE,</p>
+<p><img src="https://latex.codecogs.com/png.latex?C_k(s,%20x)%20=%20%5Cmu(s%20+%20k%20%5Cmid%20s,%20x)%20-%20%5Cmu(s%20%5Cmid%20s,%20x)."></p>
+<p>The incremental effect of <img src="https://latex.codecogs.com/png.latex?k"> extra doses averages <img src="https://latex.codecogs.com/png.latex?C_k(s,%20x)"> over the joint probability density of prior doses and covariates,</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cboxed%7BC(k)%20=%20E%5Cbig%5By(S%20+%20k)%20-%20y(S)%5Cbig%5D%20=%20%5Cint%5C!%5C!%5Cint%20C_k(s,%20x)%20%5C,%20f(s,%20x)%20%5C,%20ds%20%5C,%20dx,%20%5Cqquad%20k%20=%200,%201,%20%5Cdots,%20%5Cbar%7Bk%7D%7D"></p>
+<p>so the quantity is <img src="https://latex.codecogs.com/png.latex?C_k(s,%20x)"> and the probability weight is <img src="https://latex.codecogs.com/png.latex?f(s,%20x)">, in the same form as the ATE. The incremental effect curve plots <img src="https://latex.codecogs.com/png.latex?C(k)"> against the number of extra doses <img src="https://latex.codecogs.com/png.latex?k">. It starts at <img src="https://latex.codecogs.com/png.latex?C(0)%20=%200">, because zero extra doses changes nothing.</p>
+<p>In the example, let <img src="https://latex.codecogs.com/png.latex?p_s"> be the share of users with <img src="https://latex.codecogs.com/png.latex?s"> prior doses. With a discrete prior dose, the integral over <img src="https://latex.codecogs.com/png.latex?s"> becomes a sum weighted by these shares, and the first point on the curve is</p>
+<p><img src="https://latex.codecogs.com/png.latex?C(1)%20=%20p_1%20%5C,%20E%5By(2)%20-%20y(1)%20%5Cmid%20S%20=%201%5D%20+%20p_2%20%5C,%20E%5By(3)%20-%20y(2)%20%5Cmid%20S%20=%202%5D%20+%20p_3%20%5C,%20E%5By(4)%20-%20y(3)%20%5Cmid%20S%20=%203%5D."></p>
+<p>Figure&nbsp;1 draws the curve for this example, with shares <img src="https://latex.codecogs.com/png.latex?p_1%20=%200.5">, <img src="https://latex.codecogs.com/png.latex?p_2%20=%200.3"> and <img src="https://latex.codecogs.com/png.latex?p_3%20=%200.2">. For illustration we use a dose response with diminishing returns, <img src="https://latex.codecogs.com/png.latex?%5Cmu(d%20%5Cmid%20s,%20x)%20=%20g(d)"> with <img src="https://latex.codecogs.com/png.latex?g(d)%20=%2010%20%5Clog(1%20+%20d)">, which depends only on the total dose <img src="https://latex.codecogs.com/png.latex?d">. The colored lines are the conditional curves <img src="https://latex.codecogs.com/png.latex?C_k(s)%20=%20g(s%20+%20k)%20-%20g(s)">, one for each prior dose, and the black line is the incremental effect curve <img src="https://latex.codecogs.com/png.latex?C(k)%20=%20%5Csum_s%20p_s%20%5C,%20C_k(s)">, their average weighted by the shares.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">library</span>(ggplot2)</span>
+<span id="cb1-2"></span>
+<span id="cb1-3"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># Share of users at each prior dose, p_s</span></span>
+<span id="cb1-4">p_s <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">`</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">1</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">`</span> <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">=</span> <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.5</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">`</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">2</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">`</span> <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">=</span> <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.3</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">`</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">3</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">`</span> <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">=</span> <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.2</span>)</span>
+<span id="cb1-5">s <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">as.numeric</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">names</span>(p_s))</span>
+<span id="cb1-6">k <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">:</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">5</span></span>
+<span id="cb1-7"></span>
+<span id="cb1-8"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># Dose response with diminishing returns, depending only on the total dose</span></span>
+<span id="cb1-9">g <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">function</span>(d) <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">10</span> <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">log</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span> <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> d)</span>
+<span id="cb1-10"></span>
+<span id="cb1-11"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># Conditional curves C_k(s) = g(s + k) - g(s), one per prior dose</span></span>
+<span id="cb1-12">C_k_s <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">expand.grid</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">k =</span> k, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">s =</span> s)</span>
+<span id="cb1-13">C_k_s<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>C <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">g</span>(C_k_s<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>s <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> C_k_s<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>k) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">g</span>(C_k_s<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>s)</span>
+<span id="cb1-14">C_k_s<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>series <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">paste0</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"C[k](s)*</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">\"</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">, s = "</span>, C_k_s<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>s, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">\"</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span>)</span>
+<span id="cb1-15"></span>
+<span id="cb1-16"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># Incremental effect curve C(k) = sum_s p_s C_k(s)</span></span>
+<span id="cb1-17">C_k <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">data.frame</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">k =</span> k, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">C =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sapply</span>(k, <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">function</span>(k) <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sum</span>(p_s <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> (<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">g</span>(s <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> k) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">g</span>(s)))))</span>
+<span id="cb1-18">C_k<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>series <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"C(k)*</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">\"</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">, average</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">\"</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span></span>
+<span id="cb1-19"></span>
+<span id="cb1-20">curves <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rbind</span>(C_k_s[, <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"k"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"C"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"series"</span>)], C_k)</span>
+<span id="cb1-21"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># Series names are plotmath expressions, so C_k(s) renders with a subscript</span></span>
+<span id="cb1-22">series <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">unique</span>(C_k_s<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>series), C_k<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>series[<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>])</span>
+<span id="cb1-23">series_colors <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">setNames</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"#2a78d6"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"#eb6834"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"#1baf7a"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"#0b0b0b"</span>), series)</span>
+<span id="cb1-24">series_widths <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">setNames</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.6</span>, <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.6</span>, <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.6</span>, <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1.2</span>), series)</span>
+<span id="cb1-25">labels <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> curves[curves<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>k <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">==</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">max</span>(k), ]</span>
+<span id="cb1-26"></span>
+<span id="cb1-27"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ggplot</span>(curves, <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">aes</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">x =</span> k, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">y =</span> C, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">color =</span> series)) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span></span>
+<span id="cb1-28">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">geom_line</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">aes</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">linewidth =</span> series)) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span></span>
+<span id="cb1-29">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">geom_point</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">size =</span> <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2.5</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span></span>
+<span id="cb1-30">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">geom_text</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">data =</span> labels, <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">aes</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">label =</span> series), <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">hjust =</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">nudge_x =</span> <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.12</span>,</span>
+<span id="cb1-31">            <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">size =</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">4</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">color =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"#52514e"</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">parse =</span> <span class="cn" style="color: #8f5902;
+background-color: null;
+font-style: inherit;">TRUE</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">show.legend =</span> <span class="cn" style="color: #8f5902;
+background-color: null;
+font-style: inherit;">FALSE</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span></span>
+<span id="cb1-32">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">scale_color_manual</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">values =</span> series_colors, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">breaks =</span> series,</span>
+<span id="cb1-33">                     <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">labels =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">parse</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">text =</span> series), <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">name =</span> <span class="cn" style="color: #8f5902;
+background-color: null;
+font-style: inherit;">NULL</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span></span>
+<span id="cb1-34">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">scale_linewidth_manual</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">values =</span> series_widths, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">guide =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"none"</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span></span>
+<span id="cb1-35">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">scale_x_continuous</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">breaks =</span> k, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">expand =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">expansion</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">mult =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.03</span>, <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.35</span>))) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span></span>
+<span id="cb1-36">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">labs</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">x =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Number of extra doses, k"</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">y =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Incremental effect"</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span></span>
+<span id="cb1-37">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">theme_bw</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">base_size =</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">16</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span></span>
+<span id="cb1-38">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">theme</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">legend.position =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"top"</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">panel.grid.minor =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">element_blank</span>())</span></code></pre></div></div>
+</details>
+<div class="cell-output-display">
+<div id="fig-incremental-curve" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-incremental-curve-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="https://jeffwong.github.io/posts/what_is_an_average/index_files/figure-html/fig-incremental-curve-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-incremental-curve-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1: The incremental effect curve <img src="https://latex.codecogs.com/png.latex?C(k)"> (black) is the average of the conditional curves <img src="https://latex.codecogs.com/png.latex?C_k(s)"> for each prior dose <img src="https://latex.codecogs.com/png.latex?s"> (colored), weighted by the share of users <img src="https://latex.codecogs.com/png.latex?p_s"> at each prior dose.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>Two patterns are visible. First, every curve flattens as <img src="https://latex.codecogs.com/png.latex?k"> grows, because each extra dose adds less than the one before it. Second, users who start from more doses gain less from the same number of extra doses, so the conditional curves are ordered by prior dose. The average <img src="https://latex.codecogs.com/png.latex?C(k)"> lies between them, and above the middle curve for <img src="https://latex.codecogs.com/png.latex?s%20=%202"> at every <img src="https://latex.codecogs.com/png.latex?k">, because the curve for <img src="https://latex.codecogs.com/png.latex?s%20=%201"> carries half of the probability weight and pulls the average up.</p>
+</section>
+<section id="step-effects-are-the-slope-of-the-curve" class="level3">
+<h3 class="anchored" data-anchor-id="step-effects-are-the-slope-of-the-curve">Step Effects are the Slope of the Curve</h3>
+<p><img src="https://latex.codecogs.com/png.latex?C(k)"> is the total effect of <img src="https://latex.codecogs.com/png.latex?k"> extra doses. The step from <img src="https://latex.codecogs.com/png.latex?k%20-%201"> to <img src="https://latex.codecogs.com/png.latex?k"> extra doses is the effect of the <img src="https://latex.codecogs.com/png.latex?k">-th dose alone. Among users with prior dose <img src="https://latex.codecogs.com/png.latex?s"> and covariates <img src="https://latex.codecogs.com/png.latex?x">, the step effect is <img src="https://latex.codecogs.com/png.latex?%5Ctau_k(s,%20x)%20=%20%5Cmu(s%20+%20k%20%5Cmid%20s,%20x)%20-%20%5Cmu(s%20+%20k%20-%201%20%5Cmid%20s,%20x),"></p>
+<p>and averaging over <img src="https://latex.codecogs.com/png.latex?f(s,%20x)"> gives <img src="https://latex.codecogs.com/png.latex?%5Ctau_k%20=%20%5Cint%5C!%5C!%5Cint%20%5Ctau_k(s,%20x)%20%5C,%20f(s,%20x)%20%5C,%20ds%20%5C,%20dx%20=%20C(k)%20-%20C(k%20-%201)">.</p>
+<p>So the step effect <img src="https://latex.codecogs.com/png.latex?%5Ctau_k"> is the slope of the incremental effect curve between <img src="https://latex.codecogs.com/png.latex?k%20-%201"> and <img src="https://latex.codecogs.com/png.latex?k">. Conversely, the curve is the accumulation of its steps. Writing <img src="https://latex.codecogs.com/png.latex?C(k)"> as a sum of differences, the intermediate terms cancel in pairs, and <img src="https://latex.codecogs.com/png.latex?C(0)%20=%200"> gives</p>
+<p><img src="https://latex.codecogs.com/png.latex?C(k)%20=%20%5Csum_%7Bj%20=%201%7D%5E%7Bk%7D%20%5Cbig(%20C(j)%20-%20C(j%20-%201)%20%5Cbig)%20=%20%5Csum_%7Bj%20=%201%7D%5E%7Bk%7D%20%5Ctau_j."></p>
+</section>
+<section id="ab-tests-and-incremental-tests-measure-different-things" class="level3">
+<h3 class="anchored" data-anchor-id="ab-tests-and-incremental-tests-measure-different-things">AB Tests and Incremental Tests Measure Different Things</h3>
+<p>It is tempting to think of the classic AB test as an incremental test with a single step. It is not, and the two tests answer different questions.</p>
+<p><strong>The AB test compares zero doses with a nonzero number of doses.</strong> The control group receives zero doses. The treatment group receives a nonzero number of doses, but that number varies from user to user: one treated user might receive 2 doses, and another might receive 10. What we randomize is access to the treatment, <img src="https://latex.codecogs.com/png.latex?T_i%20%5Cin%20%5C%7B0,%201%5C%7D">, not the number of doses. Each user has a potential dose <img src="https://latex.codecogs.com/png.latex?M_i(1)">, the number of doses user <img src="https://latex.codecogs.com/png.latex?i"> would receive if treated, and <img src="https://latex.codecogs.com/png.latex?M_i(0)%20=%200">. Unlike the increment <img src="https://latex.codecogs.com/png.latex?K_i"> in an incremental test, the experimenter does not choose <img src="https://latex.codecogs.com/png.latex?M_i(1)">. It is determined by the user’s behavior, or by how the treatment is delivered. A treated user’s outcome is <img src="https://latex.codecogs.com/png.latex?y_i(M_i(1))"> and a control user’s outcome is <img src="https://latex.codecogs.com/png.latex?y_i(0)">, so by randomization the AB test measures</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Ctau%20=%20E%5By%20%5Cmid%20T%20=%201%5D%20-%20E%5By%20%5Cmid%20T%20=%200%5D%20=%20E%5Cbig%5By(M(1))%20-%20y(0)%5Cbig%5D."></p>
+<p><strong>The AB test is also an average over doses, but of a self-selected curve.</strong> Let <img src="https://latex.codecogs.com/png.latex?h(k)%20=%20P(M(1)%20=%20k)"> be the share of treated users who receive <img src="https://latex.codecogs.com/png.latex?k"> doses. Applying the law of total expectation over the potential dose, and noting that <img src="https://latex.codecogs.com/png.latex?y(M(1))%20=%20y(k)"> for users with <img src="https://latex.codecogs.com/png.latex?M(1)%20=%20k">,</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Ctau%20=%20%5Csum_k%20h(k)%20%5C,%20E%5Cbig%5By(k)%20-%20y(0)%20%5C,%5Cbig%7C%5C,%20M(1)%20=%20k%5Cbig%5D%20=%20%5Csum_k%20h(k)%20%5C,%20%5Ctilde%7BC%7D(k),"></p>
+<p>where we define the self-selected curve as the effect of <img src="https://latex.codecogs.com/png.latex?k"> doses among the users who would receive <img src="https://latex.codecogs.com/png.latex?k"> doses,</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Ctilde%7BC%7D(k)%20=%20E%5Cbig%5By(k)%20-%20y(0)%20%5C,%5Cbig%7C%5C,%20M(1)%20=%20k%5Cbig%5D."></p>
+<p>This looks similar to the incremental effect. <img src="https://latex.codecogs.com/png.latex?%5Ctau"> is an average with quantity <img src="https://latex.codecogs.com/png.latex?%5Ctilde%7BC%7D(k)"> and probability weight <img src="https://latex.codecogs.com/png.latex?h(k)">, the distribution of doses in the treatment arm. But the identity holds by construction: both sides are computed from the same treated users, once all together and once grouped by dose. It tells us how <img src="https://latex.codecogs.com/png.latex?%5Ctau"> is assembled, not how the outcome responds to the dose.</p>
+<p><strong>Note: The self-selected curve is only sometimes equal to the dose response.</strong> Compare <img src="https://latex.codecogs.com/png.latex?%5Ctilde%7BC%7D(k)"> with the incremental effect curve from earlier, at prior dose <img src="https://latex.codecogs.com/png.latex?S%20=%200">:</p>
+<p><img src="https://latex.codecogs.com/png.latex?C(k)%20=%20E%5Cbig%5By(k)%20-%20y(0)%5Cbig%5D,%20%5Cqquad%20%5Ctilde%7BC%7D(k)%20=%20E%5Cbig%5By(k)%20-%20y(0)%20%5C,%5Cbig%7C%5C,%20M(1)%20=%20k%5Cbig%5D."></p>
+<p><img src="https://latex.codecogs.com/png.latex?C(k)"> averages the effect of <img src="https://latex.codecogs.com/png.latex?k"> doses over every user, while <img src="https://latex.codecogs.com/png.latex?%5Ctilde%7BC%7D(k)"> averages it only over the users who choose <img src="https://latex.codecogs.com/png.latex?k"> doses. <img src="https://latex.codecogs.com/png.latex?C(k)%20=%20%5Ctilde%20C(k)"> for every <img src="https://latex.codecogs.com/png.latex?k"> only when there is no selection on gains, meaning the number of doses a user receives is unrelated to how much they would gain from any given number of doses. That is usually unreasonable. The dose is often how many times a user opens a feature or clicks a notification, and users who find the treatment valuable use it more. It also cannot be tested, because for a user who receives <img src="https://latex.codecogs.com/png.latex?k"> doses we never observe their outcome at any other dose. Similarly, the differences <img src="https://latex.codecogs.com/png.latex?%5Ctilde%7BC%7D(k)%20-%20%5Ctilde%7BC%7D(k%20-%201)"> are not the step effects <img src="https://latex.codecogs.com/png.latex?%5Ctau_k">. Each point of <img src="https://latex.codecogs.com/png.latex?%5Ctilde%7BC%7D"> averages over a different group of users, so a difference between two points mixes the effect of the extra dose with the difference between the two groups.</p>
+<p><strong>AB test results depend on the dose distribution.</strong> Because <img src="https://latex.codecogs.com/png.latex?%5Ctau%20=%20%5Csum_k%20h(k)%20%5Ctilde%7BC%7D(k)">, the word “average” in the ATE refers to the dose distribution <img src="https://latex.codecogs.com/png.latex?h(k)"> as well as to the covariate probability density <img src="https://latex.codecogs.com/png.latex?f(x)">. Two launches of the same treatment can yield different results: if users of the first launch mostly receive 2 doses and users of the second mostly receive 10, the two AB tests average over different parts of the curve and report different values of <img src="https://latex.codecogs.com/png.latex?%5Ctau">, even when the treatment itself is unchanged.</p>
+<p><strong>AB test results cannot be reconstructed from incremental results. They are different. That’s OK.</strong> Even if an incremental test mapped <img src="https://latex.codecogs.com/png.latex?C(k)"> perfectly, <img src="https://latex.codecogs.com/png.latex?%5Csum_k%20h(k)%20C(k)"> would equal <img src="https://latex.codecogs.com/png.latex?%5Ctau"> only under no selection on gains, which is when <img src="https://latex.codecogs.com/png.latex?C(k)%20=%20%5Ctilde%20C(k)">. In the other direction, the AB test cannot map <img src="https://latex.codecogs.com/png.latex?C(k)">, because the dose is not randomized. Even <img src="https://latex.codecogs.com/png.latex?%5Ctilde%7BC%7D(k)"> cannot be estimated from it, because <img src="https://latex.codecogs.com/png.latex?M_i(1)"> is never observed for control users. The two tests serve two different purposes.</p>
+<ul>
+<li><strong>The AB test measures <img src="https://latex.codecogs.com/png.latex?%5Ctau">.</strong> It answers: what happens if we launch the treatment and let users choose their own dose?</li>
+<li><strong>The incremental test measures <img src="https://latex.codecogs.com/png.latex?C(k)">.</strong> It answers: what happens if we change how many doses users receive? This is the question behind dosing decisions, such as sending every user three notifications instead of one.</li>
+</ul>
+</section>
+<section id="analyzing-an-incremental-test-in-r" class="level3">
+<h3 class="anchored" data-anchor-id="analyzing-an-incremental-test-in-r">Analyzing an Incremental Test in R</h3>
+<p>To measure the incremental effect curve, the experiment needs one row per user with four pieces of information:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Column</th>
+<th>Symbol</th>
+<th>Measured</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>X</code></td>
+<td><img src="https://latex.codecogs.com/png.latex?X_i"></td>
+<td>Before randomization</td>
+<td>Covariates, such as pre-period engagement</td>
+</tr>
+<tr class="even">
+<td><code>S</code></td>
+<td><img src="https://latex.codecogs.com/png.latex?S_i"></td>
+<td>Before randomization</td>
+<td>Prior dose, the number of doses the user already receives</td>
+</tr>
+<tr class="odd">
+<td><code>K</code></td>
+<td><img src="https://latex.codecogs.com/png.latex?K_i"></td>
+<td>Randomized</td>
+<td>Number of extra doses, <img src="https://latex.codecogs.com/png.latex?K_i%20%5Cin%20%5C%7B0,%201,%20%5Cdots,%20%5Cbar%7Bk%7D%5C%7D">, with <img src="https://latex.codecogs.com/png.latex?K%20=%200"> as the control arm</td>
+</tr>
+<tr class="even">
+<td><code>y</code></td>
+<td><img src="https://latex.codecogs.com/png.latex?y_i"></td>
+<td>After treatment</td>
+<td>Outcome</td>
+</tr>
+</tbody>
+</table>
+<p>The randomization structure has two requirements. First, <img src="https://latex.codecogs.com/png.latex?K"> must be randomized independently of <img src="https://latex.codecogs.com/png.latex?S"> and <img src="https://latex.codecogs.com/png.latex?X">, so that every arm has the same joint probability density <img src="https://latex.codecogs.com/png.latex?f(s,%20x)">. Second, every point on the curve needs its own arm. An experiment with only the arms <img src="https://latex.codecogs.com/png.latex?K%20=%200"> and <img src="https://latex.codecogs.com/png.latex?K%20=%20%5Cbar%7Bk%7D"> measures <img src="https://latex.codecogs.com/png.latex?C(%5Cbar%7Bk%7D)">, but not the shape of the curve on the way there.</p>
+<p>We simulate such an experiment with <img src="https://latex.codecogs.com/png.latex?%5Cbar%7Bk%7D%20=%205">, so there are six arms, and users are split evenly across them. Prior doses follow the example from earlier, with shares <img src="https://latex.codecogs.com/png.latex?p_1%20=%200.5">, <img src="https://latex.codecogs.com/png.latex?p_2%20=%200.3"> and <img src="https://latex.codecogs.com/png.latex?p_3%20=%200.2">, and users with more prior doses tend to be more engaged, so <img src="https://latex.codecogs.com/png.latex?X"> and <img src="https://latex.codecogs.com/png.latex?S"> are correlated. The outcome is</p>
+<p><img src="https://latex.codecogs.com/png.latex?y_i%20=%2020%20+%208%20x_i%20+%20g(s_i%20+%20k_i)%20+%20%5Cvarepsilon_i,%20%5Cqquad%20g(d)%20=%2010%20%5Clog(1%20+%20d),%20%5Cqquad%20%5Cvarepsilon_i%20%5Csim%20N(0,%205%5E2),"></p>
+<p>so the conditional mean of the potential outcome curve is <img src="https://latex.codecogs.com/png.latex?%5Cmu(d%20%5Cmid%20s,%20x)%20=%2020%20+%208x%20+%20g(d)">. The baseline <img src="https://latex.codecogs.com/png.latex?20%20+%208x"> cancels in <img src="https://latex.codecogs.com/png.latex?C_k(s,%20x)%20=%20%5Cmu(s%20+%20k%20%5Cmid%20s,%20x)%20-%20%5Cmu(s%20%5Cmid%20s,%20x)%20=%20g(s%20+%20k)%20-%20g(s)">, and <img src="https://latex.codecogs.com/png.latex?g"> depends only on the total dose, so the true incremental effect curve is the black curve in Figure&nbsp;1.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">set.seed</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">3</span>)</span>
+<span id="cb2-2">n <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">60000</span></span>
+<span id="cb2-3">k_bar <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">5</span></span>
+<span id="cb2-4"></span>
+<span id="cb2-5">S <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sample</span>(s, n, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">replace =</span> <span class="cn" style="color: #8f5902;
+background-color: null;
+font-style: inherit;">TRUE</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">prob =</span> p_s)  <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># prior dose, with shares p_s</span></span>
+<span id="cb2-6">X <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rnorm</span>(n, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">mean =</span> <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.5</span> <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> (S <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1.7</span>))          <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># engagement, higher for larger S</span></span>
+<span id="cb2-7">K <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sample</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">:</span>k_bar, n, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">replace =</span> <span class="cn" style="color: #8f5902;
+background-color: null;
+font-style: inherit;">TRUE</span>)        <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># randomized number of extra doses</span></span>
+<span id="cb2-8">y <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">20</span> <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">8</span> <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> X <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">g</span>(S <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> K) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rnorm</span>(n, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">sd =</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">5</span>)</span>
+<span id="cb2-9"></span>
+<span id="cb2-10">df <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">data.frame</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">user_id =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">seq_len</span>(n), <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">X =</span> X, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">S =</span> S, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">K =</span> K, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">y =</span> y)</span>
+<span id="cb2-11">knitr<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">::</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">kable</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">head</span>(df), <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">digits =</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>)</span></code></pre></div></div>
+</details>
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: right;">user_id</th>
+<th style="text-align: right;">X</th>
+<th style="text-align: right;">S</th>
+<th style="text-align: right;">K</th>
+<th style="text-align: right;">y</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-0.86</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">22.84</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">2.35</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">55.76</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">-0.97</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">26.66</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">-0.63</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">35.88</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">-0.54</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">36.09</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">1.31</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">52.20</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>We estimate the curve in two ways. The first is the difference in means between each arm and the control arm, <img src="https://latex.codecogs.com/png.latex?%5Chat%7BC%7D(k)%20=%20%5Cbar%7By%7D_k%20-%20%5Cbar%7By%7D_0">, with standard error <img src="https://latex.codecogs.com/png.latex?%5Csqrt%7Bs_k%5E2%20/%20n_k%20+%20s_0%5E2%20/%20n_0%7D">, where <img src="https://latex.codecogs.com/png.latex?%5Cbar%7By%7D_k">, <img src="https://latex.codecogs.com/png.latex?s_k%5E2"> and <img src="https://latex.codecogs.com/png.latex?n_k"> are the mean, variance and size of arm <img src="https://latex.codecogs.com/png.latex?k">. Each point on the curve is an ordinary AB comparison against the control arm.</p>
+<p>The second is a regression of <img src="https://latex.codecogs.com/png.latex?y"> on indicators for each arm, adjusting for <img src="https://latex.codecogs.com/png.latex?X"> and <img src="https://latex.codecogs.com/png.latex?S">,</p>
+<p><img src="https://latex.codecogs.com/png.latex?y_i%20=%20%5Calpha%20+%20%5Csum_%7Bk%20=%201%7D%5E%7B%5Cbar%7Bk%7D%7D%201%5C%7BK_i%20=%20k%5C%7D%20%5C,%20%5Cbeta_k%20+%20x_i%20%5Cgamma%20+%20%5Csum_%7Bs%7D%201%5C%7BS_i%20=%20s%5C%7D%20%5C,%20%5Cdelta_s%20+%20%5Cvarepsilon_i."></p>
+<p>The coefficient <img src="https://latex.codecogs.com/png.latex?%5Cbeta_k"> estimates <img src="https://latex.codecogs.com/png.latex?C(k)">. Because <img src="https://latex.codecogs.com/png.latex?K"> is randomized independently of <img src="https://latex.codecogs.com/png.latex?S"> and <img src="https://latex.codecogs.com/png.latex?X">, <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Cbeta%7D_k"> remains a consistent estimate of <img src="https://latex.codecogs.com/png.latex?C(k)"> even though the model leaves out interactions between <img src="https://latex.codecogs.com/png.latex?K"> and <img src="https://latex.codecogs.com/png.latex?S">. The covariates explain much of the variation in the baseline, which shrinks the standard errors, the same idea as <a href="https://jeffwong.github.io/posts/cuped_from_fwl/">CUPED</a>.</p>
+<p>The step effects are differences of adjacent points, <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Ctau%7D_k%20=%20%5Chat%7B%5Cbeta%7D_k%20-%20%5Chat%7B%5Cbeta%7D_%7Bk%20-%201%7D"> with <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Cbeta%7D_0%20=%200">. We compute them with a contrast matrix <img src="https://latex.codecogs.com/png.latex?L">, a <img src="https://latex.codecogs.com/png.latex?%5Cbar%7Bk%7D%20%5Ctimes%20%5Cbar%7Bk%7D"> matrix with 1 on the diagonal and <img src="https://latex.codecogs.com/png.latex?-1"> just below it, so that <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Ctau%7D%20=%20L%20%5Chat%7B%5Cbeta%7D"> and <img src="https://latex.codecogs.com/png.latex?%5Ctext%7BCov%7D(%5Chat%7B%5Ctau%7D)%20=%20L%20%5C,%20%5Ctext%7BCov%7D(%5Chat%7B%5Cbeta%7D)%20%5C,%20L%5E%5Ctop">.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># Difference in means against the control arm, K = 0</span></span>
+<span id="cb3-2">y_bar <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">tapply</span>(df<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>y, df<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>K, mean)</span>
+<span id="cb3-3">s2 <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">tapply</span>(df<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>y, df<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>K, var)</span>
+<span id="cb3-4">n_k <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">tapply</span>(df<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>y, df<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>K, length)</span>
+<span id="cb3-5">C_hat_dm <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> y_bar <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> y_bar[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"0"</span>]</span>
+<span id="cb3-6">se_C_hat_dm <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sqrt</span>(s2 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> n_k <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> s2[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"0"</span>] <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> n_k[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"0"</span>])</span>
+<span id="cb3-7"></span>
+<span id="cb3-8"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># Regression with arm indicators, adjusting for X and S</span></span>
+<span id="cb3-9">fit <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">lm</span>(y <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">~</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">factor</span>(K) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> X <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">factor</span>(S), <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">data =</span> df)</span>
+<span id="cb3-10">beta_hat <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">coef</span>(fit)[<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">paste0</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"factor(K)"</span>, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">:</span>k_bar)]</span>
+<span id="cb3-11">V_beta_hat <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">vcov</span>(fit)[<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">names</span>(beta_hat), <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">names</span>(beta_hat)]</span>
+<span id="cb3-12">C_hat_reg <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, beta_hat)</span>
+<span id="cb3-13">se_C_hat_reg <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>, <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sqrt</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">diag</span>(V_beta_hat)))</span>
+<span id="cb3-14"></span>
+<span id="cb3-15"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># Step effects tau_k = beta_k - beta_{k-1}</span></span>
+<span id="cb3-16">L <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">diag</span>(k_bar)</span>
+<span id="cb3-17">L[<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">cbind</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">:</span>k_bar, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">:</span>(k_bar <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>))] <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span></span>
+<span id="cb3-18">tau_k_hat <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">drop</span>(L <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> beta_hat)</span>
+<span id="cb3-19">se_tau_k_hat <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sqrt</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">diag</span>(L <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> V_beta_hat <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%*%</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">t</span>(L)))</span>
+<span id="cb3-20"></span>
+<span id="cb3-21"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># Ground truth from the dose response and the shares p_s</span></span>
+<span id="cb3-22">k_values <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">:</span>k_bar</span>
+<span id="cb3-23">C_true <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sapply</span>(k_values, <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">function</span>(k) <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sum</span>(p_s <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> (<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">g</span>(s <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> k) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">g</span>(s))))</span>
+<span id="cb3-24">tau_k_true <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">diff</span>(C_true)</span></code></pre></div></div>
+</details>
+</div>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1">est_se <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">function</span>(est, se) <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sprintf</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"%.2f (%.2f)"</span>, est, se)</span>
+<span id="cb4-2">knitr<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">::</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">kable</span>(</span>
+<span id="cb4-3">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">data.frame</span>(</span>
+<span id="cb4-4">    <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">k =</span> k_values,</span>
+<span id="cb4-5">    <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">C_true =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sprintf</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"%.2f"</span>, C_true),</span>
+<span id="cb4-6">    <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">C_hat_dm =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"—"</span>, <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">est_se</span>(C_hat_dm[<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>], se_C_hat_dm[<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>])),</span>
+<span id="cb4-7">    <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">C_hat_reg =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"—"</span>, <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">est_se</span>(C_hat_reg[<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>], se_C_hat_reg[<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>])),</span>
+<span id="cb4-8">    <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">tau_k_true =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"—"</span>, <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sprintf</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"%.2f"</span>, tau_k_true)),</span>
+<span id="cb4-9">    <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">tau_k_hat =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"—"</span>, <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">est_se</span>(tau_k_hat, se_tau_k_hat))</span>
+<span id="cb4-10">  ),</span>
+<span id="cb4-11">  <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">col.names =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"$k$"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"True $C(k)$"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"$</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">\\</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">hat{C}(k)$, difference in means"</span>,</span>
+<span id="cb4-12">                <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"$</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">\\</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">hat{C}(k)$, regression"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"True $</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">\\</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">tau_k$"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"$</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">\\</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">hat{</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">\\</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">tau}_k$, regression"</span>),</span>
+<span id="cb4-13">  <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">align =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"rrrrrr"</span></span>
+<span id="cb4-14">)</span></code></pre></div></div>
+</details>
+<div id="tbl-incremental-estimates" class="cell quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-incremental-estimates-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;1: Estimates of the incremental effect curve <img src="https://latex.codecogs.com/png.latex?C(k)"> and the step effects <img src="https://latex.codecogs.com/png.latex?%5Ctau_k">, with standard errors in parentheses, against the ground truth.
+</figcaption>
+<div aria-describedby="tbl-incremental-estimates-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="cell-output-display">
+<table class="cell caption-top table table-sm table-striped small">
+<colgroup>
+<col style="width: 3%">
+<col style="width: 10%">
+<col style="width: 29%">
+<col style="width: 21%">
+<col style="width: 12%">
+<col style="width: 23%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: right;"><img src="https://latex.codecogs.com/png.latex?k"></th>
+<th style="text-align: right;">True <img src="https://latex.codecogs.com/png.latex?C(k)"></th>
+<th style="text-align: right;"><img src="https://latex.codecogs.com/png.latex?%5Chat%7BC%7D(k)">, difference in means</th>
+<th style="text-align: right;"><img src="https://latex.codecogs.com/png.latex?%5Chat%7BC%7D(k)">, regression</th>
+<th style="text-align: right;">True <img src="https://latex.codecogs.com/png.latex?%5Ctau_k"></th>
+<th style="text-align: right;"><img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Ctau%7D_k">, regression</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">3.34</td>
+<td style="text-align: right;">3.06 (0.16)</td>
+<td style="text-align: right;">3.26 (0.07)</td>
+<td style="text-align: right;">3.34</td>
+<td style="text-align: right;">3.26 (0.07)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">5.81</td>
+<td style="text-align: right;">5.49 (0.15)</td>
+<td style="text-align: right;">5.71 (0.07)</td>
+<td style="text-align: right;">2.47</td>
+<td style="text-align: right;">2.45 (0.07)</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">7.78</td>
+<td style="text-align: right;">7.72 (0.15)</td>
+<td style="text-align: right;">7.81 (0.07)</td>
+<td style="text-align: right;">1.97</td>
+<td style="text-align: right;">2.10 (0.07)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">9.42</td>
+<td style="text-align: right;">9.41 (0.15)</td>
+<td style="text-align: right;">9.44 (0.07)</td>
+<td style="text-align: right;">1.64</td>
+<td style="text-align: right;">1.62 (0.07)</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">10.83</td>
+<td style="text-align: right;">10.68 (0.15)</td>
+<td style="text-align: right;">10.80 (0.07)</td>
+<td style="text-align: right;">1.41</td>
+<td style="text-align: right;">1.37 (0.07)</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</figure>
+</div>
+</div>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1">estimates <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">data.frame</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">k =</span> k_values, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">C_hat =</span> C_hat_reg,</span>
+<span id="cb5-2">                        <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">lower =</span> C_hat_reg <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1.96</span> <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> se_C_hat_reg,</span>
+<span id="cb5-3">                        <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">upper =</span> C_hat_reg <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1.96</span> <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> se_C_hat_reg)</span>
+<span id="cb5-4">truth <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">data.frame</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">k =</span> k_values, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">C =</span> C_true)</span>
+<span id="cb5-5"></span>
+<span id="cb5-6"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ggplot</span>() <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span></span>
+<span id="cb5-7">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">geom_line</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">data =</span> truth, <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">aes</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">x =</span> k, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">y =</span> C, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">color =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"True C(k)"</span>), <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">linewidth =</span> <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.9</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span></span>
+<span id="cb5-8">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">geom_errorbar</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">data =</span> estimates, <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">aes</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">x =</span> k, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">ymin =</span> lower, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">ymax =</span> upper, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">color =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Estimate"</span>),</span>
+<span id="cb5-9">                <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">width =</span> <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.15</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">linewidth =</span> <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.6</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span></span>
+<span id="cb5-10">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">geom_point</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">data =</span> estimates, <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">aes</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">x =</span> k, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">y =</span> C_hat, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">color =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Estimate"</span>), <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">size =</span> <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2.5</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span></span>
+<span id="cb5-11">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">scale_color_manual</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">values =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"True C(k)"</span> <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">=</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"#0b0b0b"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Estimate"</span> <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">=</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"#2a78d6"</span>),</span>
+<span id="cb5-12">                     <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">breaks =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"True C(k)"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Estimate"</span>), <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">name =</span> <span class="cn" style="color: #8f5902;
+background-color: null;
+font-style: inherit;">NULL</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span></span>
+<span id="cb5-13">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">scale_x_continuous</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">breaks =</span> k_values) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span></span>
+<span id="cb5-14">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">labs</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">x =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Number of extra doses, k"</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">y =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Incremental effect"</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span></span>
+<span id="cb5-15">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">theme_bw</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">base_size =</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">16</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span></span>
+<span id="cb5-16">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">theme</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">legend.position =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"top"</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">panel.grid.minor =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">element_blank</span>())</span></code></pre></div></div>
+</details>
+<div class="cell-output-display">
+<div id="fig-incremental-estimates" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-incremental-estimates-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="https://jeffwong.github.io/posts/what_is_an_average/index_files/figure-html/fig-incremental-estimates-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-incremental-estimates-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2: The regression estimates of the incremental effect curve (blue, with 95% confidence intervals) against the true curve <img src="https://latex.codecogs.com/png.latex?C(k)"> (black).
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The regression estimates track the true <img src="https://latex.codecogs.com/png.latex?C(k)"> closely at every <img src="https://latex.codecogs.com/png.latex?k">.</p>
+</section>
+</section>
+</section>
+<section id="what-does-it-mean-to-be-treated" class="level1">
+<h1>What does it mean to be treated?</h1>
+<p>In many experiments we randomize an assignment <img src="https://latex.codecogs.com/png.latex?Z%20%5Cin%20%5C%7B0,%201%5C%7D">, not the intervention itself. <img src="https://latex.codecogs.com/png.latex?Z%20=%201"> means we intend to treat the user. The treatment the user actually receives, <img src="https://latex.codecogs.com/png.latex?T%20%5Cin%20%5C%7B0,%201%5C%7D">, can differ from <img src="https://latex.codecogs.com/png.latex?Z">. This <a href="https://arxiv.org/pdf/2209.00649">paper</a> argues that there are multiple stages of delivering treatment, and describes mistakes when confusing <img src="https://latex.codecogs.com/png.latex?Z"> with <img src="https://latex.codecogs.com/png.latex?T">.</p>
+<p>As a running example, say we launch a new feature and announce it by email. The assignment <img src="https://latex.codecogs.com/png.latex?Z"> is whether a user is sent the email. When <img src="https://latex.codecogs.com/png.latex?Z%20=%201"> we are trying to treat the user, when <img src="https://latex.codecogs.com/png.latex?Z%20=%200"> we are trying to withhold from the user. The treatment <img src="https://latex.codecogs.com/png.latex?T"> is whether the user actually uses the feature, which is the user’s choice and not something we can control. The outcome <img src="https://latex.codecogs.com/png.latex?y"> is the user’s engagement. Figure&nbsp;3 shows how these variables affect one another. <img src="https://latex.codecogs.com/png.latex?U"> collects everything about the user that influences both their choice and their outcome: the covariates <img src="https://latex.codecogs.com/png.latex?X">, the compliance type <img src="https://latex.codecogs.com/png.latex?G"> defined below, and traits we do not measure.</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-itt-dag" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-itt-dag-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<svg width="672" height="480" viewbox="0.00 0.00 654.86 322.75" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" style="; max-width: none; max-height: none">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 318.75)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-318.75 650.86,-318.75 650.86,4 -4,4"></polygon>
+<!-- U -->
+<g id="node1" class="node">
+<title>U</title>
+<path fill="none" stroke="black" d="M398.3,-314.96C398.3,-314.96 283.42,-314.96 283.42,-314.96 277.42,-314.96 271.42,-308.96 271.42,-302.96 271.42,-302.96 271.42,-268.15 271.42,-268.15 271.42,-262.15 277.42,-256.15 283.42,-256.15 283.42,-256.15 398.3,-256.15 398.3,-256.15 404.3,-256.15 410.3,-262.15 410.3,-268.15 410.3,-268.15 410.3,-302.96 410.3,-302.96 410.3,-308.96 404.3,-314.96 398.3,-314.96"></path>
+<text text-anchor="middle" x="340.86" y="-298.15" font-family="Helvetica,sans-Serif" font-size="14.00">U</text>
+<text text-anchor="middle" x="340.86" y="-281.35" font-family="Helvetica,sans-Serif" font-size="14.00">user traits</text>
+<text text-anchor="middle" x="340.86" y="-264.55" font-family="Helvetica,sans-Serif" font-size="14.00">(X, G, unmeasured)</text>
+</g>
+<!-- T -->
+<g id="node3" class="node">
+<title>T</title>
+<path fill="none" stroke="black" d="M381.95,-170.96C381.95,-170.96 299.77,-170.96 299.77,-170.96 293.77,-170.96 287.77,-164.96 287.77,-158.96 287.77,-158.96 287.77,-124.15 287.77,-124.15 287.77,-118.15 293.77,-112.15 299.77,-112.15 299.77,-112.15 381.95,-112.15 381.95,-112.15 387.95,-112.15 393.95,-118.15 393.95,-124.15 393.95,-124.15 393.95,-158.96 393.95,-158.96 393.95,-164.96 387.95,-170.96 381.95,-170.96"></path>
+<text text-anchor="middle" x="340.86" y="-154.15" font-family="Helvetica,sans-Serif" font-size="14.00">T</text>
+<text text-anchor="middle" x="340.86" y="-137.35" font-family="Helvetica,sans-Serif" font-size="14.00">feature used</text>
+<text text-anchor="middle" x="340.86" y="-120.55" font-family="Helvetica,sans-Serif" font-size="14.00">(user's choice)</text>
+</g>
+<!-- U&#45;&gt;T -->
+<g id="edge3" class="edge">
+<title>U-&gt;T</title>
+<path fill="none" stroke="black" d="M340.86,-255.97C340.86,-231.02 340.86,-206.07 340.86,-181.12"></path>
+<polygon fill="black" stroke="black" points="344.36,-180.8 340.86,-170.8 337.36,-180.8 344.36,-180.8"></polygon>
+<text text-anchor="middle" x="308.76" y="-203.38" font-family="Helvetica,sans-Serif" font-size="11.00">who chooses</text>
+<text text-anchor="middle" x="308.76" y="-190.18" font-family="Helvetica,sans-Serif" font-size="11.00">to use it &nbsp;</text>
+</g>
+<!-- y -->
+<g id="node4" class="node">
+<title>y</title>
+<path fill="none" stroke="black" d="M634.71,-162.16C634.71,-162.16 589.32,-162.16 589.32,-162.16 583.32,-162.16 577.32,-156.16 577.32,-150.16 577.32,-150.16 577.32,-132.95 577.32,-132.95 577.32,-126.95 583.32,-120.95 589.32,-120.95 589.32,-120.95 634.71,-120.95 634.71,-120.95 640.71,-120.95 646.71,-126.95 646.71,-132.95 646.71,-132.95 646.71,-150.16 646.71,-150.16 646.71,-156.16 640.71,-162.16 634.71,-162.16"></path>
+<text text-anchor="middle" x="612.02" y="-145.75" font-family="Helvetica,sans-Serif" font-size="14.00">y</text>
+<text text-anchor="middle" x="612.02" y="-128.95" font-family="Helvetica,sans-Serif" font-size="14.00">outcome</text>
+</g>
+<!-- U&#45;&gt;y -->
+<g id="edge4" class="edge">
+<title>U-&gt;y</title>
+<path fill="none" stroke="black" d="M396.65,-256.24C447.37,-229.1 521.76,-189.3 568.24,-164.44"></path>
+<polygon fill="black" stroke="black" points="569.98,-167.48 577.15,-159.67 566.68,-161.3 569.98,-167.48"></polygon>
+<text text-anchor="middle" x="493.75" y="-242.05" font-family="Helvetica,sans-Serif" font-size="11.00">baseline</text>
+<text text-anchor="middle" x="493.75" y="-228.85" font-family="Helvetica,sans-Serif" font-size="11.00">behavior</text>
+</g>
+<!-- Z -->
+<g id="node2" class="node">
+<title>Z</title>
+<path fill="none" stroke="black" d="M86.71,-134.96C86.71,-134.96 11.76,-134.96 11.76,-134.96 5.76,-134.96 -0.24,-128.96 -0.24,-122.96 -0.24,-122.96 -0.24,-88.15 -0.24,-88.15 -0.24,-82.15 5.76,-76.15 11.76,-76.15 11.76,-76.15 86.71,-76.15 86.71,-76.15 92.71,-76.15 98.71,-82.15 98.71,-88.15 98.71,-88.15 98.71,-122.96 98.71,-122.96 98.71,-128.96 92.71,-134.96 86.71,-134.96"></path>
+<text text-anchor="middle" x="49.24" y="-118.15" font-family="Helvetica,sans-Serif" font-size="14.00">Z</text>
+<text text-anchor="middle" x="49.24" y="-101.35" font-family="Helvetica,sans-Serif" font-size="14.00">email sent</text>
+<text text-anchor="middle" x="49.24" y="-84.55" font-family="Helvetica,sans-Serif" font-size="14.00">(randomized)</text>
+</g>
+<!-- Z&#45;&gt;T -->
+<g id="edge1" class="edge">
+<title>Z-&gt;T</title>
+<path fill="none" stroke="black" d="M98.71,-111.58C147.73,-117.67 223.69,-127.11 277.24,-133.77"></path>
+<polygon fill="black" stroke="black" points="276.95,-137.26 287.3,-135.02 277.81,-130.31 276.95,-137.26"></polygon>
+<text text-anchor="middle" x="184.93" y="-145.05" font-family="Helvetica,sans-Serif" font-size="11.00">the email prompts</text>
+<text text-anchor="middle" x="184.93" y="-131.85" font-family="Helvetica,sans-Serif" font-size="11.00">some users to try it</text>
+</g>
+<!-- Z&#45;&gt;y -->
+<g id="edge5" class="edge">
+<title>Z:s-&gt;y:s</title>
+<path fill="none" stroke="firebrick" stroke-dasharray="5,2" d="M49.24,-75.55C49.24,46.46 581.66,8.17 610.78,-109.45"></path>
+<polygon fill="firebrick" stroke="firebrick" points="607.32,-110.05 612.02,-119.55 614.27,-109.2 607.32,-110.05"></polygon>
+<text text-anchor="middle" x="340.86" y="-15.85" font-family="Helvetica,sans-Serif" font-size="11.00" fill="firebrick">the email's own effect</text>
+</g>
+<!-- T&#45;&gt;y -->
+<g id="edge2" class="edge">
+<title>T-&gt;y</title>
+<path fill="none" stroke="black" d="M394.07,-141.55C444.39,-141.55 519.65,-141.55 567.01,-141.55"></path>
+<polygon fill="black" stroke="black" points="567.25,-145.05 577.25,-141.55 567.25,-138.05 567.25,-145.05"></polygon>
+<text text-anchor="middle" x="493.75" y="-158.05" font-family="Helvetica,sans-Serif" font-size="11.00">the feature</text>
+<text text-anchor="middle" x="493.75" y="-144.85" font-family="Helvetica,sans-Serif" font-size="11.00">changes behavior</text>
+</g>
+</g>
+</svg>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-itt-dag-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;3: A causal graph for an experiment that randomizes an email announcing a feature. Solid arrows are the paths that the ITT and the LATE rely on. The dashed arrow is a direct effect of the email, which the exclusion assumption rules out.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The graph separates the three ways the outcome can change. The feature changes behavior for users who use it, along <img src="https://latex.codecogs.com/png.latex?T%20%5Cto%20y">. Whether a user uses it is their own choice, which depends on who they are, along <img src="https://latex.codecogs.com/png.latex?U%20%5Cto%20T">. And the email can change behavior on its own, along the dashed arrow <img src="https://latex.codecogs.com/png.latex?Z%20%5Cto%20y">, for example by reminding users that the product exists. Because <img src="https://latex.codecogs.com/png.latex?U"> points into both <img src="https://latex.codecogs.com/png.latex?T"> and <img src="https://latex.codecogs.com/png.latex?y">, the users who choose the feature differ from those who do not, even before they use it. This is why we randomize <img src="https://latex.codecogs.com/png.latex?Z"> rather than compare users by <img src="https://latex.codecogs.com/png.latex?T">.</p>
+<p>Each user has two potential treatments: <img src="https://latex.codecogs.com/png.latex?T_i(1)">, the treatment user <img src="https://latex.codecogs.com/png.latex?i"> would receive if assigned to the treatment, and <img src="https://latex.codecogs.com/png.latex?T_i(0)">, the treatment they would receive if assigned to the control. The observed treatment is <img src="https://latex.codecogs.com/png.latex?T_i%20=%20T_i(Z_i)">. The pair <img src="https://latex.codecogs.com/png.latex?(T_i(1),%20T_i(0))"> sorts users into four compliance types, which we label <img src="https://latex.codecogs.com/png.latex?G_i">:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Type <img src="https://latex.codecogs.com/png.latex?G"></th>
+<th><img src="https://latex.codecogs.com/png.latex?T(1)"></th>
+<th><img src="https://latex.codecogs.com/png.latex?T(0)"></th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Always-taker, <img src="https://latex.codecogs.com/png.latex?A"></td>
+<td>1</td>
+<td>1</td>
+<td>Receives the intervention regardless of assignment</td>
+</tr>
+<tr class="even">
+<td>Never-taker, <img src="https://latex.codecogs.com/png.latex?N"></td>
+<td>0</td>
+<td>0</td>
+<td>Never receives the intervention, for example because delivery fails</td>
+</tr>
+<tr class="odd">
+<td>Complier, <img src="https://latex.codecogs.com/png.latex?C"></td>
+<td>1</td>
+<td>0</td>
+<td>Receives the intervention if and only if assigned to it</td>
+</tr>
+<tr class="even">
+<td>Defier, <img src="https://latex.codecogs.com/png.latex?D"></td>
+<td>0</td>
+<td>1</td>
+<td>Does the opposite of the assignment</td>
+</tr>
+</tbody>
+</table>
+<p>Let <img src="https://latex.codecogs.com/png.latex?%5Cpi_g(x)%20=%20P(G%20=%20g%20%7C%20X%20=%20x)"> be the share of type <img src="https://latex.codecogs.com/png.latex?g"> among users with <img src="https://latex.codecogs.com/png.latex?X%20=%20x">. The overall share is <img src="https://latex.codecogs.com/png.latex?%5Cpi_g%20=%20%5Cint%20%5Cpi_g(x)%20f(x)%20%5C,%20dx">.</p>
+<p>Connecting the ITT to the effect of the feature takes three assumptions: randomization, exclusion and monotonicity. Rather than state them all at once, we introduce them one at a time, each at the step where it is first needed. This makes clear which conclusions rest on which assumptions. Only the first is needed to define the ITT.</p>
+<ol type="1">
+<li><strong>Randomization</strong>. <img src="https://latex.codecogs.com/png.latex?Z"> is independent of <img src="https://latex.codecogs.com/png.latex?X">, the type <img src="https://latex.codecogs.com/png.latex?G">, and the potential outcomes <img src="https://latex.codecogs.com/png.latex?y(0),%20y(1)">. In the figure there is no arrow <img src="https://latex.codecogs.com/png.latex?U%20%5Cto%20Z">, because a coin flip, not the user’s traits, decides who gets the email.</li>
+</ol>
+<p>The intent to treat effect (ITT) is the difference in expectations between the assignment arms, and here we emphasize that it is not the effect from being treated, rather it is the effect from the business trying to treat the user. This quantity is rooted in randomness and is robust, whereas analysis on <img src="https://latex.codecogs.com/png.latex?T"> is much more complex and it is hard to be robust. The ITT looks just like the ATE, with a quantity and a probability weight, and has the following analogous formulas.</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0A%5Ctau_%7BITT%7D%20&amp;=%20E%5By%20%7C%20Z%20=%201%5D%20-%20E%5By%20%7C%20Z%20=%200%5D%20%5C%5C%0A%5Ctau_%7BITT%7D(x)%20&amp;=%20E%5By%20%7C%20Z%20=%201,%20X%20=%20x%5D%20-%20E%5By%20%7C%20Z%20=%200,%20X%20=%20x%5D%20%5C%5C%0A%5Ctau_%7BITT%7D%20&amp;=%20%5Cint%20%5Ctau_%7BITT%7D(x)%20%5C,%20f(x)%20%5C,%20dx%0A%5Cend%7Balign%7D"></p>
+<p>These formulas rely on randomization alone. Even if the email has its own effect, along the dashed arrow in Figure&nbsp;3, <img src="https://latex.codecogs.com/png.latex?%5Ctau_%7BITT%7D"> is still exactly the effect of sending the email. The next two assumptions are needed only when we try to attribute the ITT to the feature itself.</p>
+<section id="decomposing-the-itt" class="level3">
+<h3 class="anchored" data-anchor-id="decomposing-the-itt">Decomposing the ITT</h3>
+<p>To see what the ITT says about the intervention itself, we decompose <img src="https://latex.codecogs.com/png.latex?%5Ctau_%7BITT%7D(x)">. The first step needs the second assumption.</p>
+<ol start="2" type="1">
+<li><strong>Exclusion</strong>. The assignment affects the outcome only through the treatment received, so the potential outcomes <img src="https://latex.codecogs.com/png.latex?y_i(1)"> and <img src="https://latex.codecogs.com/png.latex?y_i(0)"> do not depend on <img src="https://latex.codecogs.com/png.latex?z">. In Figure&nbsp;3, this means the dashed arrow <img src="https://latex.codecogs.com/png.latex?Z%20%5Cto%20y"> is absent, and the only path from <img src="https://latex.codecogs.com/png.latex?Z"> to <img src="https://latex.codecogs.com/png.latex?y"> runs through <img src="https://latex.codecogs.com/png.latex?T">. It fails if the email changes behavior even among users who never use the feature.</li>
+</ol>
+<p>Under assignment <img src="https://latex.codecogs.com/png.latex?z">, user <img src="https://latex.codecogs.com/png.latex?i"> receives <img src="https://latex.codecogs.com/png.latex?T_i(z)">. Without exclusion, their outcome would depend on both the assignment and the treatment received, <img src="https://latex.codecogs.com/png.latex?y_i(z,%20T_i(z))">. Exclusion removes the direct dependence on <img src="https://latex.codecogs.com/png.latex?z">, so their outcome is <img src="https://latex.codecogs.com/png.latex?y_i(T_i(z))">. Randomization means that, among users with <img src="https://latex.codecogs.com/png.latex?X%20=%20x">, the assignment does not change the distribution of types or potential outcomes, so</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Ctau_%7BITT%7D(x)%20=%20E%5By(T(1))%20%7C%20X%20=%20x%5D%20-%20E%5By(T(0))%20%7C%20X%20=%20x%5D%20=%20E%5Cbig%5By(T(1))%20-%20y(T(0))%20%5C,%5Cbig%7C%5C,%20X%20=%20x%5Cbig%5D."></p>
+<p>Next we apply the law of total expectation over the four types, <img src="https://latex.codecogs.com/png.latex?%5Ctau_%7BITT%7D(x)%20=%20%5Csum_g%20%5Cpi_g(x)%20%5C,%20E%5Cbig%5By(T(1))%20-%20y(T(0))%20%5C,%5Cbig%7C%5C,%20X%20=%20x,%20G%20=%20g%5Cbig%5D">, and evaluate <img src="https://latex.codecogs.com/png.latex?y(T(1))%20-%20y(T(0))"> for each type using the table above:</p>
+<ul>
+<li>Always-takers have <img src="https://latex.codecogs.com/png.latex?T(1)%20=%20T(0)%20=%201">, so the difference is <img src="https://latex.codecogs.com/png.latex?y(1)%20-%20y(1)%20=%200">.</li>
+<li>Never-takers have <img src="https://latex.codecogs.com/png.latex?T(1)%20=%20T(0)%20=%200">, so the difference is <img src="https://latex.codecogs.com/png.latex?y(0)%20-%20y(0)%20=%200">.</li>
+<li>Compliers have <img src="https://latex.codecogs.com/png.latex?T(1)%20=%201"> and <img src="https://latex.codecogs.com/png.latex?T(0)%20=%200">, so the difference is <img src="https://latex.codecogs.com/png.latex?y(1)%20-%20y(0)">.</li>
+<li>Defiers have <img src="https://latex.codecogs.com/png.latex?T(1)%20=%200"> and <img src="https://latex.codecogs.com/png.latex?T(0)%20=%201">, so the difference is <img src="https://latex.codecogs.com/png.latex?y(0)%20-%20y(1)">.</li>
+</ul>
+<p>Let <img src="https://latex.codecogs.com/png.latex?%5Ctau_g(x)%20=%20E%5By(1)%20-%20y(0)%20%7C%20X%20=%20x,%20G%20=%20g%5D"> be the CATE within type <img src="https://latex.codecogs.com/png.latex?g">. Then</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Ctau_%7BITT%7D(x)%20=%20%5Cpi_C(x)%20%5C,%20%5Ctau_C(x)%20-%20%5Cpi_D(x)%20%5C,%20%5Ctau_D(x)."></p>
+<p>The defiers enter with a negative sign. If they exist, their effect can cancel the compliers’ effect, and the ITT can be zero even when the intervention helps! So we add a third assumption.</p>
+<ol start="3" type="1">
+<li><strong>Monotonicity</strong>. There are no defiers, <img src="https://latex.codecogs.com/png.latex?T_i(1)%20%5Cgeq%20T_i(0)"> for every user, so <img src="https://latex.codecogs.com/png.latex?%5Cpi_D(x)%20=%200">. Assignment never makes a user less likely to receive the intervention. This often holds by design. For example, if control users have no way to access the intervention, there are neither always-takers nor defiers.</li>
+</ol>
+<p>Under monotonicity, <img src="https://latex.codecogs.com/png.latex?%5Ctau_%7BITT%7D(x)%20=%20%5Cpi_C(x)%20%5C,%20%5Ctau_C(x)">, and integrating over <img src="https://latex.codecogs.com/png.latex?f(x)">,</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cboxed%7B%5Ctau_%7BITT%7D%20=%20%5Cint%20%5Ctau_C(x)%20%5C,%20%5Cpi_C(x)%20%5C,%20f(x)%20%5C,%20dx%7D"></p>
+<p>This is the form of an average, with quantity <img src="https://latex.codecogs.com/png.latex?%5Ctau_C(x)"> and weight <img src="https://latex.codecogs.com/png.latex?%5Cpi_C(x)%20f(x)">. But that weight is not a probability weight, because it integrates to <img src="https://latex.codecogs.com/png.latex?%5Cint%20%5Cpi_C(x)%20f(x)%20%5C,%20dx%20=%20%5Cpi_C">, not to 1. So the ITT is not an average of the intervention’s effect over any population. <strong>It is a <em>diluted</em> integral of the compliers’ effect</strong>. Always-takers and never-takers contribute zero, because the assignment does not change what they receive.</p>
+</section>
+<section id="the-dilution-in-an-example-dataset" class="level3">
+<h3 class="anchored" data-anchor-id="the-dilution-in-an-example-dataset">The Dilution in an Example Dataset</h3>
+<p>We simulate the email example with 200,000 users. Each user has a covariate <img src="https://latex.codecogs.com/png.latex?X%20%5Csim%20N(0,%201)">, their pre-period engagement. The compliance types are:</p>
+<ul>
+<li><strong>Always-takers</strong>, with share <img src="https://latex.codecogs.com/png.latex?%5Cpi_A(x)%20=%200.1">. They find the feature on their own, whether or not they get the email.</li>
+<li><strong>Compliers</strong>, with share <img src="https://latex.codecogs.com/png.latex?%5Cpi_C(x)%20=%200.8%20%5Ccdot%20%5Ctext%7Blogit%7D%5E%7B-1%7D(2x)">. Engaged users are more likely to try the feature after reading the email.</li>
+<li><strong>Never-takers</strong>, who make up the rest. They never try the feature.</li>
+</ul>
+<p>There are no defiers, so monotonicity holds by construction. The outcome depends on the assignment only through the treatment received, so exclusion holds too. The potential outcomes are</p>
+<p><img src="https://latex.codecogs.com/png.latex?y_i(0)%20=%2020%20+%205%20x_i%20+%203%20%5Ccdot%201%5C%7BG_i%20=%20A%5C%7D%20+%20%5Cvarepsilon_i,%20%5Cqquad%20y_i(1)%20=%20y_i(0)%20+%201%20+%20x_i,%20%5Cqquad%20%5Cvarepsilon_i%20%5Csim%20N(0,%205%5E2)."></p>
+<p>Always-takers have a baseline 3 units higher, because users who seek out a feature on their own tend to be more engaged. Every user’s effect is <img src="https://latex.codecogs.com/png.latex?1%20+%20x_i">, so the compliers’ CATE equals the overall CATE, <img src="https://latex.codecogs.com/png.latex?%5Ctau_C(x)%20=%20%5Ctau(x)%20=%201%20+%20x">.</p>
+<p>In a real experiment the dataset contains <img src="https://latex.codecogs.com/png.latex?X">, <img src="https://latex.codecogs.com/png.latex?Z">, <img src="https://latex.codecogs.com/png.latex?T"> and <img src="https://latex.codecogs.com/png.latex?y">. The compliance type <img src="https://latex.codecogs.com/png.latex?G"> is never observed, because we only see one of <img src="https://latex.codecogs.com/png.latex?T_i(1)"> and <img src="https://latex.codecogs.com/png.latex?T_i(0)"> for each user. We keep <img src="https://latex.codecogs.com/png.latex?G"> in the data only because the simulation knows it, so that we can look inside the ITT. This code also masks R’s shorthand <code>T</code> for <code>TRUE</code>.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">set.seed</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">4</span>)</span>
+<span id="cb6-2">n <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">200000</span></span>
+<span id="cb6-3">X <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rnorm</span>(n)</span>
+<span id="cb6-4">pi_A <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.1</span></span>
+<span id="cb6-5">pi_C_x <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">function</span>(x) <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.8</span> <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">plogis</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span> <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> x)  <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># pi_C(x), the complier share at X = x</span></span>
+<span id="cb6-6"></span>
+<span id="cb6-7">u <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">runif</span>(n)</span>
+<span id="cb6-8">G <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ifelse</span>(u <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">&lt;</span> pi_A, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"A"</span>, <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ifelse</span>(u <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">&lt;</span> pi_A <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">pi_C_x</span>(X), <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"C"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"N"</span>))</span>
+<span id="cb6-9">T_1 <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">as.integer</span>(G <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">%in%</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"A"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"C"</span>))  <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># T_i(1), treatment received if emailed</span></span>
+<span id="cb6-10">T_0 <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">as.integer</span>(G <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">==</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"A"</span>)            <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># T_i(0), treatment received if not emailed</span></span>
+<span id="cb6-11"></span>
+<span id="cb6-12">y_0 <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">20</span> <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">5</span> <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> X <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">3</span> <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> (G <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">==</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"A"</span>) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rnorm</span>(n, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">sd =</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">5</span>)</span>
+<span id="cb6-13">y_1 <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> y_0 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span> <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> X</span>
+<span id="cb6-14"></span>
+<span id="cb6-15">Z <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">rbinom</span>(n, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>, <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.5</span>)  <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># randomized assignment, the email</span></span>
+<span id="cb6-16">T <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ifelse</span>(Z <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">==</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>, T_1, T_0)</span>
+<span id="cb6-17">y <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ifelse</span>(T <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">==</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>, y_1, y_0)</span>
+<span id="cb6-18"></span>
+<span id="cb6-19">email <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">data.frame</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">user_id =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">seq_len</span>(n), X, G, Z, T, y)</span>
+<span id="cb6-20">knitr<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">::</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">kable</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">head</span>(email), <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">digits =</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2</span>)</span></code></pre></div></div>
+</details>
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: right;">user_id</th>
+<th style="text-align: right;">X</th>
+<th style="text-align: left;">G</th>
+<th style="text-align: right;">Z</th>
+<th style="text-align: right;">T</th>
+<th style="text-align: right;">y</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0.22</td>
+<td style="text-align: left;">C</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">18.29</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">-0.54</td>
+<td style="text-align: left;">C</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">16.30</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">0.89</td>
+<td style="text-align: left;">N</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">24.10</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">0.60</td>
+<td style="text-align: left;">C</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">30.35</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">1.64</td>
+<td style="text-align: left;">C</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">28.68</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">0.69</td>
+<td style="text-align: left;">C</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">20.24</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>The ITT is the difference in means between the assignment arms. To see the dilution, we also compute the difference in means between the arms within each compliance type, which is possible only because we know <img src="https://latex.codecogs.com/png.latex?G">.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1">tau_ITT_hat <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mean</span>(email<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>y[email<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>Z <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">==</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>]) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mean</span>(email<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>y[email<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>Z <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">==</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>])</span>
+<span id="cb7-2"></span>
+<span id="cb7-3">by_type <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">t</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sapply</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">A =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"A"</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">C =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"C"</span>, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">N =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"N"</span>), <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">function</span>(g) {</span>
+<span id="cb7-4">  in_g <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> email<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>G <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">==</span> g</span>
+<span id="cb7-5">  share <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mean</span>(in_g)</span>
+<span id="cb7-6">  itt_g <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mean</span>(email<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>y[in_g <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">&amp;</span> email<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>Z <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">==</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>]) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mean</span>(email<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>y[in_g <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">&amp;</span> email<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>Z <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">==</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>])</span>
+<span id="cb7-7">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">share =</span> share, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">itt_g =</span> itt_g, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">contribution =</span> share <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> itt_g)</span>
+<span id="cb7-8">}))</span>
+<span id="cb7-9">by_type</span></code></pre></div></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>    share       itt_g contribution
+A 0.09874  0.10468192  0.010336293
+C 0.40052  1.61770374  0.647922700
+N 0.50074 -0.01368946 -0.006854858</code></pre>
+</div>
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">tau_ITT_hat =</span> tau_ITT_hat, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">sum_of_contributions =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sum</span>(by_type[, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"contribution"</span>]))</span></code></pre></div></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>         tau_ITT_hat sum_of_contributions 
+           0.6606867            0.6514041 </code></pre>
+</div>
+</div>
+<p>The rows follow the decomposition. Within always-takers and never-takers, the email does not change the treatment received, so the difference in means is zero up to sampling error. Within compliers, it is close to <img src="https://latex.codecogs.com/png.latex?E%5B1%20+%20X%20%5Cmid%20G%20=%20C%5D">, the effect of the feature averaged over compliers, which we will call the LATE in the next section. Each type contributes its share times its effect, and the contributions add up to the overall ITT, up to small differences in the type shares between the two arms. Only the compliers contribute, so the ITT is the compliers’ effect scaled down by their share, which is about 40%. Most of the users in the experiment never had their treatment changed by the email, and they pull the ITT toward zero.</p>
+</section>
+<section id="local-average-treatment-effect" class="level2">
+<h2 class="anchored" data-anchor-id="local-average-treatment-effect">Local Average Treatment Effect</h2>
+<p>The ITT’s weight integrates to <img src="https://latex.codecogs.com/png.latex?%5Cpi_C"> rather than 1, so it is not a probability weight. Normalizing it turns it into a probability weight, and turns the ITT into a genuine average. Dividing the boxed ITT by <img src="https://latex.codecogs.com/png.latex?%5Cpi_C">,</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cfrac%7B%5Ctau_%7BITT%7D%7D%7B%5Cpi_C%7D%20=%20%5Cint%20%5Ctau_C(x)%20%5C,%20%5Cfrac%7B%5Cpi_C(x)%20f(x)%7D%7B%5Cpi_C%7D%20%5C,%20dx."></p>
+<p>The new probability weight is the probability density of covariates among compliers. By Bayes’ rule,</p>
+<p><img src="https://latex.codecogs.com/png.latex?f(x%20%7C%20G%20=%20C)%20=%20%5Cfrac%7BP(G%20=%20C%20%7C%20X%20=%20x)%20%5C,%20f(x)%7D%7BP(G%20=%20C)%7D%20=%20%5Cfrac%7B%5Cpi_C(x)%20f(x)%7D%7B%5Cpi_C%7D."></p>
+<p>Substituting this probability weight, and then applying the law of iterated expectations within the compliers, defines the local average treatment effect (LATE),</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cboxed%7B%5Ctau_%7BLATE%7D%20=%20%5Cfrac%7B%5Ctau_%7BITT%7D%7D%7B%5Cpi_C%7D%20=%20%5Cint%20%5Ctau_C(x)%20%5C,%20f(x%20%7C%20G%20=%20C)%20%5C,%20dx%20=%20E%5By(1)%20-%20y(0)%20%7C%20G%20=%20C%5D%7D"></p>
+<p>The LATE is an average in the full sense, with quantity <img src="https://latex.codecogs.com/png.latex?%5Ctau_C(x)"> and probability weight <img src="https://latex.codecogs.com/png.latex?f(x%20%7C%20G%20=%20C)">. The treatment is once again the intervention received, but the population is restricted to the compliers. That restriction is what “local” means. This result is due to <a href="https://www.jstor.org/stable/2951620">Imbens and Angrist (1994)</a>.</p>
+<p>The complier share <img src="https://latex.codecogs.com/png.latex?%5Cpi_C"> is not observed directly, because we never see both <img src="https://latex.codecogs.com/png.latex?T_i(1)"> and <img src="https://latex.codecogs.com/png.latex?T_i(0)"> for the same user. It is identified by applying the same type decomposition to the treatment received instead of the outcome. By randomization, <img src="https://latex.codecogs.com/png.latex?E%5BT%20%7C%20Z%20=%201%5D%20-%20E%5BT%20%7C%20Z%20=%200%5D%20=%20E%5BT(1)%20-%20T(0)%5D">. The difference <img src="https://latex.codecogs.com/png.latex?T(1)%20-%20T(0)"> is 0 for always-takers and never-takers, 1 for compliers and <img src="https://latex.codecogs.com/png.latex?-1"> for defiers, so</p>
+<p><img src="https://latex.codecogs.com/png.latex?E%5BT%20%7C%20Z%20=%201%5D%20-%20E%5BT%20%7C%20Z%20=%200%5D%20=%20%5Cpi_C%20-%20%5Cpi_D%20=%20%5Cpi_C,"></p>
+<p>where the last step uses monotonicity. The LATE is therefore the ratio of two ITTs, the effect of the assignment on the outcome divided by the effect of the assignment on the treatment received:</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Ctau_%7BLATE%7D%20=%20%5Cfrac%7BE%5By%20%7C%20Z%20=%201%5D%20-%20E%5By%20%7C%20Z%20=%200%5D%7D%7BE%5BT%20%7C%20Z%20=%201%5D%20-%20E%5BT%20%7C%20Z%20=%200%5D%7D."></p>
+<p>This is the Wald estimator, which is the instrumental variables estimate with <img src="https://latex.codecogs.com/png.latex?Z"> as the instrument. Its plug-in estimate is the ratio of the two differences in sample means.</p>
+<section id="the-itt-and-the-late-in-the-example-dataset" class="level3">
+<h3 class="anchored" data-anchor-id="the-itt-and-the-late-in-the-example-dataset">The ITT and the LATE in the Example Dataset</h3>
+<p>We return to the email dataset. The first stage, the difference in the share of users who used the feature between the assignment arms, estimates <img src="https://latex.codecogs.com/png.latex?%5Cpi_C">. Dividing the ITT by it gives the Wald estimate of the LATE. The standard error of <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Ctau%7D_%7BITT%7D"> comes from regressing <img src="https://latex.codecogs.com/png.latex?y"> on <img src="https://latex.codecogs.com/png.latex?Z">. Dividing by <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Cpi%7D_C"> inflates it by roughly a factor of <img src="https://latex.codecogs.com/png.latex?1%20/%20%5Chat%7B%5Cpi%7D_C">, because <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Cpi%7D_C"> is estimated much more precisely than <img src="https://latex.codecogs.com/png.latex?%5Chat%7B%5Ctau%7D_%7BITT%7D">.</p>
+<p>Because the simulation knows every user’s potential outcomes, we can also compute the ground truth for this sample of users. The true ITT is the average of <img src="https://latex.codecogs.com/png.latex?y_i(T_i(1))%20-%20y_i(T_i(0))">, the true LATE is the average of <img src="https://latex.codecogs.com/png.latex?y_i(1)%20-%20y_i(0)"> among compliers, and the true ATE is the average of <img src="https://latex.codecogs.com/png.latex?y_i(1)%20-%20y_i(0)"> among all users.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1">pi_C_hat <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mean</span>(email<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>T[email<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>Z <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">==</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>]) <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mean</span>(email<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>T[email<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">$</span>Z <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">==</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>])</span>
+<span id="cb11-2">tau_LATE_hat <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> tau_ITT_hat <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> pi_C_hat</span>
+<span id="cb11-3">se_tau_ITT_hat <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">coef</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">summary</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">lm</span>(y <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">~</span> Z, <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">data =</span> email)))[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Z"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Std. Error"</span>]</span>
+<span id="cb11-4">se_tau_LATE_hat <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> se_tau_ITT_hat <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> pi_C_hat  <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># approximate</span></span>
+<span id="cb11-5"></span>
+<span id="cb11-6"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># Ground truth from the potential outcomes</span></span>
+<span id="cb11-7">y_T_1 <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ifelse</span>(T_1 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">==</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>, y_1, y_0)  <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># y_i(T_i(1))</span></span>
+<span id="cb11-8">y_T_0 <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ifelse</span>(T_0 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">==</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>, y_1, y_0)  <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># y_i(T_i(0))</span></span>
+<span id="cb11-9">tau_ITT <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mean</span>(y_T_1 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> y_T_0)</span>
+<span id="cb11-10">pi_C <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mean</span>(G <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">==</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"C"</span>)</span>
+<span id="cb11-11">tau_LATE <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mean</span>((y_1 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> y_0)[G <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">==</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"C"</span>])</span>
+<span id="cb11-12">tau <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">&lt;-</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mean</span>(y_1 <span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> y_0)</span></code></pre></div></div>
+</details>
+</div>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12" style="background: #f1f3f5;"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1">knitr<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">::</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">kable</span>(</span>
+<span id="cb12-2">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">data.frame</span>(</span>
+<span id="cb12-3">    <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">Quantity =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"$</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">\\</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">tau_{ITT}$"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"$</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">\\</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">pi_C$"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"$</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">\\</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">tau_{LATE}$"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"$</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">\\</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">tau$"</span>),</span>
+<span id="cb12-4">    <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">Meaning =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Effect of sending the email, averaged over all users"</span>,</span>
+<span id="cb12-5">                <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Share of compliers"</span>,</span>
+<span id="cb12-6">                <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Effect of using the feature, averaged over compliers"</span>,</span>
+<span id="cb12-7">                <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Effect of using the feature, averaged over all users"</span>),</span>
+<span id="cb12-8">    <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">Estimate =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sprintf</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"%.3f (%.3f)"</span>, tau_ITT_hat, se_tau_ITT_hat),</span>
+<span id="cb12-9">                 <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sprintf</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"%.3f"</span>, pi_C_hat),</span>
+<span id="cb12-10">                 <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sprintf</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"%.3f (%.3f)"</span>, tau_LATE_hat, se_tau_LATE_hat),</span>
+<span id="cb12-11">                 <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Not identified"</span>),</span>
+<span id="cb12-12">    <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">Truth =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sprintf</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"%.3f"</span>, <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(tau_ITT, pi_C, tau_LATE, tau))</span>
+<span id="cb12-13">  ),</span>
+<span id="cb12-14">  <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">col.names =</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">c</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Quantity"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Meaning"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Estimate (SE)"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Ground truth"</span>),</span>
+<span id="cb12-15">  <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">align =</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"llrr"</span></span>
+<span id="cb12-16">)</span></code></pre></div></div>
+</details>
+<div id="tbl-itt-late" class="cell quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-itt-late-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;2: The ITT and the LATE estimated from the email dataset, against the ground truth computed from the potential outcomes.
+</figcaption>
+<div aria-describedby="tbl-itt-late-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="cell-output-display">
+<table class="cell caption-top table table-sm table-striped small">
+<colgroup>
+<col style="width: 14%">
+<col style="width: 55%">
+<col style="width: 15%">
+<col style="width: 13%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Quantity</th>
+<th style="text-align: left;">Meaning</th>
+<th style="text-align: right;">Estimate (SE)</th>
+<th style="text-align: right;">Ground truth</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><img src="https://latex.codecogs.com/png.latex?%5Ctau_%7BITT%7D"></td>
+<td style="text-align: left;">Effect of sending the email, averaged over all users</td>
+<td style="text-align: right;">0.661 (0.033)</td>
+<td style="text-align: right;">0.644</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><img src="https://latex.codecogs.com/png.latex?%5Cpi_C"></td>
+<td style="text-align: left;">Share of compliers</td>
+<td style="text-align: right;">0.401</td>
+<td style="text-align: right;">0.401</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><img src="https://latex.codecogs.com/png.latex?%5Ctau_%7BLATE%7D"></td>
+<td style="text-align: left;">Effect of using the feature, averaged over compliers</td>
+<td style="text-align: right;">1.647 (0.083)</td>
+<td style="text-align: right;">1.608</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><img src="https://latex.codecogs.com/png.latex?%5Ctau"></td>
+<td style="text-align: left;">Effect of using the feature, averaged over all users</td>
+<td style="text-align: right;">Not identified</td>
+<td style="text-align: right;">0.999</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</figure>
+</div>
+</div>
+<p>The ITT and the LATE estimate different things, and each one is close to its own ground truth. The LATE is about <img src="https://latex.codecogs.com/png.latex?1%20/%20%5Chat%7B%5Cpi%7D_C%20%5Capprox%202.5"> times the ITT, because dividing by the complier share undoes the dilution. The LATE also has a standard error about 2.5 times larger, because the noise in the ITT is scaled up by the same factor. The two answer different questions. The ITT is the effect of sending the email, which is what we would see if we emailed every user. The LATE is the effect of using the feature for the users who start using it because of the email.</p>
+<p>The last row is a reminder that neither is the ATE. The LATE is larger than the true ATE in this example, for a reason we explain next.</p>
+</section>
+<section id="comparing-the-late-and-the-ate" class="level3">
+<h3 class="anchored" data-anchor-id="comparing-the-late-and-the-ate">Comparing the LATE and the ATE</h3>
+<p>Both the ATE and the LATE average the effect of the intervention:</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Cbegin%7Balign%7D%0A%5Ctau%20&amp;=%20%5Cint%20%5Ctau(x)%20%5C,%20f(x)%20%5C,%20dx%20%5C%5C%0A%5Ctau_%7BLATE%7D%20&amp;=%20%5Cint%20%5Ctau_C(x)%20%5C,%20f(x%20%7C%20G%20=%20C)%20%5C,%20dx.%0A%5Cend%7Balign%7D"></p>
+<p>They can differ in both ingredients.</p>
+<ol type="1">
+<li><strong>The quantity.</strong> At the same <img src="https://latex.codecogs.com/png.latex?x">, compliers can respond differently from other users. For example, users who adopt a recommended setting might be the ones who benefit most from it. The CATE mixes all types, <img src="https://latex.codecogs.com/png.latex?%5Ctau(x)%20=%20%5Csum_g%20%5Cpi_g(x)%20%5C,%20%5Ctau_g(x)">, while the LATE uses only <img src="https://latex.codecogs.com/png.latex?%5Ctau_C(x)">.</li>
+<li><strong>The probability weight.</strong> <img src="https://latex.codecogs.com/png.latex?f(x%20%7C%20G%20=%20C)"> tilts <img src="https://latex.codecogs.com/png.latex?f(x)"> toward the values of <img src="https://latex.codecogs.com/png.latex?x"> where compliance is high.</li>
+</ol>
+<p>The two are equal when <img src="https://latex.codecogs.com/png.latex?%5Ctau_C(x)%20=%20%5Ctau(x)">, as in the model from the first section where the effect depends only on <img src="https://latex.codecogs.com/png.latex?x">, and when <img src="https://latex.codecogs.com/png.latex?%5Cpi_C(x)"> does not depend on <img src="https://latex.codecogs.com/png.latex?x">, so that <img src="https://latex.codecogs.com/png.latex?f(x%20%7C%20G%20=%20C)%20=%20f(x)">. If compliance varies with <img src="https://latex.codecogs.com/png.latex?x"> and the effect also varies with <img src="https://latex.codecogs.com/png.latex?x">, then the LATE differs from the ATE, even when the effect depends only on <img src="https://latex.codecogs.com/png.latex?x">. This is what happens in the email example. Both the complier share <img src="https://latex.codecogs.com/png.latex?%5Cpi_C(x)%20=%200.8%20%5Ccdot%20%5Ctext%7Blogit%7D%5E%7B-1%7D(2x)"> and the effect <img src="https://latex.codecogs.com/png.latex?1%20+%20x"> increase with engagement, so <img src="https://latex.codecogs.com/png.latex?f(x%20%5Cmid%20G%20=%20C)"> puts more probability weight on large effects than <img src="https://latex.codecogs.com/png.latex?f(x)"> does, and the true LATE of 1.61 is larger than the true ATE of 1.00 in Table&nbsp;2.</p>
+<p>In general, the ATE cannot be recovered from an experiment that randomizes only <img src="https://latex.codecogs.com/png.latex?Z">. Always-takers are never observed untreated, and never-takers are never observed treated, so their effects never appear in the data. Recovering the ATE requires further assumptions, such as the effect being the same for every type of user.</p>
+</section>
+</section>
+<section id="why-not-compare-the-users-who-were-treated" class="level2">
+<h2 class="anchored" data-anchor-id="why-not-compare-the-users-who-were-treated">Why Not Compare the Users Who Were Treated?</h2>
+<p>A tempting shortcut is the “as treated” comparison, <img src="https://latex.codecogs.com/png.latex?E%5By%20%7C%20T%20=%201%5D%20-%20E%5By%20%7C%20T%20=%200%5D">, which compares the users who actually received the intervention with those who did not. This is the difference in expectations from the first section, but <img src="https://latex.codecogs.com/png.latex?T"> is no longer randomized. The users with <img src="https://latex.codecogs.com/png.latex?T%20=%201"> are the always-takers in both arms plus the compliers assigned to the treatment. The users with <img src="https://latex.codecogs.com/png.latex?T%20=%200"> are the never-takers in both arms plus the compliers assigned to the control. The two groups have different covariate probability densities and different mixes of types, so their baselines do not cancel. The as-treated comparison is not any of the averages above.</p>
+
+
+</section>
+</section>
+
+ ]]></description>
+  <category>causal inference</category>
+  <category>experimentation</category>
+  <category>statistics</category>
+  <guid>https://jeffwong.github.io/posts/what_is_an_average/</guid>
+  <pubDate>Thu, 01 Oct 2026 07:00:00 GMT</pubDate>
+</item>
 <item>
   <title>Inference on Ratio Metrics</title>
   <dc:creator>Jeffrey Wong</dc:creator>

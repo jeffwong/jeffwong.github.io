@@ -1,0 +1,1657 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Jeffrey Wong">
+<meta name="dcterms.date" content="2026-10-01">
+
+<title>What does it mean to be the average effect? – From First Principles</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<script src="../../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap-158031087360bce0ff56dc785ce39e06.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../../styles.css">
+</head>
+
+<body class="nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top quarto-banner">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../../index.html">
+    <span class="navbar-title">From First Principles</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../../about.html"> 
+<span class="menu-text">About Me</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="https://linkedin.com/jeffctwong"> <i class="bi bi-linkedin" role="img">
+</i> 
+<span class="menu-text">LinkedIn</span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<header id="title-block-header" class="quarto-title-block default page-columns page-full">
+  <div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-body">
+      <h1 class="title">What does it mean to be the average effect?</h1>
+                                <div class="quarto-categories">
+                <div class="quarto-category">causal inference</div>
+                <div class="quarto-category">experimentation</div>
+                <div class="quarto-category">statistics</div>
+              </div>
+                  </div>
+  </div>
+    
+  
+  <div class="quarto-title-meta">
+
+      <div>
+      <div class="quarto-title-meta-heading">Author</div>
+      <div class="quarto-title-meta-contents">
+               <p>Jeffrey Wong </p>
+            </div>
+    </div>
+      
+      <div>
+      <div class="quarto-title-meta-heading">Published</div>
+      <div class="quarto-title-meta-contents">
+        <p class="date">October 1, 2026</p>
+      </div>
+    </div>
+    
+      
+    </div>
+    
+  
+  </header><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#grounding-the-mathematical-foundations" id="toc-grounding-the-mathematical-foundations" class="nav-link active" data-scroll-target="#grounding-the-mathematical-foundations">Grounding the mathematical foundations</a>
+  <ul class="collapse">
+  <li><a href="#what-is-an-average" id="toc-what-is-an-average" class="nav-link" data-scroll-target="#what-is-an-average">What is an Average?</a></li>
+  <li><a href="#averages-that-vary-with-covariates" id="toc-averages-that-vary-with-covariates" class="nav-link" data-scroll-target="#averages-that-vary-with-covariates">Averages that Vary with Covariates</a></li>
+  <li><a href="#the-difference-in-expectations" id="toc-the-difference-in-expectations" class="nav-link" data-scroll-target="#the-difference-in-expectations">The Difference in Expectations</a></li>
+  </ul></li>
+  <li><a href="#what-does-it-mean-to-be-a-treatment-effect" id="toc-what-does-it-mean-to-be-a-treatment-effect" class="nav-link" data-scroll-target="#what-does-it-mean-to-be-a-treatment-effect">What does it mean to be a treatment effect?</a>
+  <ul class="collapse">
+  <li><a href="#individual-effects-and-conditional-average-treatment-effect" id="toc-individual-effects-and-conditional-average-treatment-effect" class="nav-link" data-scroll-target="#individual-effects-and-conditional-average-treatment-effect">Individual Effects and Conditional Average Treatment Effect</a></li>
+  <li><a href="#average-treatment-effect" id="toc-average-treatment-effect" class="nav-link" data-scroll-target="#average-treatment-effect">Average Treatment Effect</a></li>
+  <li><a href="#marginal-effect-and-relative-effects" id="toc-marginal-effect-and-relative-effects" class="nav-link" data-scroll-target="#marginal-effect-and-relative-effects">Marginal Effect and Relative Effects</a>
+  <ul class="collapse">
+  <li><a href="#the-difference-order-does-not-matter" id="toc-the-difference-order-does-not-matter" class="nav-link" data-scroll-target="#the-difference-order-does-not-matter">The Difference: Order Does Not Matter</a></li>
+  <li><a href="#the-relative-effect-order-matters" id="toc-the-relative-effect-order-matters" class="nav-link" data-scroll-target="#the-relative-effect-order-matters">The Relative Effect: Order Matters</a></li>
+  </ul></li>
+  <li><a href="#the-incremental-effect" id="toc-the-incremental-effect" class="nav-link" data-scroll-target="#the-incremental-effect">The Incremental Effect</a>
+  <ul class="collapse">
+  <li><a href="#a-curve-of-potential-outcomes" id="toc-a-curve-of-potential-outcomes" class="nav-link" data-scroll-target="#a-curve-of-potential-outcomes">A Curve of Potential Outcomes</a></li>
+  <li><a href="#the-incremental-effect-is-an-average" id="toc-the-incremental-effect-is-an-average" class="nav-link" data-scroll-target="#the-incremental-effect-is-an-average">The Incremental Effect is an Average</a></li>
+  <li><a href="#step-effects-are-the-slope-of-the-curve" id="toc-step-effects-are-the-slope-of-the-curve" class="nav-link" data-scroll-target="#step-effects-are-the-slope-of-the-curve">Step Effects are the Slope of the Curve</a></li>
+  <li><a href="#ab-tests-and-incremental-tests-measure-different-things" id="toc-ab-tests-and-incremental-tests-measure-different-things" class="nav-link" data-scroll-target="#ab-tests-and-incremental-tests-measure-different-things">AB Tests and Incremental Tests Measure Different Things</a></li>
+  <li><a href="#analyzing-an-incremental-test-in-r" id="toc-analyzing-an-incremental-test-in-r" class="nav-link" data-scroll-target="#analyzing-an-incremental-test-in-r">Analyzing an Incremental Test in R</a></li>
+  </ul></li>
+  </ul></li>
+  <li><a href="#what-does-it-mean-to-be-treated" id="toc-what-does-it-mean-to-be-treated" class="nav-link" data-scroll-target="#what-does-it-mean-to-be-treated">What does it mean to be treated?</a>
+  <ul class="collapse">
+  <li><a href="#decomposing-the-itt" id="toc-decomposing-the-itt" class="nav-link" data-scroll-target="#decomposing-the-itt">Decomposing the ITT</a></li>
+  <li><a href="#the-dilution-in-an-example-dataset" id="toc-the-dilution-in-an-example-dataset" class="nav-link" data-scroll-target="#the-dilution-in-an-example-dataset">The Dilution in an Example Dataset</a></li>
+  <li><a href="#local-average-treatment-effect" id="toc-local-average-treatment-effect" class="nav-link" data-scroll-target="#local-average-treatment-effect">Local Average Treatment Effect</a>
+  <ul class="collapse">
+  <li><a href="#the-itt-and-the-late-in-the-example-dataset" id="toc-the-itt-and-the-late-in-the-example-dataset" class="nav-link" data-scroll-target="#the-itt-and-the-late-in-the-example-dataset">The ITT and the LATE in the Example Dataset</a></li>
+  <li><a href="#comparing-the-late-and-the-ate" id="toc-comparing-the-late-and-the-ate" class="nav-link" data-scroll-target="#comparing-the-late-and-the-ate">Comparing the LATE and the ATE</a></li>
+  </ul></li>
+  <li><a href="#why-not-compare-the-users-who-were-treated" id="toc-why-not-compare-the-users-who-were-treated" class="nav-link" data-scroll-target="#why-not-compare-the-users-who-were-treated">Why Not Compare the Users Who Were Treated?</a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content quarto-banner-title-block" id="quarto-document-content">
+
+
+
+
+
+<p>Oh what’s in a name?</p>
+<p>The term “average treatment effect” embodies two concepts - the treatment effect, which has a distribution, and its average over users. It is very precise, and yet the term is used loosely in the industry. This post will drill down into the mathematical underpinnings of what it means to be an average treatment effect, and explore its many variations such as the conditional effect, the marginal and relative effects, the incremental effect, the intent to treat effect and the local effect.</p>
+<section id="grounding-the-mathematical-foundations" class="level1">
+<h1>Grounding the mathematical foundations</h1>
+<section id="what-is-an-average" class="level2">
+<h2 class="anchored" data-anchor-id="what-is-an-average">What is an Average?</h2>
+<p>Say that we have a random variable <span class="math inline">\(Y\)</span>. It is able to take values in a set <span class="math inline">\(\mathcal{Y}\)</span>, and it has probability density <span class="math inline">\(f(y)\)</span>. Then the mathematical definition of an average has two parts, the value <span class="math inline">\(y\)</span>, and its probability density. It is computed as</p>
+<p><span class="math display">\[E[Y] = \int_{\mathcal{Y}} y f(y) dy.\]</span></p>
+<p>Transformations of the random variable, for example <span class="math inline">\(q(Y)\)</span>, have mean</p>
+<p><span class="math display">\[E[q(Y)] = \int_{\mathcal{Y}} q(y) f(y) dy.\]</span></p>
+<p>As we go over different types of effects, we will consolidate them all into the form</p>
+<p><span class="math display">\[\int q(...) f( ...) d ..., \qquad f(...) \geq 0, \qquad \int f(...) d... = 1\]</span> again emphasizing the product of a value and a probability weight.</p>
+</section>
+<section id="averages-that-vary-with-covariates" class="level2">
+<h2 class="anchored" data-anchor-id="averages-that-vary-with-covariates">Averages that Vary with Covariates</h2>
+<p>So far the value of <span class="math inline">\(Y\)</span> varied randomly. Now say that it can vary as a function of covariates <span class="math inline">\(X\)</span>, which have their own probability density <span class="math inline">\(f(x)\)</span>, and the distribution of <span class="math inline">\(Y\)</span> depends on <span class="math inline">\(X\)</span> through the conditional probability density <span class="math inline">\(f(y | x)\)</span>. At this point there are three probability densities to remember, <span class="math inline">\(f(x)\)</span>, <span class="math inline">\(f(y)\)</span>, and <span class="math inline">\(f(y | x)\)</span>. In experiment analyses we can assume that we are given a fixed <span class="math inline">\(X = x\)</span> value. The conditional mean for <span class="math inline">\(Y\)</span> becomes</p>
+<p><span class="math display">\[E[Y | X = x] = \int y \, f(y | x) \, dy.\]</span></p>
+<p>The quantity is still <span class="math inline">\(y\)</span>, but the probability weight is now <span class="math inline">\(f(y | x)\)</span>. For each <span class="math inline">\(x\)</span> <span class="math inline">\(E[Y | X = x]\)</span> outputs a number. As <span class="math inline">\(x\)</span> varies, <span class="math inline">\(E[Y | X = x]\)</span> is a function of <span class="math inline">\(x\)</span>.</p>
+<p>The unconditional average can be rebuilt from the conditional ones. The marginal probability density of <span class="math inline">\(Y\)</span> is the conditional probability density averaged over <span class="math inline">\(X\)</span>, <span class="math inline">\(f(y) = \int f(y | x) f(x) \, dx\)</span>. We substitute this into the definition of <span class="math inline">\(E[Y]\)</span>, then swap the order of integration, which is allowed when <span class="math inline">\(E|Y| &lt; \infty\)</span>:</p>
+<p><span class="math display">\[\begin{align}
+E[Y] &amp;= \int y \left[ \int f(y | x) f(x) \, dx \right] dy \\
+  &amp;= \int \left[ \int y \, f(y | x) \, dy \right] f(x) \, dx \\
+  &amp;= \int E[Y | X = x] \, f(x) \, dx.
+\end{align}\]</span></p>
+<p>This is the law of iterated expectations. In our notation, the quantity is now the conditional average <span class="math inline">\(E[Y | X = x]\)</span> and the probability weight is <span class="math inline">\(f(x)\)</span>. Averaging happens in two stages: first within the users who share the same <span class="math inline">\(x\)</span>, then across values of <span class="math inline">\(x\)</span>, weighted by how common each <span class="math inline">\(x\)</span> is.</p>
+<p>Most of the subtlety in this post is identifying the value and the probability weight. If we keep the quantity <span class="math inline">\(E[Y | X = x]\)</span> but replace the probability weight <span class="math inline">\(f(x)\)</span> with a different probability density, for example <span class="math inline">\(f(x | T = 1)\)</span>, the probability density of covariates among treated users, we get a different average, one over the covariates of treated users rather than of all users.</p>
+</section>
+<section id="the-difference-in-expectations" class="level2">
+<h2 class="anchored" data-anchor-id="the-difference-in-expectations">The Difference in Expectations</h2>
+<p>Now we apply this to an AB test. Each user <span class="math inline">\(i\)</span> has two potential outcomes: <span class="math inline">\(y_i(1)\)</span>, the outcome if treated, and <span class="math inline">\(y_i(0)\)</span>, the outcome if not treated. When treated, user <span class="math inline">\(i\)</span> receives an individual effect <span class="math inline">\(\tau(x_i)\)</span> that depends on their covariates,</p>
+<p><span class="math display">\[\begin{align}
+y_i(0) &amp;= \mu_0(x_i) + \varepsilon_i \\
+y_i(1) &amp;= y_i(0) + \tau(x_i).
+\end{align}\]</span></p>
+<p>Here <span class="math inline">\(\mu_0(x) = E[y(0) | X = x]\)</span> is the baseline, a scalar function of <span class="math inline">\(x\)</span>, so the noise satisfies <span class="math inline">\(E[\varepsilon | X = x] = 0\)</span>. We also write <span class="math inline">\(\mu_1(x) = E[y(1) | X = x]\)</span>. Taking the conditional expectation of the second line gives <span class="math inline">\(\mu_1(x) = \mu_0(x) + \tau(x)\)</span>.</p>
+<p>We only ever observe one of the two potential outcomes. With <span class="math inline">\(T_i \in \{0, 1\}\)</span> indicating whether user <span class="math inline">\(i\)</span> was treated, the observed outcome is</p>
+<p><span class="math display">\[y_i = T_i \, y_i(1) + (1 - T_i) \, y_i(0) = \mu_0(x_i) + T_i \, \tau(x_i) + \varepsilon_i.\]</span></p>
+<p>This is the model from the post on <a href="https://jeffwong.github.io/posts/controlled_randomization/">controlled randomization</a>, with a heterogeneous effect <span class="math inline">\(\tau(x)\)</span> and a baseline that varies with covariates.</p>
+<p>The difference in expectations compares the average outcome of treated users with the average outcome of untreated users. We apply the law of iterated expectations again within each arm, using that arm’s own covariate probability density, and then substitute the model for <span class="math inline">\(y\)</span>:</p>
+<p><span class="math display">\[\begin{align}
+E[y | T = 1] &amp;= \int E[y | T = 1, X = x] \, f(x | T = 1) \, dx \\
+  &amp;= \int \big( \mu_0(x) + \tau(x) + E[\varepsilon | T = 1, X = x] \big) f(x | T = 1) \, dx \\
+E[y | T = 0] &amp;= \int E[y | T = 0, X = x] \, f(x | T = 0) \, dx \\
+&amp;= \int \big( \mu_0(x) + E[\varepsilon | T = 0, X = x] \big) f(x | T = 0) \, dx \\
+E[y | T = 1] - E[y | T = 0] &amp;= \int \big( \mu_0(x) + \tau(x) + E[\varepsilon | T = 1, X = x] \big) f(x | T = 1) \, dx \\
+  &amp;\quad - \int \big( \mu_0(x) + E[\varepsilon | T = 0, X = x] \big) f(x | T = 0) \, dx
+\end{align}\]</span></p>
+<p>So the difference in expectations is a difference of two integrals. Randomization means <span class="math inline">\(T\)</span> is independent of both <span class="math inline">\(X\)</span> and <span class="math inline">\(\varepsilon\)</span>, which has two consequences:</p>
+<ol type="1">
+<li><span class="math inline">\(f(x | T = 1) = f(x | T = 0) = f(x)\)</span>, so both integrals use the same probability weight.</li>
+<li><span class="math inline">\(E[\varepsilon | T = t, X = x] = E[\varepsilon | X = x] = 0\)</span>, so the noise terms vanish.</li>
+</ol>
+<p>With a shared probability weight, linearity of the integral gives the reduction</p>
+<p><span class="math display">\[\boxed{\tau = E[y | T = 1] - E[y | T = 0] = \int \tau(x) \, f(x) \, dx}\]</span></p>
+<p>This is our grounding for the word “average” in “average treatment effect”. The quantity is the personalized effect <span class="math inline">\(\tau(x)\)</span>, and the probability weight is <span class="math inline">\(f(x)\)</span>, the probability density of covariates.</p>
+<p>Note that without randomization, the two integrals use different probability weights, <span class="math inline">\(f(x | T = 1) \neq f(x | T = 0)\)</span> and the reduction breaks!</p>
+</section>
+</section>
+<section id="what-does-it-mean-to-be-a-treatment-effect" class="level1">
+<h1>What does it mean to be a treatment effect?</h1>
+<p>Within the science of cause and effect, there are actually many different types of effects that we can report. Average effects, incremental effects, conditional effects, and relative effects. It can be daunting to manage the nuances of all of these different types of treatment effects, but actually we can consolidate them all under one roof. Mathematically, they are all different variations of an average.</p>
+<section id="individual-effects-and-conditional-average-treatment-effect" class="level2">
+<h2 class="anchored" data-anchor-id="individual-effects-and-conditional-average-treatment-effect">Individual Effects and Conditional Average Treatment Effect</h2>
+<p>We start with the finest grained effect possible, then build our way up. The individual effect of user <span class="math inline">\(i\)</span> is <span class="math inline">\(y_i(1) - y_i(0)\)</span>, which we can never truly observe. The conditional average treatment effect (CATE) averages the individual effects among users who share the same covariates,</p>
+<p><span class="math display">\[\tau(x) = E[y(1) - y(0) | X = x] = \mu_1(x) - \mu_0(x).\]</span></p>
+<p>As an average, the quantity is the individual effect and the probability weight is the conditional probability density of individual effects among users with <span class="math inline">\(X = x\)</span>. Let <span class="math inline">\(t\)</span> denote a value of the individual effect <span class="math inline">\(y(1) - y(0)\)</span>, and let <span class="math inline">\(f(t | x)\)</span> be its probability density among users with <span class="math inline">\(X = x\)</span>. Then</p>
+<p><span class="math display">\[\tau(x) = \int t \, f(t | x) \, dt.\]</span></p>
+<p>This is the same form as <span class="math inline">\(E[Y | X = x] = \int y \, f(y | x) \, dy\)</span>, with the individual effect in place of <span class="math inline">\(Y\)</span>.</p>
+</section>
+<section id="average-treatment-effect" class="level2">
+<h2 class="anchored" data-anchor-id="average-treatment-effect">Average Treatment Effect</h2>
+<p>Just as the CATE is the average of individual effects, the average treatment effect (ATE) is an average of the CATE over the covariate probability density,</p>
+<p><span class="math display">\[\tau = E[y(1) - y(0)] = \int \tau(x) \, f(x) \, dx.\]</span></p>
+<p>The ATE is an average with respect to <span class="math inline">\(f(x)\)</span>, the covariate probability density of the population the experiment samples from. Here, it is very important to note who qualifies to be in the population. If an experiment only enrolls users who visit a certain page, then <span class="math inline">\(f(x)\)</span> is the probability density among those visitors, and <span class="math inline">\(\tau\)</span> is the average effect for visitors, not for all users.</p>
+</section>
+<section id="marginal-effect-and-relative-effects" class="level2">
+<h2 class="anchored" data-anchor-id="marginal-effect-and-relative-effects">Marginal Effect and Relative Effects</h2>
+<p>Given two mean functions, <span class="math inline">\(\mu_1(x)\)</span> and <span class="math inline">\(\mu_0(x)\)</span>, there are two aggregation strategies that turn these functions into a single number for experimentation reporting.</p>
+<p>The classic ATE computes <span class="math inline">\(\tau(x) = \mu_1(x) - \mu_0(x)\)</span> at each <span class="math inline">\(x\)</span>, then averages. It starts from the granular level then aggregates. Uniquely, it’s fine to reverse the order of operations.</p>
+<p>The other approach is to compute averages first, and then compare. We saw the importance of this in the post on <a href="https://jeffwong.github.io/posts/ratio_metrics/">ratio metrics</a>.</p>
+<p><span class="math display">\[\begin{align}
+\mu_1 &amp;= E[y(1)] = \int \mu_1(x) \, f(x) \, dx \\
+\mu_0 &amp;= E[y(0)] = \int \mu_0(x) \, f(x) \, dx \\
+R &amp;= \frac{\mu_1}{\mu_0} - 1
+\end{align}\]</span></p>
+<p>and the marginal effect is a contrast of <span class="math inline">\(\mu_1\)</span> and <span class="math inline">\(\mu_0\)</span>. This prompts an interesting thought though, is the relative effect an outlier in this taxonomy on averages? We will explain below that it is not.</p>
+<section id="the-difference-order-does-not-matter" class="level3">
+<h3 class="anchored" data-anchor-id="the-difference-order-does-not-matter">The Difference: Order Does Not Matter</h3>
+<p>For the difference contrast, both orders give the same number. Using the linearity of the integral and then the definition of <span class="math inline">\(\tau(x)\)</span>,</p>
+<p><span class="math display">\[\mu_1 - \mu_0 = \int \mu_1(x) f(x) \, dx - \int \mu_0(x) f(x) \, dx = \int \big( \mu_1(x) - \mu_0(x) \big) f(x) \, dx = \int \tau(x) f(x) \, dx = \tau.\]</span></p>
+</section>
+<section id="the-relative-effect-order-matters" class="level3">
+<h3 class="anchored" data-anchor-id="the-relative-effect-order-matters">The Relative Effect: Order Matters</h3>
+<p>For a nonlinear contrast, the two orders can give different numbers. The clearest example is the relative effect. The post on <a href="https://jeffwong.github.io/posts/relative_effects/">relative effects</a> described an experiment with a few power users and many casual users, where the metric goes down for power users but up for casual users. To make it concrete, say power users make up 10% of users and have a baseline of 100, while casual users make up 90% and have a baseline of 1. The treatment lowers the metric of power users by 1% and raises the metric of casual users by 10%.</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Segment</th>
+<th>Share</th>
+<th>Baseline</th>
+<th>Relative effect</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Power users</td>
+<td>0.1</td>
+<td>100</td>
+<td><span class="math inline">\(-1\%\)</span></td>
+</tr>
+<tr class="even">
+<td>Casual users</td>
+<td>0.9</td>
+<td>1</td>
+<td><span class="math inline">\(+10\%\)</span></td>
+</tr>
+</tbody>
+</table>
+<p>Did the treatment move the metric up or down? There are two natural ways to answer.</p>
+<ol type="1">
+<li><strong>How did the typical user change?</strong> We compute the relative effect within each segment, then average across users: <span class="math inline">\(0.1(-1\%) + 0.9(10\%) = +8.9\%\)</span>. Most users improved by 10%, so the answer is up.</li>
+<li><strong>How did the total change?</strong> We average the metric within each arm first, then compute the relative change. The control mean is <span class="math inline">\(0.1(100) + 0.9(1) = 10.9\)</span> and the treatment mean is <span class="math inline">\(0.1(99) + 0.9(1.1) = 10.89\)</span>, so the relative change is <span class="math inline">\(\frac{10.89}{10.9} - 1 = -0.09\%\)</span>. Power users carry most of the volume, so the answer is down.</li>
+</ol>
+<p>Neither answer is wrong, and neither is better. They are different interpretations of the same experiment. The first counts users, and the second counts volume. A team that wants to help as many users as possible is asking the first question. A team that reports total revenue is asking the second.</p>
+<p>To see how the two are related, we write them in general. Assume <span class="math inline">\(\mu_0(x) &gt; 0\)</span> for all <span class="math inline">\(x\)</span>. The conditional relative effect is a function of <span class="math inline">\(x\)</span>,</p>
+<p><span class="math display">\[r(x) = \frac{\mu_1(x)}{\mu_0(x)} - 1 = \frac{\tau(x)}{\mu_0(x)}.\]</span></p>
+<p>In the example, <span class="math inline">\(x\)</span> is the segment, and <span class="math inline">\(r(x)\)</span> is the last column of the table. With a discrete covariate, an integral against <span class="math inline">\(f(x)\)</span> becomes a sum over segments, weighted by their shares. The two answers generalize to</p>
+<ol type="1">
+<li>Contrast first, then average. The average of the conditional relative effects is <span class="math inline">\(\bar{r} = \int r(x) \, f(x) \, dx\)</span>.</li>
+<li>Average first, then contrast. The marginal relative effect is <span class="math inline">\(R = \frac{\mu_1}{\mu_0} - 1\)</span>.</li>
+</ol>
+<p><span class="math inline">\(\bar{r}\)</span> is already an average of <span class="math inline">\(r(x)\)</span>. At first glance <span class="math inline">\(R\)</span> is a ratio of two averages rather than an average of anything. But it shares the same root, <span class="math inline">\(r(x)\)</span>. First we write <span class="math inline">\(R = \frac{\mu_1 - \mu_0}{\mu_0}\)</span> and replace the numerator with <span class="math inline">\(\int \tau(x) f(x) \, dx\)</span>. Then we multiply and divide the integrand by <span class="math inline">\(\mu_0(x)\)</span>, which is allowed because <span class="math inline">\(\mu_0(x) &gt; 0\)</span>:</p>
+<p><span class="math display">\[\begin{align}
+R &amp;= \frac{1}{\mu_0} \int \tau(x) \, f(x) \, dx \\
+  &amp;= \int \frac{\tau(x)}{\mu_0(x)} \cdot \frac{\mu_0(x) f(x)}{\mu_0} \, dx \\
+  &amp;= \int r(x) \, w(x) \, dx, \qquad w(x) = \frac{\mu_0(x) f(x)}{\mu_0}.
+\end{align}\]</span></p>
+<p>The probability weight <span class="math inline">\(w(x)\)</span> is a valid probability density. It is nonnegative because <span class="math inline">\(\mu_0(x) &gt; 0\)</span>, and it integrates to <span class="math inline">\(\frac{1}{\mu_0} \int \mu_0(x) f(x) \, dx = 1\)</span> by the definition of <span class="math inline">\(\mu_0\)</span>. Therefore the two approaches now have something in common</p>
+<p><span class="math display">\[R = \int r(x) \, \frac{\mu_0(x) f(x)}{\int \mu_0(x') f(x') \, dx'} \, dx, \qquad \bar{r} = \int r(x) \, f(x) \, dx\]</span></p>
+<p>Both relative effects are averages of the same quantity, <span class="math inline">\(r(x)\)</span>. They differ only in the probability weight. <span class="math inline">\(\bar{r}\)</span> uses <span class="math inline">\(f(x)\)</span>, which counts each user once. <span class="math inline">\(R\)</span> uses <span class="math inline">\(w(x)\)</span>, which counts each user in proportion to their baseline volume. In the example, the probability weights for <span class="math inline">\(R\)</span> are <span class="math inline">\(\frac{0.1 \cdot 100}{10.9} = 0.917\)</span> for power users and <span class="math inline">\(\frac{0.9 \cdot 1}{10.9} = 0.083\)</span> for casual users, and <span class="math inline">\(0.917(-1\%) + 0.083(10\%) = -0.09\%\)</span> recovers the second answer. So choosing how to express the relative effect is simply choosing a probability weight.</p>
+<p>The choice only matters when the relative effect is related to the baseline. The gap between the two is</p>
+<p><span class="math display">\[R - \bar{r} = \int r(x) \big( w(x) - f(x) \big) \, dx = \frac{E[r(X) \mu_0(X)] - E[r(X)] \, \mu_0}{\mu_0} = \frac{\text{Cov}\big(r(X), \mu_0(X)\big)}{\mu_0},\]</span></p>
+<p>where the expectations and the covariance are over <span class="math inline">\(X \sim f(x)\)</span>, and we used <span class="math inline">\(\int r(x) \mu_0(x) f(x) \, dx = E[r(X) \mu_0(X)]\)</span> and <span class="math inline">\(\int \mu_0(x) f(x) \, dx = \mu_0\)</span>. When the relative effect is unrelated to the baseline, the two probability weights give the same answer. In the example, the users with large baselines have the worst relative effects, so the covariance is negative and <span class="math inline">\(R &lt; \bar{r}\)</span>.</p>
+</section>
+</section>
+<section id="the-incremental-effect" class="level2">
+<h2 class="anchored" data-anchor-id="the-incremental-effect">The Incremental Effect</h2>
+<p>So far we have discussed treatments and controls as binary. The incremental effect concerns treatments given in multiple doses. It measures the effect of providing an additional dose of the treatment.</p>
+<section id="a-curve-of-potential-outcomes" class="level3">
+<h3 class="anchored" data-anchor-id="a-curve-of-potential-outcomes">A Curve of Potential Outcomes</h3>
+<p>Say each user <span class="math inline">\(i\)</span> enters the experiment having already received <span class="math inline">\(S_i\)</span> doses, which we call their prior dose, using <span class="math inline">\(S\)</span> for the starting point. Different users have different prior doses, so <span class="math inline">\(S_i\)</span> is a pre-treatment covariate, and we write <span class="math inline">\(f(s, x)\)</span> for the joint probability density of <span class="math inline">\(S\)</span> and the other covariates <span class="math inline">\(X\)</span>. The experiment randomizes an increment <span class="math inline">\(K_i \in \{0, 1, \dots, \bar{k}\}\)</span>, and user <span class="math inline">\(i\)</span> receives a total dose of <span class="math inline">\(S_i + K_i\)</span>. Users in the control arm, <span class="math inline">\(K = 0\)</span>, continue with <span class="math inline">\(S_i + 0\)</span> doses. Users in the top arm receive <span class="math inline">\(S_i + \bar{k}\)</span> doses, and the arms in between receive <span class="math inline">\(S_i + 1, S_i + 2\)</span>, and so on.</p>
+<p>In the binary case, each user had two potential outcomes, <span class="math inline">\(y_i(0)\)</span> and <span class="math inline">\(y_i(1)\)</span>. Now each user has a potential outcome for every dose <span class="math inline">\(d\)</span>, so <span class="math inline">\(y_i(d)\)</span> is a curve. From here on, the argument of <span class="math inline">\(y_i(\cdot)\)</span> is a number of doses, so <span class="math inline">\(y_i(1)\)</span> is the outcome with one dose. The conditional mean of that curve is</p>
+<p><span class="math display">\[\mu(d \mid s, x) = E[y(d) \mid S = s, X = x],\]</span></p>
+<p>a scalar for each dose <span class="math inline">\(d\)</span>, prior dose <span class="math inline">\(s\)</span> and covariate value <span class="math inline">\(x\)</span>. It conditions on <span class="math inline">\(s\)</span> because two users with the same covariates <span class="math inline">\(x\)</span> but different prior doses can respond differently to the same dose.</p>
+</section>
+<section id="the-incremental-effect-is-an-average" class="level3">
+<h3 class="anchored" data-anchor-id="the-incremental-effect-is-an-average">The Incremental Effect is an Average</h3>
+<p>Today, the users in our sample have a distribution of prior doses. Say some users have 1 dose, some have 2, and some have 3. A natural question is: what happens if we give everyone one extra dose, which shifts them to 2, 3 and 4 doses? For user <span class="math inline">\(i\)</span>, the answer is the difference between their outcome with one extra dose and their outcome at their current dose, <span class="math inline">\(y_i(S_i + 1) - y_i(S_i)\)</span>. With <span class="math inline">\(k\)</span> extra doses, the individual effect is <span class="math inline">\(y_i(S_i + k) - y_i(S_i)\)</span>.</p>
+<p>Averaging these individual effects among users who share the same prior dose <span class="math inline">\(s\)</span> and covariates <span class="math inline">\(x\)</span> gives a conditional effect, which plays the role of the CATE,</p>
+<p><span class="math display">\[C_k(s, x) = \mu(s + k \mid s, x) - \mu(s \mid s, x).\]</span></p>
+<p>The incremental effect of <span class="math inline">\(k\)</span> extra doses averages <span class="math inline">\(C_k(s, x)\)</span> over the joint probability density of prior doses and covariates,</p>
+<p><span class="math display">\[\boxed{C(k) = E\big[y(S + k) - y(S)\big] = \int\!\!\int C_k(s, x) \, f(s, x) \, ds \, dx, \qquad k = 0, 1, \dots, \bar{k}}\]</span></p>
+<p>so the quantity is <span class="math inline">\(C_k(s, x)\)</span> and the probability weight is <span class="math inline">\(f(s, x)\)</span>, in the same form as the ATE. The incremental effect curve plots <span class="math inline">\(C(k)\)</span> against the number of extra doses <span class="math inline">\(k\)</span>. It starts at <span class="math inline">\(C(0) = 0\)</span>, because zero extra doses changes nothing.</p>
+<p>In the example, let <span class="math inline">\(p_s\)</span> be the share of users with <span class="math inline">\(s\)</span> prior doses. With a discrete prior dose, the integral over <span class="math inline">\(s\)</span> becomes a sum weighted by these shares, and the first point on the curve is</p>
+<p><span class="math display">\[C(1) = p_1 \, E[y(2) - y(1) \mid S = 1] + p_2 \, E[y(3) - y(2) \mid S = 2] + p_3 \, E[y(4) - y(3) \mid S = 3].\]</span></p>
+<p><a href="#fig-incremental-curve" class="quarto-xref">Figure&nbsp;1</a> draws the curve for this example, with shares <span class="math inline">\(p_1 = 0.5\)</span>, <span class="math inline">\(p_2 = 0.3\)</span> and <span class="math inline">\(p_3 = 0.2\)</span>. For illustration we use a dose response with diminishing returns, <span class="math inline">\(\mu(d \mid s, x) = g(d)\)</span> with <span class="math inline">\(g(d) = 10 \log(1 + d)\)</span>, which depends only on the total dose <span class="math inline">\(d\)</span>. The colored lines are the conditional curves <span class="math inline">\(C_k(s) = g(s + k) - g(s)\)</span>, one for each prior dose, and the black line is the incremental effect curve <span class="math inline">\(C(k) = \sum_s p_s \, C_k(s)\)</span>, their average weighted by the shares.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Share of users at each prior dose, p_s</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>p_s <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">`</span><span class="at">1</span><span class="st">`</span> <span class="ot">=</span> <span class="fl">0.5</span>, <span class="st">`</span><span class="at">2</span><span class="st">`</span> <span class="ot">=</span> <span class="fl">0.3</span>, <span class="st">`</span><span class="at">3</span><span class="st">`</span> <span class="ot">=</span> <span class="fl">0.2</span>)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>s <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">names</span>(p_s))</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>k <span class="ot">&lt;-</span> <span class="dv">0</span><span class="sc">:</span><span class="dv">5</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Dose response with diminishing returns, depending only on the total dose</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>g <span class="ot">&lt;-</span> <span class="cf">function</span>(d) <span class="dv">10</span> <span class="sc">*</span> <span class="fu">log</span>(<span class="dv">1</span> <span class="sc">+</span> d)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Conditional curves C_k(s) = g(s + k) - g(s), one per prior dose</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>C_k_s <span class="ot">&lt;-</span> <span class="fu">expand.grid</span>(<span class="at">k =</span> k, <span class="at">s =</span> s)</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>C_k_s<span class="sc">$</span>C <span class="ot">&lt;-</span> <span class="fu">g</span>(C_k_s<span class="sc">$</span>s <span class="sc">+</span> C_k_s<span class="sc">$</span>k) <span class="sc">-</span> <span class="fu">g</span>(C_k_s<span class="sc">$</span>s)</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>C_k_s<span class="sc">$</span>series <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">"C[k](s)*</span><span class="sc">\"</span><span class="st">, s = "</span>, C_k_s<span class="sc">$</span>s, <span class="st">"</span><span class="sc">\"</span><span class="st">"</span>)</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Incremental effect curve C(k) = sum_s p_s C_k(s)</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>C_k <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">k =</span> k, <span class="at">C =</span> <span class="fu">sapply</span>(k, <span class="cf">function</span>(k) <span class="fu">sum</span>(p_s <span class="sc">*</span> (<span class="fu">g</span>(s <span class="sc">+</span> k) <span class="sc">-</span> <span class="fu">g</span>(s)))))</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>C_k<span class="sc">$</span>series <span class="ot">&lt;-</span> <span class="st">"C(k)*</span><span class="sc">\"</span><span class="st">, average</span><span class="sc">\"</span><span class="st">"</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>curves <span class="ot">&lt;-</span> <span class="fu">rbind</span>(C_k_s[, <span class="fu">c</span>(<span class="st">"k"</span>, <span class="st">"C"</span>, <span class="st">"series"</span>)], C_k)</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="co"># Series names are plotmath expressions, so C_k(s) renders with a subscript</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>series <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fu">unique</span>(C_k_s<span class="sc">$</span>series), C_k<span class="sc">$</span>series[<span class="dv">1</span>])</span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>series_colors <span class="ot">&lt;-</span> <span class="fu">setNames</span>(<span class="fu">c</span>(<span class="st">"#2a78d6"</span>, <span class="st">"#eb6834"</span>, <span class="st">"#1baf7a"</span>, <span class="st">"#0b0b0b"</span>), series)</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>series_widths <span class="ot">&lt;-</span> <span class="fu">setNames</span>(<span class="fu">c</span>(<span class="fl">0.6</span>, <span class="fl">0.6</span>, <span class="fl">0.6</span>, <span class="fl">1.2</span>), series)</span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>labels <span class="ot">&lt;-</span> curves[curves<span class="sc">$</span>k <span class="sc">==</span> <span class="fu">max</span>(k), ]</span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(curves, <span class="fu">aes</span>(<span class="at">x =</span> k, <span class="at">y =</span> C, <span class="at">color =</span> series)) <span class="sc">+</span></span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">linewidth =</span> series)) <span class="sc">+</span></span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="fl">2.5</span>) <span class="sc">+</span></span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_text</span>(<span class="at">data =</span> labels, <span class="fu">aes</span>(<span class="at">label =</span> series), <span class="at">hjust =</span> <span class="dv">0</span>, <span class="at">nudge_x =</span> <span class="fl">0.12</span>,</span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>            <span class="at">size =</span> <span class="dv">4</span>, <span class="at">color =</span> <span class="st">"#52514e"</span>, <span class="at">parse =</span> <span class="cn">TRUE</span>, <span class="at">show.legend =</span> <span class="cn">FALSE</span>) <span class="sc">+</span></span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> series_colors, <span class="at">breaks =</span> series,</span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>                     <span class="at">labels =</span> <span class="fu">parse</span>(<span class="at">text =</span> series), <span class="at">name =</span> <span class="cn">NULL</span>) <span class="sc">+</span></span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_linewidth_manual</span>(<span class="at">values =</span> series_widths, <span class="at">guide =</span> <span class="st">"none"</span>) <span class="sc">+</span></span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">breaks =</span> k, <span class="at">expand =</span> <span class="fu">expansion</span>(<span class="at">mult =</span> <span class="fu">c</span>(<span class="fl">0.03</span>, <span class="fl">0.35</span>))) <span class="sc">+</span></span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Number of extra doses, k"</span>, <span class="at">y =</span> <span class="st">"Incremental effect"</span>) <span class="sc">+</span></span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>(<span class="at">base_size =</span> <span class="dv">16</span>) <span class="sc">+</span></span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"top"</span>, <span class="at">panel.grid.minor =</span> <span class="fu">element_blank</span>())</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<div id="fig-incremental-curve" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-incremental-curve-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="index_files/figure-html/fig-incremental-curve-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-incremental-curve-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1: The incremental effect curve <span class="math inline">\(C(k)\)</span> (black) is the average of the conditional curves <span class="math inline">\(C_k(s)\)</span> for each prior dose <span class="math inline">\(s\)</span> (colored), weighted by the share of users <span class="math inline">\(p_s\)</span> at each prior dose.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>Two patterns are visible. First, every curve flattens as <span class="math inline">\(k\)</span> grows, because each extra dose adds less than the one before it. Second, users who start from more doses gain less from the same number of extra doses, so the conditional curves are ordered by prior dose. The average <span class="math inline">\(C(k)\)</span> lies between them, and above the middle curve for <span class="math inline">\(s = 2\)</span> at every <span class="math inline">\(k\)</span>, because the curve for <span class="math inline">\(s = 1\)</span> carries half of the probability weight and pulls the average up.</p>
+</section>
+<section id="step-effects-are-the-slope-of-the-curve" class="level3">
+<h3 class="anchored" data-anchor-id="step-effects-are-the-slope-of-the-curve">Step Effects are the Slope of the Curve</h3>
+<p><span class="math inline">\(C(k)\)</span> is the total effect of <span class="math inline">\(k\)</span> extra doses. The step from <span class="math inline">\(k - 1\)</span> to <span class="math inline">\(k\)</span> extra doses is the effect of the <span class="math inline">\(k\)</span>-th dose alone. Among users with prior dose <span class="math inline">\(s\)</span> and covariates <span class="math inline">\(x\)</span>, the step effect is <span class="math display">\[\tau_k(s, x) = \mu(s + k \mid s, x) - \mu(s + k - 1 \mid s, x),\]</span></p>
+<p>and averaging over <span class="math inline">\(f(s, x)\)</span> gives <span class="math inline">\(\tau_k = \int\!\!\int \tau_k(s, x) \, f(s, x) \, ds \, dx = C(k) - C(k - 1)\)</span>.</p>
+<p>So the step effect <span class="math inline">\(\tau_k\)</span> is the slope of the incremental effect curve between <span class="math inline">\(k - 1\)</span> and <span class="math inline">\(k\)</span>. Conversely, the curve is the accumulation of its steps. Writing <span class="math inline">\(C(k)\)</span> as a sum of differences, the intermediate terms cancel in pairs, and <span class="math inline">\(C(0) = 0\)</span> gives</p>
+<p><span class="math display">\[C(k) = \sum_{j = 1}^{k} \big( C(j) - C(j - 1) \big) = \sum_{j = 1}^{k} \tau_j.\]</span></p>
+</section>
+<section id="ab-tests-and-incremental-tests-measure-different-things" class="level3">
+<h3 class="anchored" data-anchor-id="ab-tests-and-incremental-tests-measure-different-things">AB Tests and Incremental Tests Measure Different Things</h3>
+<p>It is tempting to think of the classic AB test as an incremental test with a single step. It is not, and the two tests answer different questions.</p>
+<p><strong>The AB test compares zero doses with a nonzero number of doses.</strong> The control group receives zero doses. The treatment group receives a nonzero number of doses, but that number varies from user to user: one treated user might receive 2 doses, and another might receive 10. What we randomize is access to the treatment, <span class="math inline">\(T_i \in \{0, 1\}\)</span>, not the number of doses. Each user has a potential dose <span class="math inline">\(M_i(1)\)</span>, the number of doses user <span class="math inline">\(i\)</span> would receive if treated, and <span class="math inline">\(M_i(0) = 0\)</span>. Unlike the increment <span class="math inline">\(K_i\)</span> in an incremental test, the experimenter does not choose <span class="math inline">\(M_i(1)\)</span>. It is determined by the user’s behavior, or by how the treatment is delivered. A treated user’s outcome is <span class="math inline">\(y_i(M_i(1))\)</span> and a control user’s outcome is <span class="math inline">\(y_i(0)\)</span>, so by randomization the AB test measures</p>
+<p><span class="math display">\[\tau = E[y \mid T = 1] - E[y \mid T = 0] = E\big[y(M(1)) - y(0)\big].\]</span></p>
+<p><strong>The AB test is also an average over doses, but of a self-selected curve.</strong> Let <span class="math inline">\(h(k) = P(M(1) = k)\)</span> be the share of treated users who receive <span class="math inline">\(k\)</span> doses. Applying the law of total expectation over the potential dose, and noting that <span class="math inline">\(y(M(1)) = y(k)\)</span> for users with <span class="math inline">\(M(1) = k\)</span>,</p>
+<p><span class="math display">\[\tau = \sum_k h(k) \, E\big[y(k) - y(0) \,\big|\, M(1) = k\big] = \sum_k h(k) \, \tilde{C}(k),\]</span></p>
+<p>where we define the self-selected curve as the effect of <span class="math inline">\(k\)</span> doses among the users who would receive <span class="math inline">\(k\)</span> doses,</p>
+<p><span class="math display">\[\tilde{C}(k) = E\big[y(k) - y(0) \,\big|\, M(1) = k\big].\]</span></p>
+<p>This looks similar to the incremental effect. <span class="math inline">\(\tau\)</span> is an average with quantity <span class="math inline">\(\tilde{C}(k)\)</span> and probability weight <span class="math inline">\(h(k)\)</span>, the distribution of doses in the treatment arm. But the identity holds by construction: both sides are computed from the same treated users, once all together and once grouped by dose. It tells us how <span class="math inline">\(\tau\)</span> is assembled, not how the outcome responds to the dose.</p>
+<p><strong>Note: The self-selected curve is only sometimes equal to the dose response.</strong> Compare <span class="math inline">\(\tilde{C}(k)\)</span> with the incremental effect curve from earlier, at prior dose <span class="math inline">\(S = 0\)</span>:</p>
+<p><span class="math display">\[C(k) = E\big[y(k) - y(0)\big], \qquad \tilde{C}(k) = E\big[y(k) - y(0) \,\big|\, M(1) = k\big].\]</span></p>
+<p><span class="math inline">\(C(k)\)</span> averages the effect of <span class="math inline">\(k\)</span> doses over every user, while <span class="math inline">\(\tilde{C}(k)\)</span> averages it only over the users who choose <span class="math inline">\(k\)</span> doses. <span class="math inline">\(C(k) = \tilde C(k)\)</span> for every <span class="math inline">\(k\)</span> only when there is no selection on gains, meaning the number of doses a user receives is unrelated to how much they would gain from any given number of doses. That is usually unreasonable. The dose is often how many times a user opens a feature or clicks a notification, and users who find the treatment valuable use it more. It also cannot be tested, because for a user who receives <span class="math inline">\(k\)</span> doses we never observe their outcome at any other dose. Similarly, the differences <span class="math inline">\(\tilde{C}(k) - \tilde{C}(k - 1)\)</span> are not the step effects <span class="math inline">\(\tau_k\)</span>. Each point of <span class="math inline">\(\tilde{C}\)</span> averages over a different group of users, so a difference between two points mixes the effect of the extra dose with the difference between the two groups.</p>
+<p><strong>AB test results depend on the dose distribution.</strong> Because <span class="math inline">\(\tau = \sum_k h(k) \tilde{C}(k)\)</span>, the word “average” in the ATE refers to the dose distribution <span class="math inline">\(h(k)\)</span> as well as to the covariate probability density <span class="math inline">\(f(x)\)</span>. Two launches of the same treatment can yield different results: if users of the first launch mostly receive 2 doses and users of the second mostly receive 10, the two AB tests average over different parts of the curve and report different values of <span class="math inline">\(\tau\)</span>, even when the treatment itself is unchanged.</p>
+<p><strong>AB test results cannot be reconstructed from incremental results. They are different. That’s OK.</strong> Even if an incremental test mapped <span class="math inline">\(C(k)\)</span> perfectly, <span class="math inline">\(\sum_k h(k) C(k)\)</span> would equal <span class="math inline">\(\tau\)</span> only under no selection on gains, which is when <span class="math inline">\(C(k) = \tilde C(k)\)</span>. In the other direction, the AB test cannot map <span class="math inline">\(C(k)\)</span>, because the dose is not randomized. Even <span class="math inline">\(\tilde{C}(k)\)</span> cannot be estimated from it, because <span class="math inline">\(M_i(1)\)</span> is never observed for control users. The two tests serve two different purposes.</p>
+<ul>
+<li><strong>The AB test measures <span class="math inline">\(\tau\)</span>.</strong> It answers: what happens if we launch the treatment and let users choose their own dose?</li>
+<li><strong>The incremental test measures <span class="math inline">\(C(k)\)</span>.</strong> It answers: what happens if we change how many doses users receive? This is the question behind dosing decisions, such as sending every user three notifications instead of one.</li>
+</ul>
+</section>
+<section id="analyzing-an-incremental-test-in-r" class="level3">
+<h3 class="anchored" data-anchor-id="analyzing-an-incremental-test-in-r">Analyzing an Incremental Test in R</h3>
+<p>To measure the incremental effect curve, the experiment needs one row per user with four pieces of information:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Column</th>
+<th>Symbol</th>
+<th>Measured</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>X</code></td>
+<td><span class="math inline">\(X_i\)</span></td>
+<td>Before randomization</td>
+<td>Covariates, such as pre-period engagement</td>
+</tr>
+<tr class="even">
+<td><code>S</code></td>
+<td><span class="math inline">\(S_i\)</span></td>
+<td>Before randomization</td>
+<td>Prior dose, the number of doses the user already receives</td>
+</tr>
+<tr class="odd">
+<td><code>K</code></td>
+<td><span class="math inline">\(K_i\)</span></td>
+<td>Randomized</td>
+<td>Number of extra doses, <span class="math inline">\(K_i \in \{0, 1, \dots, \bar{k}\}\)</span>, with <span class="math inline">\(K = 0\)</span> as the control arm</td>
+</tr>
+<tr class="even">
+<td><code>y</code></td>
+<td><span class="math inline">\(y_i\)</span></td>
+<td>After treatment</td>
+<td>Outcome</td>
+</tr>
+</tbody>
+</table>
+<p>The randomization structure has two requirements. First, <span class="math inline">\(K\)</span> must be randomized independently of <span class="math inline">\(S\)</span> and <span class="math inline">\(X\)</span>, so that every arm has the same joint probability density <span class="math inline">\(f(s, x)\)</span>. Second, every point on the curve needs its own arm. An experiment with only the arms <span class="math inline">\(K = 0\)</span> and <span class="math inline">\(K = \bar{k}\)</span> measures <span class="math inline">\(C(\bar{k})\)</span>, but not the shape of the curve on the way there.</p>
+<p>We simulate such an experiment with <span class="math inline">\(\bar{k} = 5\)</span>, so there are six arms, and users are split evenly across them. Prior doses follow the example from earlier, with shares <span class="math inline">\(p_1 = 0.5\)</span>, <span class="math inline">\(p_2 = 0.3\)</span> and <span class="math inline">\(p_3 = 0.2\)</span>, and users with more prior doses tend to be more engaged, so <span class="math inline">\(X\)</span> and <span class="math inline">\(S\)</span> are correlated. The outcome is</p>
+<p><span class="math display">\[y_i = 20 + 8 x_i + g(s_i + k_i) + \varepsilon_i, \qquad g(d) = 10 \log(1 + d), \qquad \varepsilon_i \sim N(0, 5^2),\]</span></p>
+<p>so the conditional mean of the potential outcome curve is <span class="math inline">\(\mu(d \mid s, x) = 20 + 8x + g(d)\)</span>. The baseline <span class="math inline">\(20 + 8x\)</span> cancels in <span class="math inline">\(C_k(s, x) = \mu(s + k \mid s, x) - \mu(s \mid s, x) = g(s + k) - g(s)\)</span>, and <span class="math inline">\(g\)</span> depends only on the total dose, so the true incremental effect curve is the black curve in <a href="#fig-incremental-curve" class="quarto-xref">Figure&nbsp;1</a>.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">3</span>)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">60000</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>k_bar <span class="ot">&lt;-</span> <span class="dv">5</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>S <span class="ot">&lt;-</span> <span class="fu">sample</span>(s, n, <span class="at">replace =</span> <span class="cn">TRUE</span>, <span class="at">prob =</span> p_s)  <span class="co"># prior dose, with shares p_s</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>X <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(n, <span class="at">mean =</span> <span class="fl">0.5</span> <span class="sc">*</span> (S <span class="sc">-</span> <span class="fl">1.7</span>))          <span class="co"># engagement, higher for larger S</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>K <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="dv">0</span><span class="sc">:</span>k_bar, n, <span class="at">replace =</span> <span class="cn">TRUE</span>)        <span class="co"># randomized number of extra doses</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>y <span class="ot">&lt;-</span> <span class="dv">20</span> <span class="sc">+</span> <span class="dv">8</span> <span class="sc">*</span> X <span class="sc">+</span> <span class="fu">g</span>(S <span class="sc">+</span> K) <span class="sc">+</span> <span class="fu">rnorm</span>(n, <span class="at">sd =</span> <span class="dv">5</span>)</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">user_id =</span> <span class="fu">seq_len</span>(n), <span class="at">X =</span> X, <span class="at">S =</span> S, <span class="at">K =</span> K, <span class="at">y =</span> y)</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(<span class="fu">head</span>(df), <span class="at">digits =</span> <span class="dv">2</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: right;">user_id</th>
+<th style="text-align: right;">X</th>
+<th style="text-align: right;">S</th>
+<th style="text-align: right;">K</th>
+<th style="text-align: right;">y</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-0.86</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">22.84</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">2.35</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">55.76</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">-0.97</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">26.66</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">-0.63</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">35.88</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">-0.54</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">36.09</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">1.31</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">52.20</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>We estimate the curve in two ways. The first is the difference in means between each arm and the control arm, <span class="math inline">\(\hat{C}(k) = \bar{y}_k - \bar{y}_0\)</span>, with standard error <span class="math inline">\(\sqrt{s_k^2 / n_k + s_0^2 / n_0}\)</span>, where <span class="math inline">\(\bar{y}_k\)</span>, <span class="math inline">\(s_k^2\)</span> and <span class="math inline">\(n_k\)</span> are the mean, variance and size of arm <span class="math inline">\(k\)</span>. Each point on the curve is an ordinary AB comparison against the control arm.</p>
+<p>The second is a regression of <span class="math inline">\(y\)</span> on indicators for each arm, adjusting for <span class="math inline">\(X\)</span> and <span class="math inline">\(S\)</span>,</p>
+<p><span class="math display">\[y_i = \alpha + \sum_{k = 1}^{\bar{k}} 1\{K_i = k\} \, \beta_k + x_i \gamma + \sum_{s} 1\{S_i = s\} \, \delta_s + \varepsilon_i.\]</span></p>
+<p>The coefficient <span class="math inline">\(\beta_k\)</span> estimates <span class="math inline">\(C(k)\)</span>. Because <span class="math inline">\(K\)</span> is randomized independently of <span class="math inline">\(S\)</span> and <span class="math inline">\(X\)</span>, <span class="math inline">\(\hat{\beta}_k\)</span> remains a consistent estimate of <span class="math inline">\(C(k)\)</span> even though the model leaves out interactions between <span class="math inline">\(K\)</span> and <span class="math inline">\(S\)</span>. The covariates explain much of the variation in the baseline, which shrinks the standard errors, the same idea as <a href="https://jeffwong.github.io/posts/cuped_from_fwl/">CUPED</a>.</p>
+<p>The step effects are differences of adjacent points, <span class="math inline">\(\hat{\tau}_k = \hat{\beta}_k - \hat{\beta}_{k - 1}\)</span> with <span class="math inline">\(\hat{\beta}_0 = 0\)</span>. We compute them with a contrast matrix <span class="math inline">\(L\)</span>, a <span class="math inline">\(\bar{k} \times \bar{k}\)</span> matrix with 1 on the diagonal and <span class="math inline">\(-1\)</span> just below it, so that <span class="math inline">\(\hat{\tau} = L \hat{\beta}\)</span> and <span class="math inline">\(\text{Cov}(\hat{\tau}) = L \, \text{Cov}(\hat{\beta}) \, L^\top\)</span>.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Difference in means against the control arm, K = 0</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>y_bar <span class="ot">&lt;-</span> <span class="fu">tapply</span>(df<span class="sc">$</span>y, df<span class="sc">$</span>K, mean)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>s2 <span class="ot">&lt;-</span> <span class="fu">tapply</span>(df<span class="sc">$</span>y, df<span class="sc">$</span>K, var)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>n_k <span class="ot">&lt;-</span> <span class="fu">tapply</span>(df<span class="sc">$</span>y, df<span class="sc">$</span>K, length)</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>C_hat_dm <span class="ot">&lt;-</span> y_bar <span class="sc">-</span> y_bar[<span class="st">"0"</span>]</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>se_C_hat_dm <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(s2 <span class="sc">/</span> n_k <span class="sc">+</span> s2[<span class="st">"0"</span>] <span class="sc">/</span> n_k[<span class="st">"0"</span>])</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Regression with arm indicators, adjusting for X and S</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">lm</span>(y <span class="sc">~</span> <span class="fu">factor</span>(K) <span class="sc">+</span> X <span class="sc">+</span> <span class="fu">factor</span>(S), <span class="at">data =</span> df)</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>beta_hat <span class="ot">&lt;-</span> <span class="fu">coef</span>(fit)[<span class="fu">paste0</span>(<span class="st">"factor(K)"</span>, <span class="dv">1</span><span class="sc">:</span>k_bar)]</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>V_beta_hat <span class="ot">&lt;-</span> <span class="fu">vcov</span>(fit)[<span class="fu">names</span>(beta_hat), <span class="fu">names</span>(beta_hat)]</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>C_hat_reg <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">0</span>, beta_hat)</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>se_C_hat_reg <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="fu">sqrt</span>(<span class="fu">diag</span>(V_beta_hat)))</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Step effects tau_k = beta_k - beta_{k-1}</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>L <span class="ot">&lt;-</span> <span class="fu">diag</span>(k_bar)</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>L[<span class="fu">cbind</span>(<span class="dv">2</span><span class="sc">:</span>k_bar, <span class="dv">1</span><span class="sc">:</span>(k_bar <span class="sc">-</span> <span class="dv">1</span>))] <span class="ot">&lt;-</span> <span class="sc">-</span><span class="dv">1</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>tau_k_hat <span class="ot">&lt;-</span> <span class="fu">drop</span>(L <span class="sc">%*%</span> beta_hat)</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>se_tau_k_hat <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(<span class="fu">diag</span>(L <span class="sc">%*%</span> V_beta_hat <span class="sc">%*%</span> <span class="fu">t</span>(L)))</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a><span class="co"># Ground truth from the dose response and the shares p_s</span></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>k_values <span class="ot">&lt;-</span> <span class="dv">0</span><span class="sc">:</span>k_bar</span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>C_true <span class="ot">&lt;-</span> <span class="fu">sapply</span>(k_values, <span class="cf">function</span>(k) <span class="fu">sum</span>(p_s <span class="sc">*</span> (<span class="fu">g</span>(s <span class="sc">+</span> k) <span class="sc">-</span> <span class="fu">g</span>(s))))</span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>tau_k_true <span class="ot">&lt;-</span> <span class="fu">diff</span>(C_true)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>est_se <span class="ot">&lt;-</span> <span class="cf">function</span>(est, se) <span class="fu">sprintf</span>(<span class="st">"%.2f (%.2f)"</span>, est, se)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">data.frame</span>(</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">k =</span> k_values,</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">C_true =</span> <span class="fu">sprintf</span>(<span class="st">"%.2f"</span>, C_true),</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">C_hat_dm =</span> <span class="fu">c</span>(<span class="st">"—"</span>, <span class="fu">est_se</span>(C_hat_dm[<span class="sc">-</span><span class="dv">1</span>], se_C_hat_dm[<span class="sc">-</span><span class="dv">1</span>])),</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">C_hat_reg =</span> <span class="fu">c</span>(<span class="st">"—"</span>, <span class="fu">est_se</span>(C_hat_reg[<span class="sc">-</span><span class="dv">1</span>], se_C_hat_reg[<span class="sc">-</span><span class="dv">1</span>])),</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">tau_k_true =</span> <span class="fu">c</span>(<span class="st">"—"</span>, <span class="fu">sprintf</span>(<span class="st">"%.2f"</span>, tau_k_true)),</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">tau_k_hat =</span> <span class="fu">c</span>(<span class="st">"—"</span>, <span class="fu">est_se</span>(tau_k_hat, se_tau_k_hat))</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>  ),</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">col.names =</span> <span class="fu">c</span>(<span class="st">"$k$"</span>, <span class="st">"True $C(k)$"</span>, <span class="st">"$</span><span class="sc">\\</span><span class="st">hat{C}(k)$, difference in means"</span>,</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>                <span class="st">"$</span><span class="sc">\\</span><span class="st">hat{C}(k)$, regression"</span>, <span class="st">"True $</span><span class="sc">\\</span><span class="st">tau_k$"</span>, <span class="st">"$</span><span class="sc">\\</span><span class="st">hat{</span><span class="sc">\\</span><span class="st">tau}_k$, regression"</span>),</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">align =</span> <span class="st">"rrrrrr"</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div id="tbl-incremental-estimates" class="cell quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-incremental-estimates-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;1: Estimates of the incremental effect curve <span class="math inline">\(C(k)\)</span> and the step effects <span class="math inline">\(\tau_k\)</span>, with standard errors in parentheses, against the ground truth.
+</figcaption>
+<div aria-describedby="tbl-incremental-estimates-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="cell-output-display">
+<table class="cell caption-top table table-sm table-striped small">
+<colgroup>
+<col style="width: 3%">
+<col style="width: 10%">
+<col style="width: 29%">
+<col style="width: 21%">
+<col style="width: 12%">
+<col style="width: 23%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: right;"><span class="math inline">\(k\)</span></th>
+<th style="text-align: right;">True <span class="math inline">\(C(k)\)</span></th>
+<th style="text-align: right;"><span class="math inline">\(\hat{C}(k)\)</span>, difference in means</th>
+<th style="text-align: right;"><span class="math inline">\(\hat{C}(k)\)</span>, regression</th>
+<th style="text-align: right;">True <span class="math inline">\(\tau_k\)</span></th>
+<th style="text-align: right;"><span class="math inline">\(\hat{\tau}_k\)</span>, regression</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">3.34</td>
+<td style="text-align: right;">3.06 (0.16)</td>
+<td style="text-align: right;">3.26 (0.07)</td>
+<td style="text-align: right;">3.34</td>
+<td style="text-align: right;">3.26 (0.07)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">5.81</td>
+<td style="text-align: right;">5.49 (0.15)</td>
+<td style="text-align: right;">5.71 (0.07)</td>
+<td style="text-align: right;">2.47</td>
+<td style="text-align: right;">2.45 (0.07)</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">7.78</td>
+<td style="text-align: right;">7.72 (0.15)</td>
+<td style="text-align: right;">7.81 (0.07)</td>
+<td style="text-align: right;">1.97</td>
+<td style="text-align: right;">2.10 (0.07)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">9.42</td>
+<td style="text-align: right;">9.41 (0.15)</td>
+<td style="text-align: right;">9.44 (0.07)</td>
+<td style="text-align: right;">1.64</td>
+<td style="text-align: right;">1.62 (0.07)</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">10.83</td>
+<td style="text-align: right;">10.68 (0.15)</td>
+<td style="text-align: right;">10.80 (0.07)</td>
+<td style="text-align: right;">1.41</td>
+<td style="text-align: right;">1.37 (0.07)</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</figure>
+</div>
+</div>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>estimates <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">k =</span> k_values, <span class="at">C_hat =</span> C_hat_reg,</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>                        <span class="at">lower =</span> C_hat_reg <span class="sc">-</span> <span class="fl">1.96</span> <span class="sc">*</span> se_C_hat_reg,</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>                        <span class="at">upper =</span> C_hat_reg <span class="sc">+</span> <span class="fl">1.96</span> <span class="sc">*</span> se_C_hat_reg)</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>truth <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">k =</span> k_values, <span class="at">C =</span> C_true)</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">data =</span> truth, <span class="fu">aes</span>(<span class="at">x =</span> k, <span class="at">y =</span> C, <span class="at">color =</span> <span class="st">"True C(k)"</span>), <span class="at">linewidth =</span> <span class="fl">0.9</span>) <span class="sc">+</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_errorbar</span>(<span class="at">data =</span> estimates, <span class="fu">aes</span>(<span class="at">x =</span> k, <span class="at">ymin =</span> lower, <span class="at">ymax =</span> upper, <span class="at">color =</span> <span class="st">"Estimate"</span>),</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>                <span class="at">width =</span> <span class="fl">0.15</span>, <span class="at">linewidth =</span> <span class="fl">0.6</span>) <span class="sc">+</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">data =</span> estimates, <span class="fu">aes</span>(<span class="at">x =</span> k, <span class="at">y =</span> C_hat, <span class="at">color =</span> <span class="st">"Estimate"</span>), <span class="at">size =</span> <span class="fl">2.5</span>) <span class="sc">+</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">"True C(k)"</span> <span class="ot">=</span> <span class="st">"#0b0b0b"</span>, <span class="st">"Estimate"</span> <span class="ot">=</span> <span class="st">"#2a78d6"</span>),</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>                     <span class="at">breaks =</span> <span class="fu">c</span>(<span class="st">"True C(k)"</span>, <span class="st">"Estimate"</span>), <span class="at">name =</span> <span class="cn">NULL</span>) <span class="sc">+</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">breaks =</span> k_values) <span class="sc">+</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Number of extra doses, k"</span>, <span class="at">y =</span> <span class="st">"Incremental effect"</span>) <span class="sc">+</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>(<span class="at">base_size =</span> <span class="dv">16</span>) <span class="sc">+</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"top"</span>, <span class="at">panel.grid.minor =</span> <span class="fu">element_blank</span>())</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<div id="fig-incremental-estimates" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-incremental-estimates-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="index_files/figure-html/fig-incremental-estimates-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-incremental-estimates-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2: The regression estimates of the incremental effect curve (blue, with 95% confidence intervals) against the true curve <span class="math inline">\(C(k)\)</span> (black).
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The regression estimates track the true <span class="math inline">\(C(k)\)</span> closely at every <span class="math inline">\(k\)</span>.</p>
+</section>
+</section>
+</section>
+<section id="what-does-it-mean-to-be-treated" class="level1">
+<h1>What does it mean to be treated?</h1>
+<p>In many experiments we randomize an assignment <span class="math inline">\(Z \in \{0, 1\}\)</span>, not the intervention itself. <span class="math inline">\(Z = 1\)</span> means we intend to treat the user. The treatment the user actually receives, <span class="math inline">\(T \in \{0, 1\}\)</span>, can differ from <span class="math inline">\(Z\)</span>. This <a href="https://arxiv.org/pdf/2209.00649">paper</a> argues that there are multiple stages of delivering treatment, and describes mistakes when confusing <span class="math inline">\(Z\)</span> with <span class="math inline">\(T\)</span>.</p>
+<p>As a running example, say we launch a new feature and announce it by email. The assignment <span class="math inline">\(Z\)</span> is whether a user is sent the email. When <span class="math inline">\(Z = 1\)</span> we are trying to treat the user, when <span class="math inline">\(Z = 0\)</span> we are trying to withhold from the user. The treatment <span class="math inline">\(T\)</span> is whether the user actually uses the feature, which is the user’s choice and not something we can control. The outcome <span class="math inline">\(y\)</span> is the user’s engagement. <a href="#fig-itt-dag" class="quarto-xref">Figure&nbsp;3</a> shows how these variables affect one another. <span class="math inline">\(U\)</span> collects everything about the user that influences both their choice and their outcome: the covariates <span class="math inline">\(X\)</span>, the compliance type <span class="math inline">\(G\)</span> defined below, and traits we do not measure.</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div id="fig-itt-dag" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-itt-dag-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<svg width="672" height="480" viewbox="0.00 0.00 654.86 322.75" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" style="; max-width: none; max-height: none">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 318.75)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-318.75 650.86,-318.75 650.86,4 -4,4"></polygon>
+<!-- U -->
+<g id="node1" class="node">
+<title>U</title>
+<path fill="none" stroke="black" d="M398.3,-314.96C398.3,-314.96 283.42,-314.96 283.42,-314.96 277.42,-314.96 271.42,-308.96 271.42,-302.96 271.42,-302.96 271.42,-268.15 271.42,-268.15 271.42,-262.15 277.42,-256.15 283.42,-256.15 283.42,-256.15 398.3,-256.15 398.3,-256.15 404.3,-256.15 410.3,-262.15 410.3,-268.15 410.3,-268.15 410.3,-302.96 410.3,-302.96 410.3,-308.96 404.3,-314.96 398.3,-314.96"></path>
+<text text-anchor="middle" x="340.86" y="-298.15" font-family="Helvetica,sans-Serif" font-size="14.00">U</text>
+<text text-anchor="middle" x="340.86" y="-281.35" font-family="Helvetica,sans-Serif" font-size="14.00">user traits</text>
+<text text-anchor="middle" x="340.86" y="-264.55" font-family="Helvetica,sans-Serif" font-size="14.00">(X, G, unmeasured)</text>
+</g>
+<!-- T -->
+<g id="node3" class="node">
+<title>T</title>
+<path fill="none" stroke="black" d="M381.95,-170.96C381.95,-170.96 299.77,-170.96 299.77,-170.96 293.77,-170.96 287.77,-164.96 287.77,-158.96 287.77,-158.96 287.77,-124.15 287.77,-124.15 287.77,-118.15 293.77,-112.15 299.77,-112.15 299.77,-112.15 381.95,-112.15 381.95,-112.15 387.95,-112.15 393.95,-118.15 393.95,-124.15 393.95,-124.15 393.95,-158.96 393.95,-158.96 393.95,-164.96 387.95,-170.96 381.95,-170.96"></path>
+<text text-anchor="middle" x="340.86" y="-154.15" font-family="Helvetica,sans-Serif" font-size="14.00">T</text>
+<text text-anchor="middle" x="340.86" y="-137.35" font-family="Helvetica,sans-Serif" font-size="14.00">feature used</text>
+<text text-anchor="middle" x="340.86" y="-120.55" font-family="Helvetica,sans-Serif" font-size="14.00">(user's choice)</text>
+</g>
+<!-- U&#45;&gt;T -->
+<g id="edge3" class="edge">
+<title>U-&gt;T</title>
+<path fill="none" stroke="black" d="M340.86,-255.97C340.86,-231.02 340.86,-206.07 340.86,-181.12"></path>
+<polygon fill="black" stroke="black" points="344.36,-180.8 340.86,-170.8 337.36,-180.8 344.36,-180.8"></polygon>
+<text text-anchor="middle" x="308.76" y="-203.38" font-family="Helvetica,sans-Serif" font-size="11.00">who chooses</text>
+<text text-anchor="middle" x="308.76" y="-190.18" font-family="Helvetica,sans-Serif" font-size="11.00">to use it &nbsp;</text>
+</g>
+<!-- y -->
+<g id="node4" class="node">
+<title>y</title>
+<path fill="none" stroke="black" d="M634.71,-162.16C634.71,-162.16 589.32,-162.16 589.32,-162.16 583.32,-162.16 577.32,-156.16 577.32,-150.16 577.32,-150.16 577.32,-132.95 577.32,-132.95 577.32,-126.95 583.32,-120.95 589.32,-120.95 589.32,-120.95 634.71,-120.95 634.71,-120.95 640.71,-120.95 646.71,-126.95 646.71,-132.95 646.71,-132.95 646.71,-150.16 646.71,-150.16 646.71,-156.16 640.71,-162.16 634.71,-162.16"></path>
+<text text-anchor="middle" x="612.02" y="-145.75" font-family="Helvetica,sans-Serif" font-size="14.00">y</text>
+<text text-anchor="middle" x="612.02" y="-128.95" font-family="Helvetica,sans-Serif" font-size="14.00">outcome</text>
+</g>
+<!-- U&#45;&gt;y -->
+<g id="edge4" class="edge">
+<title>U-&gt;y</title>
+<path fill="none" stroke="black" d="M396.65,-256.24C447.37,-229.1 521.76,-189.3 568.24,-164.44"></path>
+<polygon fill="black" stroke="black" points="569.98,-167.48 577.15,-159.67 566.68,-161.3 569.98,-167.48"></polygon>
+<text text-anchor="middle" x="493.75" y="-242.05" font-family="Helvetica,sans-Serif" font-size="11.00">baseline</text>
+<text text-anchor="middle" x="493.75" y="-228.85" font-family="Helvetica,sans-Serif" font-size="11.00">behavior</text>
+</g>
+<!-- Z -->
+<g id="node2" class="node">
+<title>Z</title>
+<path fill="none" stroke="black" d="M86.71,-134.96C86.71,-134.96 11.76,-134.96 11.76,-134.96 5.76,-134.96 -0.24,-128.96 -0.24,-122.96 -0.24,-122.96 -0.24,-88.15 -0.24,-88.15 -0.24,-82.15 5.76,-76.15 11.76,-76.15 11.76,-76.15 86.71,-76.15 86.71,-76.15 92.71,-76.15 98.71,-82.15 98.71,-88.15 98.71,-88.15 98.71,-122.96 98.71,-122.96 98.71,-128.96 92.71,-134.96 86.71,-134.96"></path>
+<text text-anchor="middle" x="49.24" y="-118.15" font-family="Helvetica,sans-Serif" font-size="14.00">Z</text>
+<text text-anchor="middle" x="49.24" y="-101.35" font-family="Helvetica,sans-Serif" font-size="14.00">email sent</text>
+<text text-anchor="middle" x="49.24" y="-84.55" font-family="Helvetica,sans-Serif" font-size="14.00">(randomized)</text>
+</g>
+<!-- Z&#45;&gt;T -->
+<g id="edge1" class="edge">
+<title>Z-&gt;T</title>
+<path fill="none" stroke="black" d="M98.71,-111.58C147.73,-117.67 223.69,-127.11 277.24,-133.77"></path>
+<polygon fill="black" stroke="black" points="276.95,-137.26 287.3,-135.02 277.81,-130.31 276.95,-137.26"></polygon>
+<text text-anchor="middle" x="184.93" y="-145.05" font-family="Helvetica,sans-Serif" font-size="11.00">the email prompts</text>
+<text text-anchor="middle" x="184.93" y="-131.85" font-family="Helvetica,sans-Serif" font-size="11.00">some users to try it</text>
+</g>
+<!-- Z&#45;&gt;y -->
+<g id="edge5" class="edge">
+<title>Z:s-&gt;y:s</title>
+<path fill="none" stroke="firebrick" stroke-dasharray="5,2" d="M49.24,-75.55C49.24,46.46 581.66,8.17 610.78,-109.45"></path>
+<polygon fill="firebrick" stroke="firebrick" points="607.32,-110.05 612.02,-119.55 614.27,-109.2 607.32,-110.05"></polygon>
+<text text-anchor="middle" x="340.86" y="-15.85" font-family="Helvetica,sans-Serif" font-size="11.00" fill="firebrick">the email's own effect</text>
+</g>
+<!-- T&#45;&gt;y -->
+<g id="edge2" class="edge">
+<title>T-&gt;y</title>
+<path fill="none" stroke="black" d="M394.07,-141.55C444.39,-141.55 519.65,-141.55 567.01,-141.55"></path>
+<polygon fill="black" stroke="black" points="567.25,-145.05 577.25,-141.55 567.25,-138.05 567.25,-145.05"></polygon>
+<text text-anchor="middle" x="493.75" y="-158.05" font-family="Helvetica,sans-Serif" font-size="11.00">the feature</text>
+<text text-anchor="middle" x="493.75" y="-144.85" font-family="Helvetica,sans-Serif" font-size="11.00">changes behavior</text>
+</g>
+</g>
+</svg>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-itt-dag-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;3: A causal graph for an experiment that randomizes an email announcing a feature. Solid arrows are the paths that the ITT and the LATE rely on. The dashed arrow is a direct effect of the email, which the exclusion assumption rules out.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The graph separates the three ways the outcome can change. The feature changes behavior for users who use it, along <span class="math inline">\(T \to y\)</span>. Whether a user uses it is their own choice, which depends on who they are, along <span class="math inline">\(U \to T\)</span>. And the email can change behavior on its own, along the dashed arrow <span class="math inline">\(Z \to y\)</span>, for example by reminding users that the product exists. Because <span class="math inline">\(U\)</span> points into both <span class="math inline">\(T\)</span> and <span class="math inline">\(y\)</span>, the users who choose the feature differ from those who do not, even before they use it. This is why we randomize <span class="math inline">\(Z\)</span> rather than compare users by <span class="math inline">\(T\)</span>.</p>
+<p>Each user has two potential treatments: <span class="math inline">\(T_i(1)\)</span>, the treatment user <span class="math inline">\(i\)</span> would receive if assigned to the treatment, and <span class="math inline">\(T_i(0)\)</span>, the treatment they would receive if assigned to the control. The observed treatment is <span class="math inline">\(T_i = T_i(Z_i)\)</span>. The pair <span class="math inline">\((T_i(1), T_i(0))\)</span> sorts users into four compliance types, which we label <span class="math inline">\(G_i\)</span>:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Type <span class="math inline">\(G\)</span></th>
+<th><span class="math inline">\(T(1)\)</span></th>
+<th><span class="math inline">\(T(0)\)</span></th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Always-taker, <span class="math inline">\(A\)</span></td>
+<td>1</td>
+<td>1</td>
+<td>Receives the intervention regardless of assignment</td>
+</tr>
+<tr class="even">
+<td>Never-taker, <span class="math inline">\(N\)</span></td>
+<td>0</td>
+<td>0</td>
+<td>Never receives the intervention, for example because delivery fails</td>
+</tr>
+<tr class="odd">
+<td>Complier, <span class="math inline">\(C\)</span></td>
+<td>1</td>
+<td>0</td>
+<td>Receives the intervention if and only if assigned to it</td>
+</tr>
+<tr class="even">
+<td>Defier, <span class="math inline">\(D\)</span></td>
+<td>0</td>
+<td>1</td>
+<td>Does the opposite of the assignment</td>
+</tr>
+</tbody>
+</table>
+<p>Let <span class="math inline">\(\pi_g(x) = P(G = g | X = x)\)</span> be the share of type <span class="math inline">\(g\)</span> among users with <span class="math inline">\(X = x\)</span>. The overall share is <span class="math inline">\(\pi_g = \int \pi_g(x) f(x) \, dx\)</span>.</p>
+<p>Connecting the ITT to the effect of the feature takes three assumptions: randomization, exclusion and monotonicity. Rather than state them all at once, we introduce them one at a time, each at the step where it is first needed. This makes clear which conclusions rest on which assumptions. Only the first is needed to define the ITT.</p>
+<ol type="1">
+<li><strong>Randomization</strong>. <span class="math inline">\(Z\)</span> is independent of <span class="math inline">\(X\)</span>, the type <span class="math inline">\(G\)</span>, and the potential outcomes <span class="math inline">\(y(0), y(1)\)</span>. In the figure there is no arrow <span class="math inline">\(U \to Z\)</span>, because a coin flip, not the user’s traits, decides who gets the email.</li>
+</ol>
+<p>The intent to treat effect (ITT) is the difference in expectations between the assignment arms, and here we emphasize that it is not the effect from being treated, rather it is the effect from the business trying to treat the user. This quantity is rooted in randomness and is robust, whereas analysis on <span class="math inline">\(T\)</span> is much more complex and it is hard to be robust. The ITT looks just like the ATE, with a quantity and a probability weight, and has the following analogous formulas.</p>
+<p><span class="math display">\[\begin{align}
+\tau_{ITT} &amp;= E[y | Z = 1] - E[y | Z = 0] \\
+\tau_{ITT}(x) &amp;= E[y | Z = 1, X = x] - E[y | Z = 0, X = x] \\
+\tau_{ITT} &amp;= \int \tau_{ITT}(x) \, f(x) \, dx
+\end{align}\]</span></p>
+<p>These formulas rely on randomization alone. Even if the email has its own effect, along the dashed arrow in <a href="#fig-itt-dag" class="quarto-xref">Figure&nbsp;3</a>, <span class="math inline">\(\tau_{ITT}\)</span> is still exactly the effect of sending the email. The next two assumptions are needed only when we try to attribute the ITT to the feature itself.</p>
+<section id="decomposing-the-itt" class="level3">
+<h3 class="anchored" data-anchor-id="decomposing-the-itt">Decomposing the ITT</h3>
+<p>To see what the ITT says about the intervention itself, we decompose <span class="math inline">\(\tau_{ITT}(x)\)</span>. The first step needs the second assumption.</p>
+<ol start="2" type="1">
+<li><strong>Exclusion</strong>. The assignment affects the outcome only through the treatment received, so the potential outcomes <span class="math inline">\(y_i(1)\)</span> and <span class="math inline">\(y_i(0)\)</span> do not depend on <span class="math inline">\(z\)</span>. In <a href="#fig-itt-dag" class="quarto-xref">Figure&nbsp;3</a>, this means the dashed arrow <span class="math inline">\(Z \to y\)</span> is absent, and the only path from <span class="math inline">\(Z\)</span> to <span class="math inline">\(y\)</span> runs through <span class="math inline">\(T\)</span>. It fails if the email changes behavior even among users who never use the feature.</li>
+</ol>
+<p>Under assignment <span class="math inline">\(z\)</span>, user <span class="math inline">\(i\)</span> receives <span class="math inline">\(T_i(z)\)</span>. Without exclusion, their outcome would depend on both the assignment and the treatment received, <span class="math inline">\(y_i(z, T_i(z))\)</span>. Exclusion removes the direct dependence on <span class="math inline">\(z\)</span>, so their outcome is <span class="math inline">\(y_i(T_i(z))\)</span>. Randomization means that, among users with <span class="math inline">\(X = x\)</span>, the assignment does not change the distribution of types or potential outcomes, so</p>
+<p><span class="math display">\[\tau_{ITT}(x) = E[y(T(1)) | X = x] - E[y(T(0)) | X = x] = E\big[y(T(1)) - y(T(0)) \,\big|\, X = x\big].\]</span></p>
+<p>Next we apply the law of total expectation over the four types, <span class="math inline">\(\tau_{ITT}(x) = \sum_g \pi_g(x) \, E\big[y(T(1)) - y(T(0)) \,\big|\, X = x, G = g\big]\)</span>, and evaluate <span class="math inline">\(y(T(1)) - y(T(0))\)</span> for each type using the table above:</p>
+<ul>
+<li>Always-takers have <span class="math inline">\(T(1) = T(0) = 1\)</span>, so the difference is <span class="math inline">\(y(1) - y(1) = 0\)</span>.</li>
+<li>Never-takers have <span class="math inline">\(T(1) = T(0) = 0\)</span>, so the difference is <span class="math inline">\(y(0) - y(0) = 0\)</span>.</li>
+<li>Compliers have <span class="math inline">\(T(1) = 1\)</span> and <span class="math inline">\(T(0) = 0\)</span>, so the difference is <span class="math inline">\(y(1) - y(0)\)</span>.</li>
+<li>Defiers have <span class="math inline">\(T(1) = 0\)</span> and <span class="math inline">\(T(0) = 1\)</span>, so the difference is <span class="math inline">\(y(0) - y(1)\)</span>.</li>
+</ul>
+<p>Let <span class="math inline">\(\tau_g(x) = E[y(1) - y(0) | X = x, G = g]\)</span> be the CATE within type <span class="math inline">\(g\)</span>. Then</p>
+<p><span class="math display">\[\tau_{ITT}(x) = \pi_C(x) \, \tau_C(x) - \pi_D(x) \, \tau_D(x).\]</span></p>
+<p>The defiers enter with a negative sign. If they exist, their effect can cancel the compliers’ effect, and the ITT can be zero even when the intervention helps! So we add a third assumption.</p>
+<ol start="3" type="1">
+<li><strong>Monotonicity</strong>. There are no defiers, <span class="math inline">\(T_i(1) \geq T_i(0)\)</span> for every user, so <span class="math inline">\(\pi_D(x) = 0\)</span>. Assignment never makes a user less likely to receive the intervention. This often holds by design. For example, if control users have no way to access the intervention, there are neither always-takers nor defiers.</li>
+</ol>
+<p>Under monotonicity, <span class="math inline">\(\tau_{ITT}(x) = \pi_C(x) \, \tau_C(x)\)</span>, and integrating over <span class="math inline">\(f(x)\)</span>,</p>
+<p><span class="math display">\[\boxed{\tau_{ITT} = \int \tau_C(x) \, \pi_C(x) \, f(x) \, dx}\]</span></p>
+<p>This is the form of an average, with quantity <span class="math inline">\(\tau_C(x)\)</span> and weight <span class="math inline">\(\pi_C(x) f(x)\)</span>. But that weight is not a probability weight, because it integrates to <span class="math inline">\(\int \pi_C(x) f(x) \, dx = \pi_C\)</span>, not to 1. So the ITT is not an average of the intervention’s effect over any population. <strong>It is a <em>diluted</em> integral of the compliers’ effect</strong>. Always-takers and never-takers contribute zero, because the assignment does not change what they receive.</p>
+</section>
+<section id="the-dilution-in-an-example-dataset" class="level3">
+<h3 class="anchored" data-anchor-id="the-dilution-in-an-example-dataset">The Dilution in an Example Dataset</h3>
+<p>We simulate the email example with 200,000 users. Each user has a covariate <span class="math inline">\(X \sim N(0, 1)\)</span>, their pre-period engagement. The compliance types are:</p>
+<ul>
+<li><strong>Always-takers</strong>, with share <span class="math inline">\(\pi_A(x) = 0.1\)</span>. They find the feature on their own, whether or not they get the email.</li>
+<li><strong>Compliers</strong>, with share <span class="math inline">\(\pi_C(x) = 0.8 \cdot \text{logit}^{-1}(2x)\)</span>. Engaged users are more likely to try the feature after reading the email.</li>
+<li><strong>Never-takers</strong>, who make up the rest. They never try the feature.</li>
+</ul>
+<p>There are no defiers, so monotonicity holds by construction. The outcome depends on the assignment only through the treatment received, so exclusion holds too. The potential outcomes are</p>
+<p><span class="math display">\[y_i(0) = 20 + 5 x_i + 3 \cdot 1\{G_i = A\} + \varepsilon_i, \qquad y_i(1) = y_i(0) + 1 + x_i, \qquad \varepsilon_i \sim N(0, 5^2).\]</span></p>
+<p>Always-takers have a baseline 3 units higher, because users who seek out a feature on their own tend to be more engaged. Every user’s effect is <span class="math inline">\(1 + x_i\)</span>, so the compliers’ CATE equals the overall CATE, <span class="math inline">\(\tau_C(x) = \tau(x) = 1 + x\)</span>.</p>
+<p>In a real experiment the dataset contains <span class="math inline">\(X\)</span>, <span class="math inline">\(Z\)</span>, <span class="math inline">\(T\)</span> and <span class="math inline">\(y\)</span>. The compliance type <span class="math inline">\(G\)</span> is never observed, because we only see one of <span class="math inline">\(T_i(1)\)</span> and <span class="math inline">\(T_i(0)\)</span> for each user. We keep <span class="math inline">\(G\)</span> in the data only because the simulation knows it, so that we can look inside the ITT. This code also masks R’s shorthand <code>T</code> for <code>TRUE</code>.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">4</span>)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">200000</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>X <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(n)</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>pi_A <span class="ot">&lt;-</span> <span class="fl">0.1</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>pi_C_x <span class="ot">&lt;-</span> <span class="cf">function</span>(x) <span class="fl">0.8</span> <span class="sc">*</span> <span class="fu">plogis</span>(<span class="dv">2</span> <span class="sc">*</span> x)  <span class="co"># pi_C(x), the complier share at X = x</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>u <span class="ot">&lt;-</span> <span class="fu">runif</span>(n)</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>G <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(u <span class="sc">&lt;</span> pi_A, <span class="st">"A"</span>, <span class="fu">ifelse</span>(u <span class="sc">&lt;</span> pi_A <span class="sc">+</span> <span class="fu">pi_C_x</span>(X), <span class="st">"C"</span>, <span class="st">"N"</span>))</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>T_1 <span class="ot">&lt;-</span> <span class="fu">as.integer</span>(G <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"A"</span>, <span class="st">"C"</span>))  <span class="co"># T_i(1), treatment received if emailed</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>T_0 <span class="ot">&lt;-</span> <span class="fu">as.integer</span>(G <span class="sc">==</span> <span class="st">"A"</span>)            <span class="co"># T_i(0), treatment received if not emailed</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>y_0 <span class="ot">&lt;-</span> <span class="dv">20</span> <span class="sc">+</span> <span class="dv">5</span> <span class="sc">*</span> X <span class="sc">+</span> <span class="dv">3</span> <span class="sc">*</span> (G <span class="sc">==</span> <span class="st">"A"</span>) <span class="sc">+</span> <span class="fu">rnorm</span>(n, <span class="at">sd =</span> <span class="dv">5</span>)</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>y_1 <span class="ot">&lt;-</span> y_0 <span class="sc">+</span> <span class="dv">1</span> <span class="sc">+</span> X</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>Z <span class="ot">&lt;-</span> <span class="fu">rbinom</span>(n, <span class="dv">1</span>, <span class="fl">0.5</span>)  <span class="co"># randomized assignment, the email</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>T <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(Z <span class="sc">==</span> <span class="dv">1</span>, T_1, T_0)</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>y <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(T <span class="sc">==</span> <span class="dv">1</span>, y_1, y_0)</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>email <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">user_id =</span> <span class="fu">seq_len</span>(n), X, G, Z, T, y)</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(<span class="fu">head</span>(email), <span class="at">digits =</span> <span class="dv">2</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: right;">user_id</th>
+<th style="text-align: right;">X</th>
+<th style="text-align: left;">G</th>
+<th style="text-align: right;">Z</th>
+<th style="text-align: right;">T</th>
+<th style="text-align: right;">y</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0.22</td>
+<td style="text-align: left;">C</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">18.29</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">-0.54</td>
+<td style="text-align: left;">C</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">16.30</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">0.89</td>
+<td style="text-align: left;">N</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">24.10</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">0.60</td>
+<td style="text-align: left;">C</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">30.35</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">1.64</td>
+<td style="text-align: left;">C</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">28.68</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">0.69</td>
+<td style="text-align: left;">C</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">20.24</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>The ITT is the difference in means between the assignment arms. To see the dilution, we also compute the difference in means between the arms within each compliance type, which is possible only because we know <span class="math inline">\(G\)</span>.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>tau_ITT_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(email<span class="sc">$</span>y[email<span class="sc">$</span>Z <span class="sc">==</span> <span class="dv">1</span>]) <span class="sc">-</span> <span class="fu">mean</span>(email<span class="sc">$</span>y[email<span class="sc">$</span>Z <span class="sc">==</span> <span class="dv">0</span>])</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>by_type <span class="ot">&lt;-</span> <span class="fu">t</span>(<span class="fu">sapply</span>(<span class="fu">c</span>(<span class="at">A =</span> <span class="st">"A"</span>, <span class="at">C =</span> <span class="st">"C"</span>, <span class="at">N =</span> <span class="st">"N"</span>), <span class="cf">function</span>(g) {</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  in_g <span class="ot">&lt;-</span> email<span class="sc">$</span>G <span class="sc">==</span> g</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  share <span class="ot">&lt;-</span> <span class="fu">mean</span>(in_g)</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  itt_g <span class="ot">&lt;-</span> <span class="fu">mean</span>(email<span class="sc">$</span>y[in_g <span class="sc">&amp;</span> email<span class="sc">$</span>Z <span class="sc">==</span> <span class="dv">1</span>]) <span class="sc">-</span> <span class="fu">mean</span>(email<span class="sc">$</span>y[in_g <span class="sc">&amp;</span> email<span class="sc">$</span>Z <span class="sc">==</span> <span class="dv">0</span>])</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">c</span>(<span class="at">share =</span> share, <span class="at">itt_g =</span> itt_g, <span class="at">contribution =</span> share <span class="sc">*</span> itt_g)</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>}))</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>by_type</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>    share       itt_g contribution
+A 0.09874  0.10468192  0.010336293
+C 0.40052  1.61770374  0.647922700
+N 0.50074 -0.01368946 -0.006854858</code></pre>
+</div>
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="at">tau_ITT_hat =</span> tau_ITT_hat, <span class="at">sum_of_contributions =</span> <span class="fu">sum</span>(by_type[, <span class="st">"contribution"</span>]))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>         tau_ITT_hat sum_of_contributions 
+           0.6606867            0.6514041 </code></pre>
+</div>
+</div>
+<p>The rows follow the decomposition. Within always-takers and never-takers, the email does not change the treatment received, so the difference in means is zero up to sampling error. Within compliers, it is close to <span class="math inline">\(E[1 + X \mid G = C]\)</span>, the effect of the feature averaged over compliers, which we will call the LATE in the next section. Each type contributes its share times its effect, and the contributions add up to the overall ITT, up to small differences in the type shares between the two arms. Only the compliers contribute, so the ITT is the compliers’ effect scaled down by their share, which is about 40%. Most of the users in the experiment never had their treatment changed by the email, and they pull the ITT toward zero.</p>
+</section>
+<section id="local-average-treatment-effect" class="level2">
+<h2 class="anchored" data-anchor-id="local-average-treatment-effect">Local Average Treatment Effect</h2>
+<p>The ITT’s weight integrates to <span class="math inline">\(\pi_C\)</span> rather than 1, so it is not a probability weight. Normalizing it turns it into a probability weight, and turns the ITT into a genuine average. Dividing the boxed ITT by <span class="math inline">\(\pi_C\)</span>,</p>
+<p><span class="math display">\[\frac{\tau_{ITT}}{\pi_C} = \int \tau_C(x) \, \frac{\pi_C(x) f(x)}{\pi_C} \, dx.\]</span></p>
+<p>The new probability weight is the probability density of covariates among compliers. By Bayes’ rule,</p>
+<p><span class="math display">\[f(x | G = C) = \frac{P(G = C | X = x) \, f(x)}{P(G = C)} = \frac{\pi_C(x) f(x)}{\pi_C}.\]</span></p>
+<p>Substituting this probability weight, and then applying the law of iterated expectations within the compliers, defines the local average treatment effect (LATE),</p>
+<p><span class="math display">\[\boxed{\tau_{LATE} = \frac{\tau_{ITT}}{\pi_C} = \int \tau_C(x) \, f(x | G = C) \, dx = E[y(1) - y(0) | G = C]}\]</span></p>
+<p>The LATE is an average in the full sense, with quantity <span class="math inline">\(\tau_C(x)\)</span> and probability weight <span class="math inline">\(f(x | G = C)\)</span>. The treatment is once again the intervention received, but the population is restricted to the compliers. That restriction is what “local” means. This result is due to <a href="https://www.jstor.org/stable/2951620">Imbens and Angrist (1994)</a>.</p>
+<p>The complier share <span class="math inline">\(\pi_C\)</span> is not observed directly, because we never see both <span class="math inline">\(T_i(1)\)</span> and <span class="math inline">\(T_i(0)\)</span> for the same user. It is identified by applying the same type decomposition to the treatment received instead of the outcome. By randomization, <span class="math inline">\(E[T | Z = 1] - E[T | Z = 0] = E[T(1) - T(0)]\)</span>. The difference <span class="math inline">\(T(1) - T(0)\)</span> is 0 for always-takers and never-takers, 1 for compliers and <span class="math inline">\(-1\)</span> for defiers, so</p>
+<p><span class="math display">\[E[T | Z = 1] - E[T | Z = 0] = \pi_C - \pi_D = \pi_C,\]</span></p>
+<p>where the last step uses monotonicity. The LATE is therefore the ratio of two ITTs, the effect of the assignment on the outcome divided by the effect of the assignment on the treatment received:</p>
+<p><span class="math display">\[\tau_{LATE} = \frac{E[y | Z = 1] - E[y | Z = 0]}{E[T | Z = 1] - E[T | Z = 0]}.\]</span></p>
+<p>This is the Wald estimator, which is the instrumental variables estimate with <span class="math inline">\(Z\)</span> as the instrument. Its plug-in estimate is the ratio of the two differences in sample means.</p>
+<section id="the-itt-and-the-late-in-the-example-dataset" class="level3">
+<h3 class="anchored" data-anchor-id="the-itt-and-the-late-in-the-example-dataset">The ITT and the LATE in the Example Dataset</h3>
+<p>We return to the email dataset. The first stage, the difference in the share of users who used the feature between the assignment arms, estimates <span class="math inline">\(\pi_C\)</span>. Dividing the ITT by it gives the Wald estimate of the LATE. The standard error of <span class="math inline">\(\hat{\tau}_{ITT}\)</span> comes from regressing <span class="math inline">\(y\)</span> on <span class="math inline">\(Z\)</span>. Dividing by <span class="math inline">\(\hat{\pi}_C\)</span> inflates it by roughly a factor of <span class="math inline">\(1 / \hat{\pi}_C\)</span>, because <span class="math inline">\(\hat{\pi}_C\)</span> is estimated much more precisely than <span class="math inline">\(\hat{\tau}_{ITT}\)</span>.</p>
+<p>Because the simulation knows every user’s potential outcomes, we can also compute the ground truth for this sample of users. The true ITT is the average of <span class="math inline">\(y_i(T_i(1)) - y_i(T_i(0))\)</span>, the true LATE is the average of <span class="math inline">\(y_i(1) - y_i(0)\)</span> among compliers, and the true ATE is the average of <span class="math inline">\(y_i(1) - y_i(0)\)</span> among all users.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>pi_C_hat <span class="ot">&lt;-</span> <span class="fu">mean</span>(email<span class="sc">$</span>T[email<span class="sc">$</span>Z <span class="sc">==</span> <span class="dv">1</span>]) <span class="sc">-</span> <span class="fu">mean</span>(email<span class="sc">$</span>T[email<span class="sc">$</span>Z <span class="sc">==</span> <span class="dv">0</span>])</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>tau_LATE_hat <span class="ot">&lt;-</span> tau_ITT_hat <span class="sc">/</span> pi_C_hat</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>se_tau_ITT_hat <span class="ot">&lt;-</span> <span class="fu">coef</span>(<span class="fu">summary</span>(<span class="fu">lm</span>(y <span class="sc">~</span> Z, <span class="at">data =</span> email)))[<span class="st">"Z"</span>, <span class="st">"Std. Error"</span>]</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>se_tau_LATE_hat <span class="ot">&lt;-</span> se_tau_ITT_hat <span class="sc">/</span> pi_C_hat  <span class="co"># approximate</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Ground truth from the potential outcomes</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>y_T_1 <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(T_1 <span class="sc">==</span> <span class="dv">1</span>, y_1, y_0)  <span class="co"># y_i(T_i(1))</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>y_T_0 <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(T_0 <span class="sc">==</span> <span class="dv">1</span>, y_1, y_0)  <span class="co"># y_i(T_i(0))</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>tau_ITT <span class="ot">&lt;-</span> <span class="fu">mean</span>(y_T_1 <span class="sc">-</span> y_T_0)</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>pi_C <span class="ot">&lt;-</span> <span class="fu">mean</span>(G <span class="sc">==</span> <span class="st">"C"</span>)</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>tau_LATE <span class="ot">&lt;-</span> <span class="fu">mean</span>((y_1 <span class="sc">-</span> y_0)[G <span class="sc">==</span> <span class="st">"C"</span>])</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>tau <span class="ot">&lt;-</span> <span class="fu">mean</span>(y_1 <span class="sc">-</span> y_0)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">data.frame</span>(</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">Quantity =</span> <span class="fu">c</span>(<span class="st">"$</span><span class="sc">\\</span><span class="st">tau_{ITT}$"</span>, <span class="st">"$</span><span class="sc">\\</span><span class="st">pi_C$"</span>, <span class="st">"$</span><span class="sc">\\</span><span class="st">tau_{LATE}$"</span>, <span class="st">"$</span><span class="sc">\\</span><span class="st">tau$"</span>),</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">Meaning =</span> <span class="fu">c</span>(<span class="st">"Effect of sending the email, averaged over all users"</span>,</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>                <span class="st">"Share of compliers"</span>,</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>                <span class="st">"Effect of using the feature, averaged over compliers"</span>,</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>                <span class="st">"Effect of using the feature, averaged over all users"</span>),</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">Estimate =</span> <span class="fu">c</span>(<span class="fu">sprintf</span>(<span class="st">"%.3f (%.3f)"</span>, tau_ITT_hat, se_tau_ITT_hat),</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">sprintf</span>(<span class="st">"%.3f"</span>, pi_C_hat),</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">sprintf</span>(<span class="st">"%.3f (%.3f)"</span>, tau_LATE_hat, se_tau_LATE_hat),</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>                 <span class="st">"Not identified"</span>),</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">Truth =</span> <span class="fu">sprintf</span>(<span class="st">"%.3f"</span>, <span class="fu">c</span>(tau_ITT, pi_C, tau_LATE, tau))</span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>  ),</span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">col.names =</span> <span class="fu">c</span>(<span class="st">"Quantity"</span>, <span class="st">"Meaning"</span>, <span class="st">"Estimate (SE)"</span>, <span class="st">"Ground truth"</span>),</span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">align =</span> <span class="st">"llrr"</span></span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div id="tbl-itt-late" class="cell quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-itt-late-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;2: The ITT and the LATE estimated from the email dataset, against the ground truth computed from the potential outcomes.
+</figcaption>
+<div aria-describedby="tbl-itt-late-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="cell-output-display">
+<table class="cell caption-top table table-sm table-striped small">
+<colgroup>
+<col style="width: 14%">
+<col style="width: 55%">
+<col style="width: 15%">
+<col style="width: 13%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Quantity</th>
+<th style="text-align: left;">Meaning</th>
+<th style="text-align: right;">Estimate (SE)</th>
+<th style="text-align: right;">Ground truth</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><span class="math inline">\(\tau_{ITT}\)</span></td>
+<td style="text-align: left;">Effect of sending the email, averaged over all users</td>
+<td style="text-align: right;">0.661 (0.033)</td>
+<td style="text-align: right;">0.644</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><span class="math inline">\(\pi_C\)</span></td>
+<td style="text-align: left;">Share of compliers</td>
+<td style="text-align: right;">0.401</td>
+<td style="text-align: right;">0.401</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><span class="math inline">\(\tau_{LATE}\)</span></td>
+<td style="text-align: left;">Effect of using the feature, averaged over compliers</td>
+<td style="text-align: right;">1.647 (0.083)</td>
+<td style="text-align: right;">1.608</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><span class="math inline">\(\tau\)</span></td>
+<td style="text-align: left;">Effect of using the feature, averaged over all users</td>
+<td style="text-align: right;">Not identified</td>
+<td style="text-align: right;">0.999</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</figure>
+</div>
+</div>
+<p>The ITT and the LATE estimate different things, and each one is close to its own ground truth. The LATE is about <span class="math inline">\(1 / \hat{\pi}_C \approx 2.5\)</span> times the ITT, because dividing by the complier share undoes the dilution. The LATE also has a standard error about 2.5 times larger, because the noise in the ITT is scaled up by the same factor. The two answer different questions. The ITT is the effect of sending the email, which is what we would see if we emailed every user. The LATE is the effect of using the feature for the users who start using it because of the email.</p>
+<p>The last row is a reminder that neither is the ATE. The LATE is larger than the true ATE in this example, for a reason we explain next.</p>
+</section>
+<section id="comparing-the-late-and-the-ate" class="level3">
+<h3 class="anchored" data-anchor-id="comparing-the-late-and-the-ate">Comparing the LATE and the ATE</h3>
+<p>Both the ATE and the LATE average the effect of the intervention:</p>
+<p><span class="math display">\[\begin{align}
+\tau &amp;= \int \tau(x) \, f(x) \, dx \\
+\tau_{LATE} &amp;= \int \tau_C(x) \, f(x | G = C) \, dx.
+\end{align}\]</span></p>
+<p>They can differ in both ingredients.</p>
+<ol type="1">
+<li><strong>The quantity.</strong> At the same <span class="math inline">\(x\)</span>, compliers can respond differently from other users. For example, users who adopt a recommended setting might be the ones who benefit most from it. The CATE mixes all types, <span class="math inline">\(\tau(x) = \sum_g \pi_g(x) \, \tau_g(x)\)</span>, while the LATE uses only <span class="math inline">\(\tau_C(x)\)</span>.</li>
+<li><strong>The probability weight.</strong> <span class="math inline">\(f(x | G = C)\)</span> tilts <span class="math inline">\(f(x)\)</span> toward the values of <span class="math inline">\(x\)</span> where compliance is high.</li>
+</ol>
+<p>The two are equal when <span class="math inline">\(\tau_C(x) = \tau(x)\)</span>, as in the model from the first section where the effect depends only on <span class="math inline">\(x\)</span>, and when <span class="math inline">\(\pi_C(x)\)</span> does not depend on <span class="math inline">\(x\)</span>, so that <span class="math inline">\(f(x | G = C) = f(x)\)</span>. If compliance varies with <span class="math inline">\(x\)</span> and the effect also varies with <span class="math inline">\(x\)</span>, then the LATE differs from the ATE, even when the effect depends only on <span class="math inline">\(x\)</span>. This is what happens in the email example. Both the complier share <span class="math inline">\(\pi_C(x) = 0.8 \cdot \text{logit}^{-1}(2x)\)</span> and the effect <span class="math inline">\(1 + x\)</span> increase with engagement, so <span class="math inline">\(f(x \mid G = C)\)</span> puts more probability weight on large effects than <span class="math inline">\(f(x)\)</span> does, and the true LATE of 1.61 is larger than the true ATE of 1.00 in <a href="#tbl-itt-late" class="quarto-xref">Table&nbsp;2</a>.</p>
+<p>In general, the ATE cannot be recovered from an experiment that randomizes only <span class="math inline">\(Z\)</span>. Always-takers are never observed untreated, and never-takers are never observed treated, so their effects never appear in the data. Recovering the ATE requires further assumptions, such as the effect being the same for every type of user.</p>
+</section>
+</section>
+<section id="why-not-compare-the-users-who-were-treated" class="level2">
+<h2 class="anchored" data-anchor-id="why-not-compare-the-users-who-were-treated">Why Not Compare the Users Who Were Treated?</h2>
+<p>A tempting shortcut is the “as treated” comparison, <span class="math inline">\(E[y | T = 1] - E[y | T = 0]\)</span>, which compares the users who actually received the intervention with those who did not. This is the difference in expectations from the first section, but <span class="math inline">\(T\)</span> is no longer randomized. The users with <span class="math inline">\(T = 1\)</span> are the always-takers in both arms plus the compliers assigned to the treatment. The users with <span class="math inline">\(T = 0\)</span> are the never-takers in both arms plus the compliers assigned to the control. The two groups have different covariate probability densities and different mixes of types, so their baselines do not cancel. The as-treated comparison is not any of the averages above.</p>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/jeffwong\.github\.io");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

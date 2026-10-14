@@ -1,0 +1,855 @@
+---
+title: "System One and Causal Inference"
+author: "Jeffrey Wong"
+date: 2026-10-12
+categories: [causal inference, AI]
+format:
+  html:
+    toc: true
+    code-fold: show
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(torch)
+options(pillar.width = Inf)
+```
+
+In *Thinking, Fast and Slow*, Daniel Kahneman separates two modes of thought. System 1 is fast, automatic and intuitive: we read the mood of a face, or know that $2 + 2 = 4$, without effort. System 2 is slow and deliberate: we multiply $17 \times 24$, or fill out a tax form. Most of what we do all day is System 1.
+
+Software has the same split. A customer support platform receives a ticket and has to decide, in a fraction of a second, whether the customer is asking for a refund, which team should handle it, and how upset the customer is. These are small judgments, made millions of times a day, and each one feeds an `if` statement. Writing the reply to the customer is a different job, slower and open ended.
+
+TypeSafe AI recently introduced [System One models](https://typesafe.ai/blog/introducing-system-one-models-and-jev), a class of models built for the first kind of job, together with the first such model, Jev. This post describes, from first principles, what a System One model is, how it differs from the large language models (LLMs) used for chat and from the rankers we built in [First Principles of Ranking](https://jeffwong.github.io/posts/rankers/), and what it means for such a model to "make decisions".
+
+A note on sources. Jev is new, and TypeSafe has published what the model does but not how it is built: there is no paper, and the architecture, model size, training data and reward function are not disclosed. Where this post says what Jev does, it cites TypeSafe's [launch post](https://typesafe.ai/blog/introducing-system-one-models-and-jev) and [documentation](https://docs.typesafe.ai/concepts/system-one), and the performance figures are TypeSafe's own, not independent measurements. Where this post says how a System One model works inside, it follows [open-jev](https://github.com/kyegomez/open-jev), an unofficial open source reconstruction whose README states that its design choices are "hypotheses, not disclosed details of TypeSafe AI's system". We will treat it the same way: one plausible design, not Jev itself.
+
+# Three tools for three jobs
+
+## What a System One model does
+
+A System One model receives two things: a **state**, which is text or JSON describing the current situation in a program, and a list of **typed questions** about that state. It returns one typed answer per question, each with probabilities, and nothing else. It never writes prose. TypeSafe offers three question types:
+
+* **Noul**: is this statement true? The answer is a probability between 0 and 1.
+* **Choice**: which of these options applies? The options are supplied with the question, and the answer is one of them, with a probability for each.
+* **Score**: where does the state fall on this ordered rubric? The answer is a probability for each level of the rubric, and the expected level.
+
+Our running example is the support ticket from TypeSafe's documentation. The state is the ticket,
+
+```json
+{
+  "customer": {"tier": "enterprise"},
+  "transactions": {"duplicates": 1},
+  "message": "charged again card please refund unacceptable",
+  "policy": "refund within 60 days"
+}
+```
+
+and we ask three questions about it at once:
+
+| Question | Type | Answer space |
+|---|---|---|
+| The customer is requesting a refund | Noul | $[0, 1]$ |
+| Which team should handle this ticket? | Choice | billing, technical, account |
+| How frustrated is the customer? | Score | calm, annoyed, frustrated, very frustrated |
+
+A System One model answers all three in a single pass: a probability that the customer wants a refund, a probability for each of the three teams, and a probability for each frustration level together with a score between 0 and 3. Each answer drops straight into code. TypeSafe describes the intended uses as "smart if-statements" in workflows, classification, routing and guardrails, map-reduce over large datasets, and real-time applications. One of its demos plays the video game Doom from a text description of the game state, making about 10 queries a second.
+
+TypeSafe makes three claims for this design. The answers are *type safe*: a Choice answer is always one of the declared options, so there is nothing to parse and no malformed output. The answers come with *calibrated* probabilities, so code can decide when to act and when to escalate to a person. And the model is *fast and cheap*: TypeSafe reports 70 to 500 milliseconds per call, "40x-200x faster than frontier LLMs", at \$0.042 per million input tokens with output free.
+
+## Compared with LLMs and rankers
+
+The three tools take different inputs, produce different outputs, and are good at different jobs.
+
+| | LLM | Ranker | System One model |
+|---|---|---|---|
+| Input | A prompt | A query, such as a member and their context | A state and a list of typed questions |
+| Output | Free text, generated one token at a time | An ordered list of items from a catalog | One typed answer per question, with probabilities |
+| Scale of the answer space | Any text | Thousands to billions of items | A handful of options per question (Jev allows at most 255) |
+| Speed | Seconds | Milliseconds, after offline precomputation | Milliseconds |
+| Typical use | Writing, reasoning, conversation, code | Search, recommendations, feeds | Classifying, routing, scoring, checking, inside code |
+
+Use an **LLM** when the output is open ended or the task needs deliberate, multi-step reasoning: drafting the reply to the ticket, explaining a refund policy, or deciding what to do in a case nobody anticipated. This is System 2.
+
+Use a **ranker** when the job is to choose and order a few items out of a very large catalog for a query, such as the "Top Picks" row on Netflix. A ranker is built around the size of the catalog: cheap candidate generation narrows millions of items to hundreds, and only then does an expensive model score them.
+
+Use a **System One model** when the job is a fixed, well-scoped judgment that software makes over and over: is this a refund request, which team gets the ticket, is this message abusive, does this transaction look like a duplicate. The answer space is small and known in advance, and the cost of each call matters because there are millions of them. TypeSafe's documentation recommends keeping each question atomic: rather than asking "rate this startup pitch", ask separate questions about market size, feasibility and differentiation, then "combine the scores with your own formula".
+
+The tools also work together. A workflow can ask a System One model to route every ticket, send the cases where it is unsure to an LLM or a person, and use a ranker to pick which help center articles to attach. @fig-three-tools sketches the three pipelines.
+
+```{dot}
+//| label: fig-three-tools
+//| fig-cap: "Three pipelines. An LLM generates its answer one token at a time. A ranker narrows a large catalog in stages and outputs an ordered list. A System One model encodes the state once and answers every typed question in parallel."
+digraph G {
+  rankdir = LR;
+  nodesep = 0.25;
+  ranksep = 0.35;
+  node [shape = box, style = rounded, fontname = "Helvetica", fontsize = 11];
+  edge [fontname = "Helvetica", fontsize = 10];
+
+  subgraph cluster_llm {
+    label = "LLM"; fontname = "Helvetica"; style = rounded; color = gray60;
+    p [label = "prompt"];
+    t1 [label = "token 1"]; t2 [label = "token 2"]; t3 [label = "..."]; txt [label = "text\n(parse it)"];
+    p -> t1 -> t2 -> t3 -> txt;
+  }
+  subgraph cluster_ranker {
+    label = "Ranker"; fontname = "Helvetica"; style = rounded; color = gray60;
+    q [label = "query"];
+    cg [label = "candidate\ngeneration"]; sc [label = "utility\nprediction"]; rr [label = "reranking"]; lst [label = "ordered\nlist"];
+    q -> cg -> sc -> rr -> lst;
+  }
+  subgraph cluster_s1 {
+    label = "System One"; fontname = "Helvetica"; style = rounded; color = gray60;
+    s [label = "state +\nquestions"];
+    enc [label = "encode\nonce"];
+    a1 [label = "Noul"]; a2 [label = "Choice"]; a3 [label = "Score"];
+    s -> enc; enc -> a1; enc -> a2; enc -> a3;
+  }
+}
+```
+
+# The mathematical model
+
+## Each question is a probability model
+
+Let $s$ be the state and let $m = 1, \dots, M$ index the questions asked about it. For each question there is an unknown true answer, which we write $a_m$. For the Noul question about refunds, $a_m = 1$ if the customer really is requesting a refund and 0 otherwise. A System One model with parameters $\theta$ outputs a probability distribution over the possible values of $a_m$, given the state.
+
+The model first summarizes the pair (state, question) into a vector $r_m \in \mathbb{R}^d$, a list of $d$ numbers that describes what the state says about question $m$. Each question type then turns $r_m$ into a distribution of the right type.
+
+**Noul** is a Bernoulli model. With a weight vector $w_N \in \mathbb{R}^d$,
+
+$$P_\theta(a_m = 1 \mid s) = \operatorname{logit}^{-1}(w_N^\top r_m) = \frac{1}{1 + \exp(-w_N^\top r_m)}.$$
+
+**Choice** is a categorical model over the options $\mathcal{O}_m$ supplied with the question, with $K_m = |\mathcal{O}_m|$ options. Each option $o$ is embedded as a vector $v_o \in \mathbb{R}^d$ from its text, and the probability of each option is a softmax of dot products,
+
+$$P_\theta(a_m = o \mid s) = \frac{\exp(r_m^\top v_o / \gamma)}{\sum_{o' \in \mathcal{O}_m} \exp(r_m^\top v_{o'} / \gamma)}, \qquad o \in \mathcal{O}_m,$$
+
+where $\gamma > 0$ is a scalar temperature. This is where type safety comes from. The sum in the denominator runs over exactly the declared options, so the probabilities of the declared options sum to 1, and every other answer has probability zero. A wrong type is not merely unlikely. It cannot be represented. Because options enter only through their embeddings $v_o$, the option set can change from call to call.
+
+**Score** is an ordinal model over levels $c = 0, 1, \dots, C_m - 1$. A flat softmax over levels would treat confusing "calm" with "very frustrated" as no worse than confusing "calm" with "annoyed". Instead, the model predicts the probability that the answer exceeds each level, using a single scalar $z_m = w_S^\top r_m$ and a decreasing sequence of thresholds $b_0 > b_1 > \dots > b_{C_m - 2}$,
+
+$$P_\theta(a_m > c \mid s) = \operatorname{logit}^{-1}(z_m + b_c), \qquad c = 0, \dots, C_m - 2.$$
+
+Because the thresholds decrease, these probabilities decrease in $c$, as probabilities of exceeding a level must. The probability of each level is the difference of adjacent exceedance probabilities, with $P_\theta(a_m > -1 \mid s) = 1$ and $P_\theta(a_m > C_m - 1 \mid s) = 0$:
+
+$$P_\theta(a_m = c \mid s) = P_\theta(a_m > c - 1 \mid s) - P_\theta(a_m > c \mid s).$$
+
+The reported score is the expected level, $\sum_c c \, P_\theta(a_m = c \mid s)$, which is why a score can be a number like 1.4 rather than a whole level. This is the cumulative logit, or proportional odds, model from ordinal regression.
+
+From here on we write $\hat{p}(o \mid s) = P_\theta(a_m = o \mid s)$ for the model's predicted probability of answer $o$, whichever the question type, and for a Noul question we shorten $\hat{p}(1 \mid s)$ to $\hat{p}(s)$.
+
+## Probability is not confidence
+
+Choice and Score answers come with both probabilities and a separate confidence $\kappa \in [0, 1]$. They measure different things. The probabilities describe uncertainty that is in the state itself: a message that only says "card error" may really be ambiguous between billing and technical, and a 60/40 split can be exactly right. The confidence describes uncertainty in the model: a state unlike anything seen in training, or a question the state cannot answer. A low $\kappa$ is the signal to escalate to a person or to an LLM.
+
+TypeSafe does not say how $\kappa$ is computed. In open-jev, one more small head predicts a nonnegative "evidence" $\eta$, and $\kappa = 1 - K_m / (K_m + \eta)$. With no evidence, $\kappa = 0$. As evidence grows, $\kappa$ approaches 1. We describe it for completeness. It plays no further role in this post.
+
+## Calibration and how to train for it
+
+TypeSafe's documentation says that "System One models are trained for calibrated decisions: their probabilities are optimized against outcomes to reflect uncertainty." Calibration means that among all the times the model says $\lambda$, the answer is true a fraction $\lambda$ of the time. For a Noul question, with $S$ a randomly drawn state,
+
+$$P\big(a_m = 1 \mid \hat{p}(S) = \lambda\big) = \lambda \quad \text{for every } \lambda \in [0, 1].$$
+
+Calibration is what lets code treat 0.9 as 0.9: if we auto-refund every ticket with $\hat{p}(s) > 0.9$, we know roughly how many refunds will go to customers who did not ask.
+
+TypeSafe calls its training method Reinforcement Learning for Calibrated Decisions (RLCD) but has published only this goal, not the method. What we can do is derive which training objectives produce calibrated probabilities. The answer is any *proper scoring rule*, and the log loss used by open-jev is one.
+
+Fix a state $s$ and a question with options $\mathcal{O}_m$. Let $p(o \mid s) = P(a_m = o \mid s)$ be the true probability of each answer, and let $\hat{p}(o \mid s)$ be any distribution over the options that the model might predict. The expected log loss of that prediction, averaged over the true answer, is
+
+$$\ell(\hat{p}) = E\big[-\log \hat{p}(a_m \mid s) \mid s\big] = -\sum_{o \in \mathcal{O}_m} p(o \mid s) \log \hat{p}(o \mid s).$$
+
+To see which $\hat{p}$ minimizes it, add and subtract $\sum_o p(o \mid s) \log p(o \mid s)$, which does not depend on $\hat{p}$:
+
+$$\ell(\hat{p}) = \underbrace{-\sum_o p(o \mid s) \log p(o \mid s)}_{\text{entropy of the answer, fixed}} + \underbrace{\sum_o p(o \mid s) \log \frac{p(o \mid s)}{\hat{p}(o \mid s)}}_{\text{KL divergence, } \geq 0}.$$
+
+The Kullback-Leibler divergence is never negative, and it is zero only when $\hat{p}(\cdot \mid s) = p(\cdot \mid s)$. So the expected log loss is minimized by predicting the true probabilities, at every state, and its minimum value is the entropy of the answer. The same holds for the Brier score, $\sum_o \big(\hat{p}(o \mid s) - 1\{a_m = o\}\big)^2$, whose expectation is $\sum_o \big(\hat{p}(o \mid s) - p(o \mid s)\big)^2$ plus a term that does not depend on $\hat{p}$.
+
+A model that predicts the true probability at every state is calibrated. Take a Noul question with $\hat{p}(s) = P(a_m = 1 \mid s)$. By the law of iterated expectations,
+
+$$P\big(a_m = 1 \mid \hat{p}(S) = \lambda\big) = E\big[P(a_m = 1 \mid S) \mid \hat{p}(S) = \lambda\big] = E\big[\hat{p}(S) \mid \hat{p}(S) = \lambda\big] = \lambda.$$
+
+Two assumptions carry this argument: the model is flexible enough to represent $P(a_m = 1 \mid s)$, and there is enough data that minimizing the average loss over the training set comes close to minimizing the expected loss.
+
+**Soft targets.** We rarely observe $p(\cdot \mid s)$. We observe either a hard label, a single draw of $a_m$, or a *soft target*: a reference distribution $p^{\text{ref}}(\cdot \mid s)$ from a teacher, such as the frequency with which an ensemble of LLMs picks each option. Training on a soft target replaces the one observed answer with its expectation under $p^{\text{ref}}$:
+
+$$-\sum_o p^{\text{ref}}(o \mid s) \log \hat{p}(o \mid s) = E_{a \sim p^{\text{ref}}(\cdot \mid s)}\big[-\log \hat{p}(a \mid s)\big].$$
+
+By the same decomposition, this loss is minimized at $\hat{p}(\cdot \mid s) = p^{\text{ref}}(\cdot \mid s)$. A model trained on soft targets is calibrated *to its teacher*. Whether it is calibrated to reality depends entirely on whether the teacher is. Hard labels drawn from reality aim at the true probability, but each label is a single coin flip, so the estimates are noisier.
+
+This matters for reading TypeSafe's evaluations. The launch post says that, to score models on its workflow benchmark, TypeSafe uses "the predictions of the largest, smartest, and most expensive external models as reference probabilities", specifically "the average of GPT-6 Astra and Fable 5.1". That measures agreement with a teacher, not calibration against what actually happened.
+
+# System architecture
+
+## Encode once, ask many
+
+A System One model has to answer $M$ questions about a state of $n_s$ tokens in a single pass. The design in open-jev splits the work into an expensive part that is shared by all questions and a cheap part that is done once per question. @fig-architecture shows it.
+
+1. **Flatten the state.** The JSON is turned into a sequence of $n_s$ tokens. Each token also records its *path* in the JSON, such as `customer.tier` or `message`, so the word "refund" in the message and the word "refund" in the refund policy are different inputs. In addition, open-jev records each token's position in the sequence, as most transformers do.
+2. **Encode the state once.** Each token becomes a vector, the sum of a token embedding and a path embedding. A transformer encoder then lets every token attend to every other token, in both directions, with no causal mask, because nothing is being generated. The output is $h(s)$, an $n_s \times d$ matrix with one row per token. It does not depend on the questions, so it can be cached and reused.
+3. **Read out each question.** Question $m$'s text is embedded as $u_m \in \mathbb{R}^d$. The question gets a few learned vectors called *slots*, shifted by $u_m$, and the slots *cross-attend* to $h(s)$: each slot forms a weighted average of the rows of $h(s)$, with weights given by how well that slot matches each token. After a few such layers, the slots are averaged into the summary vector $r_m$ from the previous section.
+4. **Answer through typed heads.** $r_m$ goes to the Noul, Choice or Score head, which outputs the distribution defined above.
+
+Attention is the operation in steps 2 and 3. For a matrix of queries $A$ and a matrix $B$ to attend to,
+
+$$\text{Attn}(A, B) = \operatorname{softmax}\!\left(\frac{(A W_Q)(B W_K)^\top}{\sqrt{d}}\right) B W_V,$$
+
+where $W_Q, W_K, W_V$ are $d \times d$ weight matrices and the softmax runs across each row. In step 2, $A$ and $B$ are both the state's token vectors. In step 3, $A$ is the question's slots and $B = h(s)$.
+
+```{dot}
+//| label: fig-architecture
+//| fig-cap: "The architecture of a System One model as reconstructed by open-jev. The state is encoded once, without seeing the questions. Each question's slots cross-attend into the shared encoding, and questions never attend to each other. Each question is answered by the head for its type."
+digraph G {
+  rankdir = LR;
+  nodesep = 0.3;
+  ranksep = 0.45;
+  node [shape = box, style = rounded, fontname = "Helvetica", fontsize = 11];
+  edge [fontname = "Helvetica", fontsize = 10];
+
+  state [label = "state s\n(JSON)"];
+  flat [label = "flatten:\ntoken + path"];
+  enc [label = "bidirectional\nencoder"];
+  cache [label = "h(s)\nn_s x d\n(cached)", style = "rounded,filled", fillcolor = "#e8eef8"];
+
+  q1 [label = "Noul text"]; q2 [label = "Choice text\n+ options"]; q3 [label = "Score text\n+ levels"];
+  r1 [label = "slots read h(s)\n-> r_1"]; r2 [label = "slots read h(s)\n-> r_2"]; r3 [label = "slots read h(s)\n-> r_3"];
+  h1 [label = "logit^-1(w_N'r_1)\nP(true)"]; h2 [label = "softmax over\ndeclared options"]; h3 [label = "ordinal\nthresholds"];
+
+  state -> flat -> enc -> cache;
+  cache -> r1; cache -> r2; cache -> r3;
+  q1 -> r1 -> h1;
+  q2 -> r2 -> h2;
+  q3 -> r3 -> h3;
+}
+```
+
+The pseudocode for one call is short.
+
+```text
+function answer(state, questions):
+    tokens, paths = flatten(state)                     # n_s tokens, each with a JSON path
+    h = encoder(embed(tokens) + embed(paths))          # n_s x d, computed once
+    for each question m, in parallel:                  # questions never see each other
+        slots = slot_init + embed_text(question m)     # a few d-vectors
+        for each readout layer:
+            slots = slots + Attn(slots, h)             # read from the state
+            slots = slots + ffn(slots)
+        r_m = mean(slots)
+        if Noul:   answer_m = logit^-1(w_N' r_m)
+        if Choice: v_o = embed_text(o) for each declared option o
+                   answer_m = softmax(r_m' v_o / gamma) over declared options
+        if Score:  answer_m = differences of logit^-1(w_S' r_m + b_c)
+    return answers
+```
+
+## Why it is fast
+
+The cost of attention in the encoder grows with the square of the state length, roughly $n_s^2 d$ per layer, and it is paid once per state. Each question then costs roughly $n_{\text{slots}} \, n_s \, d$ per readout layer, where $n_{\text{slots}}$ is a handful of slots, so adding questions is cheap.
+
+An LLM asked the same three questions has to generate its answers as text, one token at a time, where each token requires another pass through the network. It must then parse the text, which can fail, and the questions in one prompt can influence each other's answers. A System One model produces every answer in one pass, with no output tokens, which is the source of TypeSafe's claimed speed and its free output pricing.
+
+The design has a price. The state is encoded without knowing the questions, and each question gets a fixed amount of computation, with no scratchpad for working through a problem step by step. A System One model is built for System 1 judgments, and is weak at System 2 reasoning by design.
+
+## Choosing among more than 255 options
+
+Jev's Choice questions allow at most 255 options. In the Wikiracing demo, where the model navigates from one Wikipedia page to another by clicking links, a page can have thousands of links. TypeSafe says that for these, "we do a two-stage system of scoring independently then making an explicit choice". The first stage scores each link on its own, and the second chooses among the scored links, so the answer space can exceed what a single Choice question allows.
+
+# A minimal System One model in R
+
+We now build a small System One model with the R interface to [torch](https://torch.mlverse.org/), train it on simulated support tickets, and check the properties claimed above. Because the tickets are simulated, we know the true probability of every answer. The model follows @fig-architecture with two simplifications: it has no confidence head, and it records each token's path but not its position, so a message is treated as a bag of words.
+
+## Simulated tickets
+
+Each ticket has a customer tier, a count of duplicate charges, a message and a policy line. The message is a bag of words drawn from a vocabulary for the ticket's underlying issue (billing, technical or account), words that express heat ("again", "unacceptable"), filler, and sometimes an explicit request for a refund. Half of the tickets carry a policy line that also contains the word "refund", so the model has to learn that "refund" means something in the message but nothing in the policy.
+
+```{r}
+set.seed(1)
+tiers <- c("free", "standard", "enterprise")
+routes <- c("billing", "technical", "account")
+moods <- c("calm", "annoyed", "frustrated", "very frustrated")
+word_bank <- list(
+  billing = c("charged", "invoice", "card", "payment"),
+  technical = c("error", "crash", "login", "slow"),
+  account = c("password", "email", "profile", "delete"),
+  heat = c("again", "third", "unacceptable", "now"),
+  filler = c("hello", "please", "help", "thanks", "order", "today")
+)
+
+# One message: two words from the issue, maybe a stray word from another issue,
+# maybe a refund request, some heat, and filler, in random order
+write_message <- function(issue, asks_refund, heat) {
+  words <- c(sample(word_bank[[issue]], 2, replace = TRUE),
+             sample(unlist(word_bank[setdiff(routes, issue)]), rbinom(1, 1, 0.5)),
+             if (asks_refund) sample(c("refund", "money back"), 1),
+             sample(word_bank$heat, min(heat, 4)),
+             sample(word_bank$filler, 3, replace = TRUE))
+  paste(sample(words), collapse = " ")
+}
+
+simulate_tickets <- function(n) {
+  tibble(
+    ticket_id = seq_len(n),
+    tier = sample(tiers, n, replace = TRUE, prob = c(0.5, 0.35, 0.15)),
+    duplicates = sample(0:2, n, replace = TRUE, prob = c(0.6, 0.3, 0.1)),
+    issue = sample(routes, n, replace = TRUE, prob = c(0.45, 0.35, 0.2)),
+    asks_refund = rbinom(n, 1, 0.3),
+    heat = rpois(n, 0.8)
+  ) %>%
+    mutate(
+      issue = if_else(duplicates > 0 & runif(n) < 0.7, "billing", issue),
+      message = pmap_chr(list(issue, asks_refund, heat), write_message),
+      policy = if_else(runif(n) < 0.5, "refund within 60 days", "see help center")
+    )
+}
+```
+
+The true probability of each answer is a known function of what is visible in the ticket. A refund request is more likely when the message says "refund" or "money back", mentions a charge, or the ticket has duplicate charges. The route depends on how many words of each issue's vocabulary appear. Frustration follows the cumulative logit model from the math section, driven by heat words, duplicates and the enterprise tier.
+
+```{r}
+true_probabilities <- function(tickets) {
+  words <- str_split(tickets$message, " ")
+  has <- \(w) map_lgl(words, \(x) any(x %in% w))
+  count_in <- \(w) map_int(words, \(x) sum(x %in% w))
+
+  refund <- plogis(-2.2 + 2.8 * has(c("refund", "money")) + 1.0 * tickets$duplicates +
+                     0.6 * has("charged"))
+
+  route_lin <- cbind(billing = 1.1 * count_in(word_bank$billing) + 0.8 * tickets$duplicates,
+                     technical = 1.1 * count_in(word_bank$technical),
+                     account = 1.1 * count_in(word_bank$account))
+  route <- exp(route_lin) / rowSums(exp(route_lin))
+
+  z <- 0.9 * count_in(word_bank$heat) + 0.7 * tickets$duplicates +
+    0.5 * (tickets$tier == "enterprise")
+  exceed <- plogis(outer(z, c(0.8, 2.0, 3.2), `-`))       # P(level > c), c = 0, 1, 2
+  mood <- cbind(1, exceed) - cbind(exceed, 0)             # P(level = c), c = 0, ..., 3
+
+  list(refund = refund, route = route, mood = mood)
+}
+
+n_train <- 6000
+n_test <- 2000
+tickets <- simulate_tickets(n_train + n_test)
+p_true <- true_probabilities(tickets)
+tickets %>% select(tier, duplicates, message, policy) %>% head(4)
+```
+
+For the same four tickets, these are the true probabilities. They are what a perfect teacher would report, and what the model should learn to output. Ticket 3 mentions a refund and an invoice and has a duplicate charge, so it is very likely a refund request and very likely a billing ticket. Ticket 1 contains "crash" and "slow", so it is most likely a technical ticket. Ticket 2 contains two heat words, "again" and "unacceptable", so it has the highest chance of a frustrated or very frustrated customer.
+
+```{r}
+tibble(ticket = 1:4,
+       refund = p_true$refund[1:4]) %>%
+  bind_cols(as_tibble(p_true$route[1:4, ]),
+            as_tibble(p_true$mood[1:4, ], .name_repair = ~ moods)) %>%
+  mutate(across(-ticket, \(x) round(x, 2)))
+```
+
+## Flattening the state
+
+Each ticket is flattened into tokens, each tagged with its path, as in step 1 of the architecture. The vocabulary of tokens and the list of paths are built from the data.
+
+```{r}
+flatten_ticket <- function(tier, duplicates, message, policy) {
+  message_tokens <- str_split_1(message, " ")
+  policy_tokens <- str_split_1(policy, " ")
+  tibble(path = c("customer.tier", "transactions.duplicates",
+                  rep("message", length(message_tokens)), rep("policy", length(policy_tokens))),
+         token = c(tier, paste0("duplicates_", duplicates), message_tokens, policy_tokens))
+}
+
+questions <- c(refund = "the customer is requesting a refund",
+               route = "which team should handle this ticket",
+               mood = "how frustrated is the customer")
+
+flatten_tickets <- function(tickets) {
+  tickets %>%
+    mutate(flat = pmap(list(tier, duplicates, message, policy), flatten_ticket)) %>%
+    select(ticket_id, flat) %>%
+    unnest(flat) %>%
+    group_by(ticket_id) %>%
+    mutate(position = row_number()) %>%
+    ungroup()
+}
+
+flat <- flatten_tickets(tickets)
+vocab <- unique(c("<pad>", flat$token, str_split_1(paste(questions, collapse = " "), " "),
+                  routes, unlist(str_split(moods, " "))))
+paths <- c("<pad>", unique(flat$path))
+n_s <- max(flat$position)
+
+# Integer matrix with one row per ticket and n_s columns, padded with id 1
+to_ids <- function(flat, column, levels) {
+  flat %>%
+    transmute(ticket_id, position, id = match(.data[[column]], levels)) %>%
+    complete(ticket_id, position = 1:n_s, fill = list(id = 1L)) %>%
+    pivot_wider(names_from = position, values_from = id) %>%
+    select(-ticket_id) %>%
+    as.matrix() %>%
+    torch_tensor(dtype = torch_long())
+}
+to_tensors <- function(tickets) {
+  flat <- flatten_tickets(tickets)
+  list(token = to_ids(flat, "token", vocab), path = to_ids(flat, "path", paths))
+}
+text_ids <- \(text) match(str_split_1(text, " "), vocab)
+batch <- \(state, idx) map(state, \(x) x[idx, ])                # select tickets (rows)
+
+state <- to_tensors(tickets)
+c(vocabulary = length(vocab), paths = length(paths) - 1, n_s = n_s)
+```
+
+To see what this does, here is ticket 3 after flattening. Each row is one token. The tier and the duplicate count become single tokens at their own paths, and the message and the policy become one token per word. The word "refund" appears twice, once at path `message` and once at path `policy`. The two have the same token but different paths, which is how the model can learn that only the first one matters.
+
+```{r}
+flat %>% filter(ticket_id == 3)
+```
+
+The model does not see strings. Each token and each path is replaced by its position in `vocab` and in `paths`. Id 1 is reserved for padding in both.
+
+```{r}
+head(vocab, 12)
+paths
+```
+
+Every ticket is padded to the length of the longest one, $n_s$ tokens, so a batch of tickets becomes two integer matrices with one row per ticket and $n_s$ columns, `state$token` and `state$path`. Here are the rows for tickets 3 and 4. Both end in padding, id 1, and ticket 4 has fewer tokens than ticket 3, so its padding starts earlier. The path ids show the structure: id 2 is `customer.tier`, 3 is `transactions.duplicates`, 4 is `message` and 5 is `policy`. Mapping the ids back through `vocab` recovers ticket 3's tokens.
+
+```{r}
+as.matrix(state$token[3:4, ])
+as.matrix(state$path[3:4, ])
+vocab[as.matrix(state$token[3, ])]
+```
+
+## The model
+
+The model has one encoder layer, one readout layer, four slots and $d = 32$. The variable names follow the math: `h` is $h(s)$, `u_m` is the question embedding $u_m$, `r_m` is the summary $r_m$, `v_o` holds the option embeddings $v_o$, `w_N` and `w_S` are the Noul and Score weights, `z_m` and `b_c` are the ordinal score and thresholds, and the temperature $\gamma$ is fixed at $\sqrt{d}$. The text of questions and options is embedded by averaging token embeddings and applying one linear layer, so options are just more text and can be changed at call time.
+
+In torch, a model is defined with `nn_module`. The `initialize` function creates the building blocks, and each building block owns learnable parameters: weight matrices, bias vectors, embedding tables. Torch keeps a list of every parameter in the model, `model$parameters`, which is what the optimizer will update during training. The other functions in the module are methods that wire the building blocks together into steps 2 to 4 of the architecture.
+
+```{r}
+d <- 32
+
+system_one <- nn_module(
+  initialize = function(n_vocab, n_paths, d, n_slots = 4, max_levels = 4) {
+    self$token_embedding <- nn_embedding(n_vocab, d, padding_idx = 1)
+    self$path_embedding <- nn_embedding(n_paths, d, padding_idx = 1)
+    self$encoder_attention <- nn_multihead_attention(d, num_heads = 4, batch_first = TRUE)
+    self$encoder_ffn <- nn_sequential(nn_layer_norm(d), nn_linear(d, 4 * d), nn_gelu(),
+                                      nn_linear(4 * d, d))
+    self$encoder_norm <- nn_layer_norm(d)
+    self$text_projection <- nn_linear(d, d)
+    self$slot_init <- nn_parameter(torch_randn(n_slots, d) * 0.1)
+    self$readout_attention <- nn_multihead_attention(d, num_heads = 4, batch_first = TRUE)
+    self$readout_ffn <- nn_sequential(nn_layer_norm(d), nn_linear(d, 4 * d), nn_gelu(),
+                                      nn_linear(4 * d, d))
+    self$w_N <- nn_linear(d, 1)                                # Noul head
+    self$choice_projection <- nn_linear(d, d)                  # Choice head
+    self$w_S <- nn_linear(d, 1)                                # Score head
+    self$threshold_steps <- nn_parameter(torch_zeros(max_levels - 2))
+  },
+
+  # Step 2: encode the state once, bidirectionally (no causal mask)
+  encode_state = function(state) {
+    pad <- state$token == 1
+    x <- self$token_embedding(state$token) + self$path_embedding(state$path)
+    x <- x + self$encoder_attention(x, x, x, key_padding_mask = pad)[[1]]
+    list(h = self$encoder_norm(x + self$encoder_ffn(x)), pad = pad)
+  },
+
+  embed_text = function(text) {
+    ids <- torch_tensor(text_ids(text), dtype = torch_long())
+    self$text_projection(self$token_embedding(ids)$mean(dim = 1))
+  },
+
+  # Step 3: the question's slots cross-attend into the cached h(s); returns r_m
+  read = function(cache, question) {
+    u_m <- self$embed_text(question)
+    n_tickets <- cache$h$size(1)
+    slots <- (self$slot_init + u_m)$unsqueeze(1)$expand(c(n_tickets, -1, -1))
+    slots <- slots + self$readout_attention(slots, cache$h, cache$h,
+                                            key_padding_mask = cache$pad)[[1]]
+    slots <- slots + self$readout_ffn(slots)
+    slots$mean(dim = 2)
+  },
+
+  # Step 4: typed heads
+  noul = function(r_m) torch_sigmoid(self$w_N(r_m)$squeeze(2)),
+
+  choice = function(r_m, options) {
+    v_o <- torch_stack(map(options, self$embed_text))           # K_m x d
+    nnf_softmax(torch_matmul(self$choice_projection(r_m), v_o$t()) / sqrt(d), dim = 2)
+  },
+
+  score = function(r_m, n_levels) {
+    z_m <- self$w_S(r_m)
+    b_c <- -torch_cat(list(torch_zeros(1),
+                           nnf_softplus(self$threshold_steps[1:(n_levels - 2)])$cumsum(1)))
+    exceed <- torch_sigmoid(z_m + b_c$unsqueeze(1))             # P(level > c)
+    ones <- torch_ones(z_m$size(1), 1)
+    zeros <- torch_zeros(z_m$size(1), 1)
+    torch_cat(list(ones, exceed), 2) - torch_cat(list(exceed, zeros), 2)
+  }
+)
+```
+
+Each line of `initialize` creates one building block. @tbl-components lists them, what each torch function does, and which part of the math or the architecture it implements.
+
+| Component | Torch building block | What it does | Concept |
+|---|---|---|---|
+| `token_embedding` | `nn_embedding(n_vocab, d, padding_idx = 1)` | A lookup table with one learnable $d$-vector per vocabulary token. Feeding it an integer id returns that row. The padding row is held at zero. | Turning words into vectors (step 2). Also reused to embed question and option text. |
+| `path_embedding` | `nn_embedding(n_paths, d, padding_idx = 1)` | A lookup table with one learnable $d$-vector per JSON path, added to the token's vector. | Path embeddings: "refund" in `message` and in `policy` become different inputs. |
+| `encoder_attention` | `nn_multihead_attention(d, num_heads = 4, batch_first = TRUE)` | Self-attention, $\text{Attn}(A, B)$ with $A = B$ the state's tokens. Holds $W_Q, W_K, W_V$. With 4 heads, the $d$ dimensions are split into 4 groups that attend separately, then recombined. `batch_first` means tensors are tickets $\times$ tokens $\times$ $d$. | The bidirectional encoder (step 2). No causal mask, so every token sees every other token. |
+| `encoder_ffn` | `nn_sequential(nn_layer_norm(d), nn_linear(d, 4 * d), nn_gelu(), nn_linear(4 * d, d))` | `nn_sequential` chains layers. This chain is a one hidden layer network applied to each token separately: normalize, expand to $4d$ units, apply the GELU nonlinearity, project back to $d$. | The nonlinearity of the encoder, a hidden layer as in [From OLS to Deep Learning](https://jeffwong.github.io/posts/ols_to_deep_learning/). |
+| `encoder_norm` | `nn_layer_norm(d)` | Rescales each token's vector to mean 0 and variance 1, then applies a learned scale and shift. | Keeps $h(s)$ on a stable scale, which helps training. |
+| `text_projection` | `nn_linear(d, d)` | A linear map $x \mapsto Wx + b$ with a learnable $d \times d$ matrix and bias. | Maps averaged word embeddings to $u_m$ (question text) and $v_o$ (option text). |
+| `slot_init` | `nn_parameter(torch_randn(n_slots, d) * 0.1)` | A free $4 \times d$ matrix of parameters, registered so the optimizer updates it. | The learned starting slots, shifted by $u_m$ for each question (step 3). |
+| `readout_attention` | `nn_multihead_attention(d, num_heads = 4, batch_first = TRUE)` | Cross-attention, $\text{Attn}(A, B)$ with $A$ the slots and $B = h(s)$. | The question reading the cached state (step 3). |
+| `readout_ffn` | `nn_sequential(...)`, as in the encoder | A hidden layer applied to each slot. | Lets the slots combine what they read. |
+| `w_N` | `nn_linear(d, 1)` | A $d$-vector of weights and an intercept, giving one number per ticket. | The Noul weights $w_N$. The intercept is an extra parameter not written in the math. |
+| `choice_projection` | `nn_linear(d, d)` | A learned linear map applied to $r_m$ before the dot product with each $v_o$. | The Choice head. The math writes $r_m^\top v_o$; this layer can be folded into the definition of $r_m$. |
+| `w_S` | `nn_linear(d, 1)` | A $d$-vector of weights and an intercept. | The Score head's $z_m = w_S^\top r_m$, plus an intercept that shifts all levels. |
+| `threshold_steps` | `nn_parameter(torch_zeros(max_levels - 2))` | Free parameters, passed through a softplus to make them positive. | The gaps between the thresholds: $b_0 = 0$, and each later $b_c$ subtracts one more positive gap, so the thresholds decrease by construction and no level probability is negative. |
+
+: The building blocks of the model, and the concept each one implements. {#tbl-components}
+
+The methods use these blocks to run the pass.
+
+| Method | Step | What it computes |
+|---|---|---|
+| `encode_state(state)` | 2 | Adds token and path embeddings, applies self-attention and the feed-forward layer, and returns $h(s)$ together with the padding mask, which tells attention to ignore padded positions. |
+| `embed_text(text)` | 3, 4 | Looks up the embedding of each word in the text, averages them, and applies `text_projection`. Returns a $d$-vector: $u_m$ for a question, $v_o$ for an option. |
+| `read(cache, question)` | 3 | Starts from `slot_init + u_m`, copies the slots once per ticket (`unsqueeze` adds a ticket dimension and `expand` repeats along it without copying memory), lets them cross-attend into $h(s)$, applies the feed-forward layer, and averages the slots into $r_m$. |
+| `noul(r_m)` | 4 | $\operatorname{logit}^{-1}(w_N^\top r_m)$. |
+| `choice(r_m, options)` | 4 | Embeds the declared options as $v_o$ and returns the softmax of the dot products, divided by $\gamma = \sqrt{d}$. |
+| `score(r_m, n_levels)` | 4 | Builds the thresholds $b_c$, the exceedance probabilities $\operatorname{logit}^{-1}(z_m + b_c)$, and their differences. |
+
+`answer_all` runs the whole pass for a batch of tickets: one call to `encode_state`, then one read per question against the same cache.
+
+```{r}
+answer_all <- function(model, state) {
+  cache <- model$encode_state(state)
+  list(refund = model$noul(model$read(cache, questions["refund"])),
+       route = model$choice(model$read(cache, questions["route"]), routes),
+       mood = model$score(model$read(cache, questions["mood"]), length(moods)))
+}
+```
+
+To connect the code to the shapes in the math, we create an untrained model and push tickets 3 and 4 through it, keeping each intermediate tensor. `with_no_grad` tells torch not to record the operations for training, since we are only looking.
+
+```{r}
+torch_manual_seed(0)
+untrained <- system_one(length(vocab), length(paths), d)
+two_tickets <- batch(state, 3:4)
+
+with_no_grad({
+  cache <- untrained$encode_state(two_tickets)
+  u_m <- untrained$embed_text(questions["route"])
+  r_m <- untrained$read(cache, questions["route"])
+  v_o <- torch_stack(map(routes, untrained$embed_text))
+  p_hat_untrained <- answer_all(untrained, two_tickets)
+})
+
+intermediates <- list(`state$token` = two_tickets$token, `cache$h` = cache$h, `cache$pad` = cache$pad,
+                      u_m = u_m, r_m = r_m, v_o = v_o, refund = p_hat_untrained$refund,
+                      route = p_hat_untrained$route, mood = p_hat_untrained$mood)
+tibble(object = names(intermediates),
+       math = c("token ids", "h(s)", "padding mask", "u_m", "r_m", "v_o, one row per option",
+                "P(true)", "P(option)", "P(level)"),
+       shape = map_chr(intermediates, \(x) paste(x$shape, collapse = " x ")))
+```
+
+The state of two tickets enters as a $2 \times 18$ matrix of ids and leaves the encoder as $h(s)$, a $2 \times 18 \times 32$ tensor: one 32-dimensional vector for every token of every ticket. The question becomes a single vector $u_m$, which the readout turns into one summary $r_m$ per ticket, a $2 \times 32$ matrix. The three route options become a $3 \times 32$ matrix $v_o$, and the Choice head returns one probability per option per ticket. The model has this many parameters:
+
+```{r}
+sum(map_dbl(untrained$parameters, \(p) p$numel()))
+```
+
+Before training, the answers carry no information. The Choice probabilities are close to one third for each team, the Score probabilities reflect only the initial thresholds, and all of them are nearly the same for both tickets, even though ticket 3 is clearly about billing and ticket 4 is not a refund request.
+
+```{r}
+map(p_hat_untrained, \(x) round(as.matrix(x), 3))
+```
+
+## Training on soft targets
+
+We train with the log loss against soft targets, summed over the three questions. In TypeSafe's setting, the soft targets would come from a teacher such as an ensemble of LLMs. Here we play a perfect teacher and use the true probabilities. In the code, `p_true` holds the true probabilities $p$, `p_ref` the targets $p^{\text{ref}}$, and `p_hat` the model's predictions $\hat{p}$.
+
+The loss is the soft log loss from the math section, $-\sum_o p^{\text{ref}}(o \mid s) \log \hat{p}(o \mid s)$, averaged over tickets. In code, `soft_log_loss` takes a matrix of predictions `p_hat` and a matrix of targets `p_ref`, both with one row per ticket and one column per option. It multiplies them elementwise, sums across options, and averages across tickets. The `clamp` keeps $\log \hat{p}$ finite if a probability underflows to zero. A Noul answer is a single probability, so `as_two_columns` writes it as the two-option distribution [P(false), P(true)], and all three question types share one loss function.
+
+Here is the loss on one minibatch of 4 training tickets, computed with the untrained model from above, next to the targets and predictions that go into it.
+
+```{r}
+idx <- 1:4
+p_hat_batch <- with_no_grad(answer_all(untrained, batch(state, idx)))
+soft_log_loss <- \(p_hat, p_ref) -(p_ref * torch_log(p_hat$clamp(min = 1e-7)))$sum(dim = 2)$mean()
+as_two_columns <- \(p) torch_stack(list(1 - p, p), dim = 2)       # Noul as [P(false), P(true)]
+
+list(route_target = round(p_true$route[idx, ], 3),
+     route_predicted = round(as.matrix(p_hat_batch$route), 3),
+     route_loss = soft_log_loss(p_hat_batch$route, torch_tensor(p_true$route[idx, ]))$item())
+```
+
+The untrained model predicts about one third for every team, so its loss is close to $\log 3 \approx 1.10$, the loss of a uniform guess over three options. Training repeats this computation and nudges the parameters to lower the loss. `fit_system_one` does it in five steps per iteration:
+
+1. **Draw a minibatch.** `sample(train_idx, 256)` picks 256 training tickets at random.
+2. **Forward pass.** `answer_all` runs the model on those tickets. As it computes, torch records every operation on a tape, from the embedding lookups to the softmax, so that it can later trace how the loss depends on each parameter.
+3. **Loss.** The soft log loss is computed for each question and summed into one number.
+4. **Backward pass.** `optimizer$zero_grad()` clears the gradients from the previous step, because torch adds new gradients to old ones. `loss$backward()` then walks the tape in reverse and applies the chain rule, which is backpropagation as in [From OLS to Deep Learning](https://jeffwong.github.io/posts/ols_to_deep_learning/), to compute the derivative of the loss with respect to every parameter in `model$parameters`.
+5. **Update.** `optimizer$step()` moves every parameter a small step against its gradient. Adam (`optim_adam`) adapts the step size of each parameter using running averages of its past gradients, with base learning rate `lr = 3e-3`.
+
+All three questions read from the same $h(s)$, so the gradient of the summed loss flows from all three heads back into the shared encoder and embeddings. The encoder is trained by every question at once, the same way the two towers in the ranking post were trained jointly through their shared loss. `map_dbl` runs the 400 iterations and collects the loss after each, and `model$eval()` switches the model from training to prediction mode at the end.
+
+```{r}
+train_idx <- 1:n_train
+test_idx <- n_train + 1:n_test
+
+fit_system_one <- function(p_ref, steps = 400, seed = 1) {
+  torch_manual_seed(seed)
+  model <- system_one(length(vocab), length(paths), d)
+  optimizer <- optim_adam(model$parameters, lr = 3e-3)
+  p_ref <- map(p_ref, torch_tensor)
+  losses <- map_dbl(seq_len(steps), \(step) {
+    idx <- sample(train_idx, 256)
+    p_hat <- answer_all(model, batch(state, idx))
+    loss <- soft_log_loss(as_two_columns(p_hat$refund), as_two_columns(p_ref$refund[idx])) +
+      soft_log_loss(p_hat$route, p_ref$route[idx, ]) +
+      soft_log_loss(p_hat$mood, p_ref$mood[idx, ])
+    optimizer$zero_grad()
+    loss$backward()
+    optimizer$step()
+    loss$item()
+  })
+  model$eval()
+  list(model = model, losses = losses)
+}
+
+fit <- fit_system_one(p_true)
+model <- fit$model
+round(fit$losses[c(1, 50, 100, 200, 400)], 3)
+```
+
+The loss levels off within a few hundred steps. The floor it approaches is the sum of the entropies of the three answers: the decomposition of the log loss showed that its minimum is the entropy of the answer, reached by predicting the true probabilities. We can check this on the full training set, question by question.
+
+```{r}
+entropy <- \(p) mean(-rowSums(p * log(p)))
+p_hat_train <- with_no_grad(answer_all(model, batch(state, train_idx)))
+
+tibble(question = c("refund", "route", "mood"),
+       model_loss = c(soft_log_loss(as_two_columns(p_hat_train$refund),
+                                    as_two_columns(torch_tensor(p_true$refund[train_idx])))$item(),
+                      soft_log_loss(p_hat_train$route, torch_tensor(p_true$route[train_idx, ]))$item(),
+                      soft_log_loss(p_hat_train$mood, torch_tensor(p_true$mood[train_idx, ]))$item()),
+       entropy_floor = c(entropy(cbind(1 - p_true$refund[train_idx], p_true$refund[train_idx])),
+                         entropy(p_true$route[train_idx, ]),
+                         entropy(p_true$mood[train_idx, ])))
+```
+
+The trained model's loss matches the floor to the precision shown, for every question. We compare the predictions on the held out tickets with the truth, first for three tickets and then on average.
+
+```{r}
+p_hat <- map(with_no_grad(answer_all(model, batch(state, test_idx))), as.matrix)
+
+tickets[test_idx[1:3], ] %>%
+  transmute(message, true_refund = p_true$refund[test_idx[1:3]],
+            predicted_refund = p_hat$refund[1:3],
+            true_billing = p_true$route[test_idx[1:3], "billing"],
+            predicted_billing = p_hat$route[1:3, 1]) %>%
+  mutate(across(where(is.numeric), \(x) round(x, 3)))
+```
+
+```{r}
+tibble(question = c("refund", "route", "mood"),
+       mean_abs_error = c(mean(abs(p_hat$refund - p_true$refund[test_idx])),
+                          mean(abs(p_hat$route - p_true$route[test_idx, ])),
+                          mean(abs(p_hat$mood - p_true$mood[test_idx, ]))))
+```
+
+All three heads recover the true probabilities to within about one percentage point on average, on tickets the model never saw.
+
+## Checking the claims
+
+**Type safety and runtime options.** The Choice head returns a distribution over whatever options it is handed. Reversing the order of the options permutes the probabilities and changes nothing else, and dropping an option renormalizes over the ones that remain. No answer outside the declared options can come back.
+
+```{r}
+with_no_grad({
+  cache <- model$encode_state(batch(state, test_idx[1:3]))
+  r_m <- model$read(cache, questions["route"])
+  list(declared = round(as.matrix(model$choice(r_m, routes)), 3),
+       reversed = round(as.matrix(model$choice(r_m, rev(routes))), 3),
+       two_options = round(as.matrix(model$choice(r_m, c("billing", "technical"))), 3))
+})
+```
+
+**Paths matter.** The word "refund" in the policy line carries no information about whether the customer wants a refund. If we take the held out tickets and swap every policy line for the other one, the predicted refund probability should not move.
+
+```{r}
+swapped <- tickets[test_idx, ] %>%
+  mutate(policy = if_else(policy == "see help center", "refund within 60 days", "see help center"))
+p_swapped <- with_no_grad(as.numeric(model$noul(
+  model$read(model$encode_state(to_tensors(swapped)), questions["refund"]))))
+mean(abs(p_swapped - p_hat$refund))
+```
+
+The average change is a fraction of a percentage point. The same word, at a different path, is a different input.
+
+**Calibrated to whom?** The derivation of soft targets predicted that a model is calibrated to its teacher, and that hard labels aim at the truth but are noisier. To test both, we fit the model twice more, changing only the targets for the refund question: once with hard labels, a single draw of $a_m$ per ticket, and once with an overconfident teacher, which pushes every true probability away from 0.5 by doubling its log odds. @fig-calibration plots each model's predicted refund probability on the held out tickets against the true probability.
+
+```{r}
+set.seed(2)
+a_refund <- rbinom(length(p_true$refund), 1, p_true$refund)        # one true answer a_m per ticket
+p_teacher <- plogis(2 * qlogis(p_true$refund))                      # an overconfident teacher
+
+predict_refund <- \(model) with_no_grad(as.numeric(
+  model$noul(model$read(model$encode_state(batch(state, test_idx)), questions["refund"]))))
+
+hard_fit <- fit_system_one(list(refund = a_refund, route = p_true$route, mood = p_true$mood))
+teacher_fit <- fit_system_one(list(refund = p_teacher, route = p_true$route, mood = p_true$mood))
+
+calibration <- tibble(truth = p_true$refund[test_idx],
+                      teacher = p_teacher[test_idx],
+                      `perfect teacher` = p_hat$refund,
+                      `hard labels` = predict_refund(hard_fit$model),
+                      `overconfident teacher` = predict_refund(teacher_fit$model)) %>%
+  pivot_longer(-c(truth, teacher), names_to = "training", values_to = "p_hat")
+
+calibration %>%
+  group_by(training) %>%
+  summarise(error_vs_truth = mean(abs(p_hat - truth)),
+            error_vs_teacher = mean(abs(p_hat - teacher)))
+```
+
+```{r}
+#| label: fig-calibration
+#| fig-cap: "Predicted refund probability against the true probability, on held out tickets. Points on the dashed line are perfectly calibrated. The model trained on an overconfident teacher reproduces the teacher, not the truth."
+#| code-fold: true
+#| fig-width: 9
+#| fig-height: 3.6
+calibration %>%
+  mutate(training = fct_relevel(training, "perfect teacher", "hard labels")) %>%
+  ggplot(aes(truth, p_hat)) +
+  geom_abline(linetype = "dashed", color = "gray50") +
+  geom_point(alpha = 0.15, size = 0.8, color = "#2a78d6") +
+  facet_wrap(~ training) +
+  coord_equal() +
+  labs(x = "True probability of a refund request", y = "Predicted probability") +
+  theme_bw(base_size = 14) +
+  theme(panel.grid.minor = element_blank())
+```
+
+The three panels match the derivation. With soft targets from a perfect teacher, the predictions sit on the diagonal. With hard labels, the predictions follow the diagonal but with errors about ten times larger, in both directions, because each ticket contributes one coin flip instead of a probability. With the overconfident teacher, the model matches the teacher almost exactly and so inherits its error, an S-shaped curve that is too sure in both directions. Its calibration against the teacher is excellent, and its calibration against reality is not.
+
+# Is a System One decision a ranking or an experiment?
+
+TypeSafe describes Jev as a model for "fast, structured decisions". In experimentation we also make decisions: we run an AB test and launch the treatment if it wins. And a ranker decides which titles to show. Which of the two is Jev's decision engine closer to?
+
+## Structurally, it is a ranker
+
+Compare the Choice head with the two-tower model from the [ranking post](https://jeffwong.github.io/posts/rankers/). There, a query tower $\phi(q)$ and a title tower $\psi(j)$ produce embeddings, and the probability that member $q$ plays title $j$ is a softmax of their dot products over the catalog, $P(j \mid q) \propto \exp\big(\phi(q)^\top \psi(j)\big)$. Here, the readout produces $r_m$ from the state and the question, the option encoder produces $v_o$, and $\hat{p}(o \mid s) \propto \exp(r_m^\top v_o / \gamma)$. The state and question play the role of the query, the options play the role of the titles, and the declared option set plays the role of the catalog. The Choice head is a two-tower scorer followed by a softmax over a small catalog, which is the utility prediction phase of a ranker.
+
+The match goes further for large option sets. For more than 255 options, TypeSafe first scores each option independently and then makes an explicit choice, as described in the architecture section. That has the shape of candidate generation followed by ranking. Wikiracing, choosing the next link out of thousands, is a ranking problem.
+
+## What it predicts is not the effect of acting
+
+A ranker's utility model predicts how much a member will value a title. It does not, by itself, tell us whether changing the ranker improves the business. That is why the ranking post ended with the AB test as the final judge. The same gap exists here, and it is sharper.
+
+A System One model predicts the answer to a question about the state: does this customer want a refund? A decision is an action, such as automatically issuing the refund, and the business cares about the outcome of that action, such as whether the customer stays. Let $T \in \{0, 1\}$ indicate the action, with $T = 1$ for an automatic refund and $T = 0$ for sending the ticket to a person, and let $y$ be whether the customer is retained 90 days later. Each ticket $i$ has two potential outcomes, $y_i(1)$ and $y_i(0)$, and the effect of the automatic refund at state $s$ is the average difference between them among tickets with that state,
+
+$$\tau(s) = E\big[y_i(1) - y_i(0) \mid S = s\big].$$
+
+A good decision rule takes $T = 1$ where $\tau(s) > 0$. The model's output $\hat{p}(s)$ is the probability of an answer. It is not $\tau(s)$, and calibration does not help. A perfectly calibrated $\hat{p}(s) = 0.9$ says that 90% of such customers want a refund, and nothing about what an automatic refund does to them.
+
+Could the model learn $\tau(s)$? The documentation says probabilities are "optimized against outcomes", but TypeSafe has not said which outcomes. If the outcomes are the true answers to the questions, as in our simulated tickets, the model is a calibrated predictor of answers, and the argument above applies. If the outcomes were results of actions taken in production, the model would be learning from logged decisions, and it would face the problem from the position bias section of the ranking post: we only see the outcome of the action that was taken. If the old rule always auto-refunded tickets with $\hat{p}(s) > 0.5$, the logs contain no outcome of human review for any such ticket, and $y_i(0)$ for those tickets can never be estimated from them. Learning $\tau(s)$ requires the action to be randomized, or at least to have a known probability of being taken at every state. That is an experiment.
+
+## A simulated experiment
+
+We make this concrete. In the simulation, whether an automatic refund helps depends on the customer. Free and standard customers who want a refund are more likely to stay when they get it instantly. Enterprise customers who want a refund are *less* likely to stay when a bot handles it, because they expect their account manager to call. And refunding a customer who did not ask is mildly harmful. Since the refund question is the only one in this section, we drop the question index and write $a_i$ for ticket $i$'s true answer to it, 1 if the customer wants a refund. Concretely, $P(y_i(0) = 1) = 0.75$ for every ticket, and $P(y_i(1) = 1) = 0.75 + \tau_i$, where $\tau_i = E[y_i(1) - y_i(0) \mid \text{tier}_i, a_i]$ is ticket $i$'s effect:
+
+$$\tau_i = \begin{cases} +0.10 & a_i = 1, \text{ free or standard tier} \\ -0.15 & a_i = 1, \text{ enterprise tier} \\ -0.05 & a_i = 0. \end{cases}$$
+
+The state shows the tier but not $a_i$, so the effect at a state averages $\tau_i$ over the uncertain answer, $\tau(s) = E[\tau_i \mid S = s]$.
+
+We take 100,000 new tickets, let the trained model flag those with $\hat{p}(s) > 0.5$, and run an experiment on the flagged tickets: each is randomized to an automatic refund or to a person with probability one half. The true answer $a_i$ is drawn from the true probability $p(1 \mid s)$, as for the hard labels. We estimate the effect separately within each tier by regressing $y$ on tier and the interaction of tier with $T$.
+
+```{r}
+set.seed(3)
+new_tickets <- simulate_tickets(100000)
+p_hat_new <- with_no_grad(as.numeric(model$noul(
+  model$read(model$encode_state(to_tensors(new_tickets)), questions["refund"]))))
+
+tau_i <- function(tier, a) {
+  case_when(a == 1 & tier != "enterprise" ~ 0.10,
+            a == 1 ~ -0.15,
+            TRUE ~ -0.05)
+}
+
+experiment <- new_tickets %>%
+  mutate(p_hat = p_hat_new,
+         a = rbinom(n(), 1, true_probabilities(new_tickets)$refund),
+         tau_i = tau_i(tier, a),
+         y_0 = rbinom(n(), 1, 0.75),
+         y_1 = rbinom(n(), 1, 0.75 + tau_i)) %>%
+  filter(p_hat > 0.5) %>%                                   # tickets the model flags
+  mutate(T = rbinom(n(), 1, 0.5),                           # randomized action (masks R's T for TRUE)
+         y = if_else(T == 1, y_1, y_0))
+
+tau_hat <- lm(y ~ 0 + tier + tier:T, data = experiment) %>%
+  broom::tidy() %>%
+  filter(str_detect(term, ":T")) %>%
+  transmute(tier = str_remove_all(term, "tier|:T"), tau_hat = estimate, se = std.error)
+
+experiment %>%
+  group_by(tier) %>%
+  summarise(tickets = n(), mean_p_hat = mean(p_hat), share_wanting_refund = mean(a),
+            true_tau = mean(tau_i)) %>%
+  left_join(tau_hat, by = "tier")
+```
+
+The model is doing its job. Among flagged tickets, its average predicted probability is within two percentage points of the share of customers who actually want a refund, in every tier. And its prediction is nearly the same across tiers. Yet the effect of acting on it has opposite signs: an automatic refund raises retention for free and standard customers and lowers it for enterprise customers. Nothing in $\hat{p}(s)$ distinguishes these cases, because the question it answers, "does the customer want a refund?", is not the question the decision depends on. The randomized experiment recovers the effect in each tier, and suggests the better rule: automatic refunds for flagged free and standard tickets, a person for flagged enterprise tickets.
+
+@fig-decision summarizes the roles. The System One model turns a state into calibrated answers. The decision rule, written by a person, turns answers into an action. The action causes the outcome. Only randomizing the action, or the rule, measures that last link.
+
+```{dot}
+//| label: fig-decision
+//| fig-cap: "Where a System One model sits in a decision. It predicts answers about the state. A rule written in code turns answers into an action, and the action changes the outcome. The model is trained on the dashed link; an AB test measures the bold one."
+digraph G {
+  rankdir = LR;
+  nodesep = 0.5;
+  ranksep = 0.7;
+  node [shape = box, style = rounded, fontname = "Helvetica", fontsize = 11];
+  edge [fontname = "Helvetica", fontsize = 10];
+
+  s [label = "state s\n(ticket)"];
+  p [label = "System One\nanswers"];
+  rule [label = "decision rule\n(code)"];
+  t [label = "action T\n(auto refund?)"];
+  y [label = "outcome y\n(retained?)"];
+  coin [label = "randomization\n(AB test)", style = "rounded,dashed"];
+  a [label = "true answer a_i\n(wants refund?)"];
+
+  s -> p [label = "predict"];
+  s -> a;
+  a -> p [style = dashed, label = "trained to match"];
+  p -> rule -> t;
+  coin -> t [style = dashed];
+  t -> y [penwidth = 2.5, label = "tau(s)"];
+  s -> y;
+}
+```
+
+## So which is it?
+
+The decision engine of a System One model is a ranking engine, not an experimentation engine. It scores a small set of options for a state and returns calibrated probabilities over them, exactly as the utility prediction phase of a ranker does, and for large option sets it adds a candidate generation stage. It is trained, as far as TypeSafe has disclosed, to agree with reference probabilities, which makes it a fast, cheap and calibrated *predictor*. It does not observe counterfactuals and does not estimate the effect of the actions taken on its answers.
+
+That is not a weakness of the model so much as a division of labor. The System One model makes millions of small judgments quickly. A person writes the rule that turns those judgments into actions. And, as with rankers, the way to know whether the rule is a good one is an AB test.
+
+# Putting it together
+
+| | LLM | Ranker | System One model |
+|---|---|---|---|
+| Job | Generate open ended text, reason step by step | Order a few items out of a huge catalog | Answer fixed, typed questions about a state |
+| Output | Text, which must be parsed | An ordered list | Typed answers with calibrated probabilities |
+| Mathematical model | Next token distribution, sampled one token at a time | Pointwise or listwise utility, softmax over the catalog | Bernoulli, categorical over declared options, cumulative logit over ordered levels |
+| Architecture | Causal decoder | Candidate generation, two-tower and ranking models, reranking | Bidirectional state encoder, cached; question slots that cross-attend; typed heads |
+| Trained toward | Next token, human preference, verifiable rewards | Logged engagement, corrected for position bias | Calibrated probabilities against reference probabilities (TypeSafe), via a proper scoring rule |
+| Decides by | Following instructions in the prompt | Sorting by predicted utility | A rule in code applied to the answers |
+| How we know a change helps | AB test | AB test | AB test |
+
+A System One model is the System 1 of software: a fast, calibrated judgment that drops into an `if` statement. Its math is the math of a classifier, trained with a proper scoring rule and calibrated only to whatever it was trained against. Its architecture is built so that one encoding of the state answers many questions at almost no extra cost. Whether acting on its answers helps is a causal question, and causal questions are answered by randomization.

@@ -1,0 +1,1647 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Jeffrey Wong">
+<meta name="dcterms.date" content="2026-10-17">
+
+<title>Every bootstrap is a reweighting – From First Principles</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<script src="../../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap-158031087360bce0ff56dc785ce39e06.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../../styles.css">
+</head>
+
+<body class="nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top quarto-banner">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../../index.html">
+    <span class="navbar-title">From First Principles</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../../about.html"> 
+<span class="menu-text">About Me</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="https://linkedin.com/jeffctwong"> <i class="bi bi-linkedin" role="img">
+</i> 
+<span class="menu-text">LinkedIn</span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<header id="title-block-header" class="quarto-title-block default page-columns page-full">
+  <div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-body">
+      <h1 class="title">Every bootstrap is a reweighting</h1>
+                                <div class="quarto-categories">
+                <div class="quarto-category">statistics</div>
+                <div class="quarto-category">bayesian statistics</div>
+                <div class="quarto-category">AB testing</div>
+                <div class="quarto-category">regression</div>
+              </div>
+                  </div>
+  </div>
+    
+  
+  <div class="quarto-title-meta">
+
+      <div>
+      <div class="quarto-title-meta-heading">Author</div>
+      <div class="quarto-title-meta-contents">
+               <p>Jeffrey Wong </p>
+            </div>
+    </div>
+      
+      <div>
+      <div class="quarto-title-meta-heading">Published</div>
+      <div class="quarto-title-meta-contents">
+        <p class="date">October 17, 2026</p>
+      </div>
+    </div>
+    
+      
+    </div>
+    
+  
+  </header><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#the-classical-bootstrap-resample-the-data" id="toc-the-classical-bootstrap-resample-the-data" class="nav-link active" data-scroll-target="#the-classical-bootstrap-resample-the-data">The classical bootstrap: resample the data</a>
+  <ul class="collapse">
+  <li><a href="#the-plug-in-principle" id="toc-the-plug-in-principle" class="nav-link" data-scroll-target="#the-plug-in-principle">The plug-in principle</a></li>
+  <li><a href="#running-example-an-experiment-on-hours-streamed" id="toc-running-example-an-experiment-on-hours-streamed" class="nav-link" data-scroll-target="#running-example-an-experiment-on-hours-streamed">Running example: an experiment on hours streamed</a></li>
+  <li><a href="#the-bootstrap-standard-error" id="toc-the-bootstrap-standard-error" class="nav-link" data-scroll-target="#the-bootstrap-standard-error">The bootstrap standard error</a></li>
+  <li><a href="#the-bootstrap-distribution-is-a-sampling-distribution" id="toc-the-bootstrap-distribution-is-a-sampling-distribution" class="nav-link" data-scroll-target="#the-bootstrap-distribution-is-a-sampling-distribution">The bootstrap distribution is a sampling distribution</a></li>
+  <li><a href="#the-classical-bootstrap-is-not-a-posterior" id="toc-the-classical-bootstrap-is-not-a-posterior" class="nav-link" data-scroll-target="#the-classical-bootstrap-is-not-a-posterior">The classical bootstrap is not a posterior</a></li>
+  <li><a href="#resampling-is-reweighting" id="toc-resampling-is-reweighting" class="nav-link" data-scroll-target="#resampling-is-reweighting">Resampling is reweighting</a></li>
+  </ul></li>
+  <li><a href="#the-poisson-bootstrap-reweight-dont-resample" id="toc-the-poisson-bootstrap-reweight-dont-resample" class="nav-link" data-scroll-target="#the-poisson-bootstrap-reweight-dont-resample">The Poisson bootstrap: reweight, don’t resample</a>
+  <ul class="collapse">
+  <li><a href="#the-problem-with-multinomial-weights-at-scale" id="toc-the-problem-with-multinomial-weights-at-scale" class="nav-link" data-scroll-target="#the-problem-with-multinomial-weights-at-scale">The problem with multinomial weights at scale</a></li>
+  <li><a href="#from-multinomial-to-poisson-weights" id="toc-from-multinomial-to-poisson-weights" class="nav-link" data-scroll-target="#from-multinomial-to-poisson-weights">From multinomial to Poisson weights</a></li>
+  <li><a href="#any-estimator-that-accepts-weights-works" id="toc-any-estimator-that-accepts-weights-works" class="nav-link" data-scroll-target="#any-estimator-that-accepts-weights-works">Any estimator that accepts weights works</a></li>
+  <li><a href="#least-squares-with-weights" id="toc-least-squares-with-weights" class="nav-link" data-scroll-target="#least-squares-with-weights">Least squares with weights</a></li>
+  <li><a href="#computing-all-replicates-in-one-pass" id="toc-computing-all-replicates-in-one-pass" class="nav-link" data-scroll-target="#computing-all-replicates-in-one-pass">Computing all replicates in one pass</a></li>
+  <li><a href="#the-poisson-bootstrap-distribution-and-standard-errors" id="toc-the-poisson-bootstrap-distribution-and-standard-errors" class="nav-link" data-scroll-target="#the-poisson-bootstrap-distribution-and-standard-errors">The Poisson bootstrap distribution and standard errors</a></li>
+  <li><a href="#why-both-bootstraps-land-on-the-robust-standard-error" id="toc-why-both-bootstraps-land-on-the-robust-standard-error" class="nav-link" data-scroll-target="#why-both-bootstraps-land-on-the-robust-standard-error">Why both bootstraps land on the robust standard error</a></li>
+  </ul></li>
+  <li><a href="#the-bayesian-bootstrap-a-posterior-over-the-population" id="toc-the-bayesian-bootstrap-a-posterior-over-the-population" class="nav-link" data-scroll-target="#the-bayesian-bootstrap-a-posterior-over-the-population">The Bayesian bootstrap: a posterior over the population</a>
+  <ul class="collapse">
+  <li><a href="#the-problem-a-posterior-without-a-likelihood-for-the-model" id="toc-the-problem-a-posterior-without-a-likelihood-for-the-model" class="nav-link" data-scroll-target="#the-problem-a-posterior-without-a-likelihood-for-the-model">The problem: a posterior without a likelihood for the model</a></li>
+  <li><a href="#deriving-the-bayesian-bootstrap" id="toc-deriving-the-bayesian-bootstrap" class="nav-link" data-scroll-target="#deriving-the-bayesian-bootstrap">Deriving the Bayesian bootstrap</a>
+  <ul class="collapse">
+  <li><a href="#the-dirichlet-distribution" id="toc-the-dirichlet-distribution" class="nav-link" data-scroll-target="#the-dirichlet-distribution">The Dirichlet distribution</a></li>
+  <li><a href="#why-the-dirichlet-is-the-natural-family-conjugacy" id="toc-why-the-dirichlet-is-the-natural-family-conjugacy" class="nav-link" data-scroll-target="#why-the-dirichlet-is-the-natural-family-conjugacy">Why the Dirichlet is the natural family: conjugacy</a></li>
+  <li><a href="#choosing-the-pseudo-counts" id="toc-choosing-the-pseudo-counts" class="nav-link" data-scroll-target="#choosing-the-pseudo-counts">Choosing the pseudo-counts</a></li>
+  <li><a href="#sampling-the-posterior" id="toc-sampling-the-posterior" class="nav-link" data-scroll-target="#sampling-the-posterior">Sampling the posterior</a></li>
+  </ul></li>
+  <li><a href="#a-tiny-example-three-users" id="toc-a-tiny-example-three-users" class="nav-link" data-scroll-target="#a-tiny-example-three-users">A tiny example: three users</a></li>
+  <li><a href="#from-a-posterior-over-the-population-to-a-posterior-over-any-estimand" id="toc-from-a-posterior-over-the-population-to-a-posterior-over-any-estimand" class="nav-link" data-scroll-target="#from-a-posterior-over-the-population-to-a-posterior-over-any-estimand">From a posterior over the population to a posterior over any estimand</a></li>
+  <li><a href="#sanity-check-the-posterior-of-a-mean" id="toc-sanity-check-the-posterior-of-a-mean" class="nav-link" data-scroll-target="#sanity-check-the-posterior-of-a-mean">Sanity check: the posterior of a mean</a></li>
+  <li><a href="#how-the-bayesian-bootstrap-differs-from-the-classical-bootstrap" id="toc-how-the-bayesian-bootstrap-differs-from-the-classical-bootstrap" class="nav-link" data-scroll-target="#how-the-bayesian-bootstrap-differs-from-the-classical-bootstrap">How the Bayesian bootstrap differs from the classical bootstrap</a></li>
+  <li><a href="#a-posterior-for-the-treatment-effect" id="toc-a-posterior-for-the-treatment-effect" class="nav-link" data-scroll-target="#a-posterior-for-the-treatment-effect">A posterior for the treatment effect</a></li>
+  <li><a href="#a-posterior-for-an-estimand-with-no-likelihood-the-difference-in-medians" id="toc-a-posterior-for-an-estimand-with-no-likelihood-the-difference-in-medians" class="nav-link" data-scroll-target="#a-posterior-for-an-estimand-with-no-likelihood-the-difference-in-medians">A posterior for an estimand with no likelihood: the difference in medians</a></li>
+  <li><a href="#assumptions-and-when-the-bayesian-bootstrap-breaks" id="toc-assumptions-and-when-the-bayesian-bootstrap-breaks" class="nav-link" data-scroll-target="#assumptions-and-when-the-bayesian-bootstrap-breaks">Assumptions, and when the Bayesian bootstrap breaks</a></li>
+  <li><a href="#so-can-we-skip-the-bayesian-linear-model" id="toc-so-can-we-skip-the-bayesian-linear-model" class="nav-link" data-scroll-target="#so-can-we-skip-the-bayesian-linear-model">So can we skip the Bayesian linear model?</a></li>
+  </ul></li>
+  <li><a href="#putting-it-together" id="toc-putting-it-together" class="nav-link" data-scroll-target="#putting-it-together">Putting it together</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content quarto-banner-title-block" id="quarto-document-content">
+
+
+
+
+
+<p>A team runs an AB test and reports a covariate-adjusted effect on hours streamed. A second team reports the difference in median hours. A third wants the probability that the effect is positive. The first has a textbook standard error, if we remember to make it robust. The second has no simple formula at all. The third needs a posterior, which in our <a href="https://jeffwong.github.io/posts/posterior_distribution_effect/">previous post on posterior distributions</a> required a prior, a likelihood, and some care when the likelihood was wrong.</p>
+<p>The bootstrap answers all three with one recipe: refit the same estimator many times on perturbed versions of the data. In this post we describe three versions of it. The classical bootstrap of <a href="https://projecteuclid.org/euclid.aos/1176344552">Efron (1979)</a> resamples the data. The Poisson bootstrap reweights it, which makes it practical for big datasets. The Bayesian bootstrap of <a href="https://projecteuclid.org/euclid.aos/1176345338">Rubin (1981)</a> also reweights it, and produces a posterior. <strong>All three are the same computation with differently distributed weights.</strong> What changes is how the weights are drawn, and what the resulting distribution means.</p>
+<section id="the-classical-bootstrap-resample-the-data" class="level1">
+<h1>The classical bootstrap: resample the data</h1>
+<section id="the-plug-in-principle" class="level2">
+<h2 class="anchored" data-anchor-id="the-plug-in-principle">The plug-in principle</h2>
+<p>Let <span class="math inline">\(F\)</span> be the population distribution that generates a user’s data. Each time <span class="math inline">\(F\)</span> generates a user, it produces one row of data <span class="math inline">\((y_i, T_i, X_i)\)</span>: user <span class="math inline">\(i\)</span>’s outcome, treatment indicator and covariates. <span class="math inline">\(F\)</span> determines how often each kind of row comes up, for example how common light viewers are relative to heavy viewers. This is also what makes <span class="math inline">\(F\)</span> a probability distribution: for any set of rows, it gives the probability that a generated user’s row falls in that set. Most things we want to estimate are summaries of <span class="math inline">\(F\)</span>: a mean, a median, a treatment effect, a regression coefficient. Call such an estimand <span class="math inline">\(\theta = \theta(F)\)</span>. It is a fixed number, because <span class="math inline">\(F\)</span> is fixed.</p>
+<p>We never see <span class="math inline">\(F\)</span>. We see the <span class="math inline">\(n\)</span> users it generated. From them we build a stand-in population, the empirical distribution <span class="math inline">\(\hat F\)</span>. It is a population made only of our <span class="math inline">\(n\)</span> users, in equal shares: to generate a user from <span class="math inline">\(\hat F\)</span>, pick one of our <span class="math inline">\(n\)</span> users at random, each with probability <span class="math inline">\(1/n\)</span>, and return that user’s row. We write it as</p>
+<p><span class="math display">\[\hat F = \sum_{i=1}^n \frac{1}{n}\,F_i,\]</span></p>
+<p>where <span class="math inline">\(F_i\)</span> is the population made only of copies of user <span class="math inline">\(i\)</span>: every user it generates has user <span class="math inline">\(i\)</span>’s row <span class="math inline">\((y_i, T_i, X_i)\)</span>. The sum here does not add up numbers. It is a recipe for mixing populations: with probability <span class="math inline">\(\frac{1}{n}\)</span>, generate the user from <span class="math inline">\(F_i\)</span>. A weighted sum of single-user populations is therefore itself a population, and so itself a distribution. The probability it gives to a set of rows is the total weight of the users whose rows are in that set, and averages under it are weighted averages over our users. For example, the mean outcome of <span class="math inline">\(\hat F\)</span> is <span class="math inline">\(\sum_i \frac{1}{n} y_i\)</span>.</p>
+<p>The plug-in estimate replaces <span class="math inline">\(F\)</span> by <span class="math inline">\(\hat F\)</span>:</p>
+<p><span class="math display">\[\hat\theta = \theta(\hat F).\]</span></p>
+<p>The sample mean is the mean of <span class="math inline">\(\hat F\)</span>, the sample median is the median of <span class="math inline">\(\hat F\)</span>, and so on.</p>
+<p><span class="math inline">\(\hat\theta\)</span> is random, because a different sample of <span class="math inline">\(n\)</span> users gives a different <span class="math inline">\(\hat F\)</span>. The distribution of <span class="math inline">\(\hat\theta\)</span> over repeated samples of <span class="math inline">\(n\)</span> users generated by <span class="math inline">\(F\)</span> is its <strong>sampling distribution</strong>, and its standard deviation is the standard error. To see the sampling distribution directly we would need <span class="math inline">\(F\)</span> to generate new samples, which we cannot ask it to do.</p>
+<p>Efron’s idea is to let <span class="math inline">\(\hat F\)</span> generate the new samples instead. Generating <span class="math inline">\(n\)</span> users from <span class="math inline">\(\hat F\)</span> means picking <span class="math inline">\(n\)</span> of our users uniformly at random, with replacement. The classical bootstrap is</p>
+<ol type="1">
+<li>For <span class="math inline">\(b = 1, \dots, B\)</span>, draw <span class="math inline">\(n\)</span> users from the sample with replacement, and compute the estimate <span class="math inline">\(\hat\theta^{(b)}\)</span> on this resample.</li>
+<li>Use the spread of <span class="math inline">\(\hat\theta^{(1)}, \dots, \hat\theta^{(B)}\)</span> around <span class="math inline">\(\hat\theta\)</span> as a stand-in for the spread of <span class="math inline">\(\hat\theta\)</span> around <span class="math inline">\(\theta\)</span>.</li>
+</ol>
+<p>The bootstrap standard error is the standard deviation of the <span class="math inline">\(\hat\theta^{(b)}\)</span>. The 2.5% and 97.5% quantiles of the <span class="math inline">\(\hat\theta^{(b)}\)</span> give a percentile confidence interval, and <span class="math inline">\(\frac{1}{B}\sum_b \hat\theta^{(b)} - \hat\theta\)</span> estimates the bias of <span class="math inline">\(\hat\theta\)</span>. None of these steps needs a formula for the variance of <span class="math inline">\(\hat\theta\)</span>, which is what makes the bootstrap useful for medians, ratios, ranks and machine learning models.</p>
+</section>
+<section id="running-example-an-experiment-on-hours-streamed" class="level2">
+<h2 class="anchored" data-anchor-id="running-example-an-experiment-on-hours-streamed">Running example: an experiment on hours streamed</h2>
+<p>Consider an experiment on <span class="math inline">\(n = 10{,}000\)</span> users. For user <span class="math inline">\(i\)</span>, <span class="math inline">\(y_i\)</span> is hours streamed during the experiment, <span class="math inline">\(T_i\)</span> is the treatment indicator, and <span class="math inline">\(X_i\)</span> is hours streamed in the pre-period. Treatment is randomized with probability 0.2, as in a test with a small treatment arm. We simulate from</p>
+<p><span class="math display">\[\begin{align}
+y_i &amp;= \alpha + T_i \beta_1 + X_i \beta_2 + \varepsilon_i, \\
+\alpha &amp;= 2, \qquad \beta_1 = \tau = 0.2, \qquad \beta_2 = 0.8,
+\end{align}\]</span></p>
+<p>where the noise <span class="math inline">\(\varepsilon_i\)</span> has mean zero and standard deviation <span class="math inline">\(0.2\, X_i (1 + T_i)\)</span>. Heavier viewers are noisier, and treatment doubles the noise. The noise variance is not constant, so the textbook standard error of least squares, which assumes it is, will be wrong.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>tau <span class="ot">&lt;-</span> <span class="fl">0.2</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>simulate_users <span class="ot">&lt;-</span> <span class="cf">function</span>(n) {</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tibble</span>(</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">user =</span> <span class="fu">seq_len</span>(n),</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">X =</span> <span class="fu">rgamma</span>(n, <span class="at">shape =</span> <span class="dv">2</span>, <span class="at">scale =</span> <span class="dv">5</span>),</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Randomized treatment. Note that this masks R's shorthand T for TRUE</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">T =</span> <span class="fu">rbinom</span>(n, <span class="dv">1</span>, <span class="fl">0.2</span>)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">y =</span> <span class="dv">2</span> <span class="sc">+</span> tau <span class="sc">*</span> T <span class="sc">+</span> <span class="fl">0.8</span> <span class="sc">*</span> X <span class="sc">+</span> <span class="fu">rnorm</span>(n, <span class="at">sd =</span> <span class="fl">0.2</span> <span class="sc">*</span> X <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">+</span> T)))</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">2026</span>)</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">10000</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>users <span class="ot">&lt;-</span> <span class="fu">simulate_users</span>(n)</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(users)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 6 × 4
+   user      X     T     y
+  &lt;int&gt;  &lt;dbl&gt; &lt;int&gt; &lt;dbl&gt;
+1     1 11.0       0  8.40
+2     2  2.35      0  3.05
+3     3  0.302     0  2.27
+4     4  3.97      0  4.28
+5     5 10.9       0 13.0 
+6     6 15.1       1 18.5 </code></pre>
+</div>
+</div>
+<p>We estimate the coefficients with least squares. Stack the rows <span class="math inline">\(M_i = (1, T_i, X_i)\)</span> into the <span class="math inline">\(n \times k\)</span> design matrix <span class="math inline">\(M = [1, T, X]\)</span>, with <span class="math inline">\(k = 3\)</span>, and the outcomes into the <span class="math inline">\(n\)</span>-vector <span class="math inline">\(y\)</span>. Least squares minimizes <span class="math inline">\(\sum_i (y_i - M_i\beta)^2\)</span>, and the solution is</p>
+<p><span class="math display">\[\begin{align}
+\hat\beta &amp;= (M^\top M)^{-1} M^\top y \\
+&amp;= \Big(\sum_{i=1}^n M_i^\top M_i\Big)^{-1} \sum_{i=1}^n M_i^\top y_i.
+\end{align}\]</span></p>
+<p>The second form writes both matrices as sums over users, because <span class="math inline">\(M^\top M\)</span> adds up the <span class="math inline">\(k \times k\)</span> outer products <span class="math inline">\(M_i^\top M_i\)</span> and <span class="math inline">\(M^\top y\)</span> adds up the <span class="math inline">\(k\)</span>-vectors <span class="math inline">\(M_i^\top y_i\)</span>.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>M <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="dv">1</span>, users<span class="sc">$</span>T, users<span class="sc">$</span>X)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(M) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"1"</span>, <span class="st">"T"</span>, <span class="st">"X"</span>)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>y <span class="ot">&lt;-</span> users<span class="sc">$</span>y</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>k <span class="ot">&lt;-</span> <span class="fu">ncol</span>(M)</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>ols <span class="ot">&lt;-</span> <span class="cf">function</span>(M, y) {</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">solve</span>(<span class="fu">crossprod</span>(M), <span class="fu">crossprod</span>(M, y))[, <span class="dv">1</span>]</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>beta_hat <span class="ot">&lt;-</span> <span class="fu">ols</span>(M, y)</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>beta_hat</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>        1         T         X 
+1.8827625 0.3991198 0.8135292 </code></pre>
+</div>
+</div>
+<p>The estimate of <span class="math inline">\(\beta_1\)</span> is 0.399, against a true <span class="math inline">\(\tau = 0.2\)</span>.</p>
+</section>
+<section id="the-bootstrap-standard-error" class="level2">
+<h2 class="anchored" data-anchor-id="the-bootstrap-standard-error">The bootstrap standard error</h2>
+<p>We resample the <span class="math inline">\(n\)</span> users <span class="math inline">\(B = 1{,}000\)</span> times and refit least squares on each resample.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>B <span class="ot">&lt;-</span> <span class="dv">1000</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>time_classical <span class="ot">&lt;-</span> <span class="fu">system.time</span>({</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  beta_classical <span class="ot">&lt;-</span> <span class="fu">do.call</span>(rbind, <span class="fu">map</span>(<span class="fu">seq_len</span>(B), \(b) {</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    rows <span class="ot">&lt;-</span> <span class="fu">sample</span>(n, n, <span class="at">replace =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ols</span>(M[rows, ], y[rows])</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>  }))</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>})[<span class="st">"elapsed"</span>]</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(beta_classical, <span class="dv">3</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>            1         T         X
+[1,] 1.853100 0.5247530 0.8125417
+[2,] 1.977129 0.3472915 0.8000558
+[3,] 1.830352 0.4649621 0.8198540</code></pre>
+</div>
+</div>
+<p>Each row is one replicate <span class="math inline">\(\hat\beta^{(b)}\)</span>. The bootstrap standard error of each coefficient is the standard deviation of its column. We compare it with the textbook standard error, <span class="math inline">\(\sqrt{\hat\sigma^2 [(M^\top M)^{-1}]_{uu}}\)</span> for coefficient <span class="math inline">\(u\)</span>, with <span class="math inline">\(\hat\sigma^2 = \frac{1}{n-k}\sum_i \hat\varepsilon_i^2\)</span> and residuals <span class="math inline">\(\hat\varepsilon_i = y_i - M_i \hat\beta\)</span>. We call it the naive standard error, because it assumes every user has the same noise variance.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>MtM_inv <span class="ot">&lt;-</span> <span class="fu">solve</span>(<span class="fu">crossprod</span>(M))</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>eps_hat <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(y <span class="sc">-</span> M <span class="sc">%*%</span> beta_hat)</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>se_naive <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(<span class="fu">diag</span>(<span class="fu">sum</span>(eps_hat<span class="sc">^</span><span class="dv">2</span>) <span class="sc">/</span> (n <span class="sc">-</span> k) <span class="sc">*</span> MtM_inv))</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>se_classical <span class="ot">&lt;-</span> <span class="fu">apply</span>(beta_classical, <span class="dv">2</span>, sd)</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="fu">rbind</span>(<span class="at">naive =</span> se_naive, <span class="at">classical =</span> se_classical)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>                   1          T           X
+naive     0.05630463 0.07680789 0.004375192
+classical 0.07294947 0.10969559 0.008279613</code></pre>
+</div>
+</div>
+<p>The two disagree on <span class="math inline">\(\beta_1\)</span>: 0.077 for the naive formula against 0.110 for the bootstrap. Which one is right? Because we simulated the data, we can check. We simulate 1,000 fresh experiments from the same population, fit least squares on each, and take the standard deviation of the 1,000 estimates of <span class="math inline">\(\beta_1\)</span>. Those 1,000 estimates are draws from the true sampling distribution, which the bootstrap is trying to imitate from a single experiment.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">2</span>)</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>n_experiments <span class="ot">&lt;-</span> <span class="dv">1000</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>beta_1_sampling <span class="ot">&lt;-</span> <span class="fu">map_dbl</span>(<span class="fu">seq_len</span>(n_experiments), \(r) {</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  fresh <span class="ot">&lt;-</span> <span class="fu">simulate_users</span>(n)</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ols</span>(<span class="fu">cbind</span>(<span class="dv">1</span>, fresh<span class="sc">$</span>T, fresh<span class="sc">$</span>X), fresh<span class="sc">$</span>y)[<span class="dv">2</span>]</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="fu">sd</span>(beta_1_sampling)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.1095301</code></pre>
+</div>
+</div>
+<p>The true standard error is 0.110. The bootstrap recovers it from one experiment, without being told the noise variance changes across users, while the naive formula understates it by 30%. The bootstrap gets it right because resampling users keeps each user’s noise attached to that user’s <span class="math inline">\(T_i\)</span> and <span class="math inline">\(X_i\)</span>. In the <a href="https://jeffwong.github.io/posts/linear_probability_model/">post on the linear probability model</a> we fixed the same problem with robust standard errors.</p>
+</section>
+<section id="the-bootstrap-distribution-is-a-sampling-distribution" class="level2">
+<h2 class="anchored" data-anchor-id="the-bootstrap-distribution-is-a-sampling-distribution">The bootstrap distribution is a sampling distribution</h2>
+<p><a href="#fig-sampling" class="quarto-xref">Figure&nbsp;1</a> overlays the 1,000 bootstrap replicates of <span class="math inline">\(\hat\beta_1\)</span> from our one experiment on the 1,000 estimates from fresh experiments.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">bind_rows</span>(</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tibble</span>(<span class="at">source =</span> <span class="st">"Bootstrap of one experiment"</span>, <span class="at">beta_1 =</span> beta_classical[, <span class="st">"T"</span>]),</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tibble</span>(<span class="at">source =</span> <span class="st">"Fresh experiments"</span>, <span class="at">beta_1 =</span> beta_1_sampling)</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>) <span class="sc">|&gt;</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> beta_1, <span class="at">fill =</span> source)) <span class="sc">+</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_density</span>(<span class="at">alpha =</span> <span class="fl">0.5</span>, <span class="at">color =</span> <span class="cn">NA</span>) <span class="sc">+</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> tau, <span class="at">linetype =</span> <span class="st">"dashed"</span>) <span class="sc">+</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> beta_hat[<span class="st">"T"</span>], <span class="at">color =</span> <span class="st">"#D55E00"</span>) <span class="sc">+</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">annotate</span>(<span class="st">"text"</span>, <span class="at">x =</span> tau, <span class="at">y =</span> <span class="dv">0</span>, <span class="at">label =</span> <span class="st">"τ"</span>, <span class="at">vjust =</span> <span class="sc">-</span><span class="fl">0.5</span>, <span class="at">hjust =</span> <span class="fl">1.5</span>, <span class="at">size =</span> <span class="dv">6</span>) <span class="sc">+</span></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">annotate</span>(<span class="st">"text"</span>, <span class="at">x =</span> beta_hat[<span class="st">"T"</span>], <span class="at">y =</span> <span class="dv">0</span>, <span class="at">label =</span> <span class="st">"estimate"</span>, <span class="at">vjust =</span> <span class="sc">-</span><span class="fl">0.5</span>, <span class="at">hjust =</span> <span class="sc">-</span><span class="fl">0.1</span>,</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>           <span class="at">size =</span> <span class="dv">5</span>, <span class="at">color =</span> <span class="st">"#D55E00"</span>) <span class="sc">+</span></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">"#D55E00"</span>, <span class="st">"#0072B2"</span>)) <span class="sc">+</span></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="fu">expression</span>(<span class="fu">hat</span>(beta)[<span class="dv">1</span>]), <span class="at">y =</span> <span class="st">"density"</span>, <span class="at">fill =</span> <span class="cn">NULL</span>) <span class="sc">+</span></span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>(<span class="at">base_size =</span> <span class="dv">16</span>) <span class="sc">+</span></span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"top"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<div id="fig-sampling" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-sampling-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="index_files/figure-html/fig-sampling-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-sampling-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1: The bootstrap distribution (one experiment, 1,000 resamples) and the true sampling distribution (1,000 fresh experiments) of the estimate of β₁. Same width, different centers: the bootstrap is centered at the estimate from our experiment, the sampling distribution at the truth τ.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The two curves have the same width but different centers. The fresh experiments scatter around the truth <span class="math inline">\(\tau\)</span>. The bootstrap replicates scatter around our estimate <span class="math inline">\(\hat\beta_1\)</span>, because the bootstrap treats <span class="math inline">\(\hat F\)</span> as if it were the population. What the bootstrap reproduces is the <em>shape</em> of the error: the distribution of <span class="math inline">\(\hat\beta_1^{(b)} - \hat\beta_1\)</span> approximates the distribution of <span class="math inline">\(\hat\beta_1 - \tau\)</span>.</p>
+<p>Our experiment happens to be an unlucky one. Its estimate is 1.8 standard errors above <span class="math inline">\(\tau\)</span>, and 7% of the fresh experiments land at least that far from <span class="math inline">\(\tau\)</span> in either direction. From inside the experiment there is no way to tell.</p>
+<p>So the bootstrap does create a distribution for the estimator, and that distribution is the sampling distribution. It answers the question “if we reran this experiment on new users, how much would our estimate move?”. The population, and with it <span class="math inline">\(\tau\)</span>, is held fixed while hypothetical datasets vary.</p>
+</section>
+<section id="the-classical-bootstrap-is-not-a-posterior" class="level2">
+<h2 class="anchored" data-anchor-id="the-classical-bootstrap-is-not-a-posterior">The classical bootstrap is not a posterior</h2>
+<p>In the <a href="https://jeffwong.github.io/posts/posterior_distribution_effect/">posterior distribution post</a> we separated two kinds of distributions. A confidence interval comes from the sampling distribution, where <span class="math inline">\(\tau\)</span> is a fixed constant and the randomness comes from the data. A posterior distribution <span class="math inline">\(p(\tau \mid \text{data})\)</span> treats <span class="math inline">\(\tau\)</span> as uncertain and holds the observed data fixed. Only the posterior supports a statement like “there is a 95% probability that <span class="math inline">\(\tau\)</span> is between these two numbers”.</p>
+<p>The classical bootstrap sits firmly on the first side. Every replicate is a hypothetical dataset, and the histogram in <a href="#fig-sampling" class="quarto-xref">Figure&nbsp;1</a> describes how the estimate varies across datasets. <strong>The classical bootstrap is not a posterior distribution for <span class="math inline">\(\tau\)</span>, and reading its quantiles as probabilities about <span class="math inline">\(\tau\)</span> is the same mistake as reading a confidence interval that way.</strong></p>
+</section>
+<section id="resampling-is-reweighting" class="level2">
+<h2 class="anchored" data-anchor-id="resampling-is-reweighting">Resampling is reweighting</h2>
+<p>A resample of <span class="math inline">\(n\)</span> users contains some users several times and others not at all. Let <span class="math inline">\(w_i\)</span> be the number of times user <span class="math inline">\(i\)</span> appears in a resample. To see this concretely, take the first 6 users and draw a resample of size 6.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">3</span>)</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>users_6 <span class="ot">&lt;-</span> users <span class="sc">|&gt;</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">6</span>)</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>rows <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="dv">6</span>, <span class="dv">6</span>, <span class="at">replace =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="co"># The resampled dataset</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>users_6 <span class="sc">|&gt;</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice</span>(rows) <span class="sc">|&gt;</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(user)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 6 × 4
+   user      X     T     y
+  &lt;int&gt;  &lt;dbl&gt; &lt;int&gt; &lt;dbl&gt;
+1     2  2.35      0  3.05
+2     2  2.35      0  3.05
+3     3  0.302     0  2.27
+4     4  3.97      0  4.28
+5     4  3.97      0  4.28
+6     5 10.9       0 13.0 </code></pre>
+</div>
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># The same information as a count for each original user</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>users_6 <span class="sc">|&gt;</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">w =</span> <span class="fu">tabulate</span>(rows, <span class="at">nbins =</span> <span class="dv">6</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 6 × 5
+   user      X     T     y     w
+  &lt;int&gt;  &lt;dbl&gt; &lt;int&gt; &lt;dbl&gt; &lt;int&gt;
+1     1 11.0       0  8.40     0
+2     2  2.35      0  3.05     2
+3     3  0.302     0  2.27     1
+4     4  3.97      0  4.28     2
+5     5 10.9       0 13.0      1
+6     6 15.1       1 18.5      0</code></pre>
+</div>
+</div>
+<p>The resampled dataset and the original 6 users with a count column <span class="math inline">\(w\)</span> carry exactly the same information. Any estimator that adds up contributions from each row, as least squares adds up <span class="math inline">\(M_i^\top M_i\)</span> and <span class="math inline">\(M_i^\top y_i\)</span>, gives the same answer on the resample as on the original data with user <span class="math inline">\(i\)</span> counted <span class="math inline">\(w_i\)</span> times. A resample is therefore the original data with weights. In the classical bootstrap the weight vector <span class="math inline">\(w = (w_1, \dots, w_n)\)</span> is the vector of counts from <span class="math inline">\(n\)</span> draws with replacement, which is a multinomial distribution:</p>
+<p><span class="math display">\[
+w \sim \text{Multinomial}\left(n; \tfrac{1}{n}, \dots, \tfrac{1}{n}\right).
+\]</span></p>
+<p>The rest of the post varies only the distribution of <span class="math inline">\(w\)</span>.</p>
+</section>
+</section>
+<section id="the-poisson-bootstrap-reweight-dont-resample" class="level1">
+<h1>The Poisson bootstrap: reweight, don’t resample</h1>
+<section id="the-problem-with-multinomial-weights-at-scale" class="level2">
+<h2 class="anchored" data-anchor-id="the-problem-with-multinomial-weights-at-scale">The problem with multinomial weights at scale</h2>
+<p>Resampling is easy on one machine with 10,000 users. It is awkward on an experimentation platform with hundreds of millions of users whose rows are spread across many machines or arrive as a stream. The multinomial counts are coupled: they must add up to <span class="math inline">\(n\)</span>. To draw them we need to know <span class="math inline">\(n\)</span> before we start, and we cannot draw user <span class="math inline">\(i\)</span>’s count without coordinating with every other user’s count. If we resample literally, we also build <span class="math inline">\(B\)</span> new datasets, or make <span class="math inline">\(B\)</span> passes over the data.</p>
+</section>
+<section id="from-multinomial-to-poisson-weights" class="level2">
+<h2 class="anchored" data-anchor-id="from-multinomial-to-poisson-weights">From multinomial to Poisson weights</h2>
+<p>Look at one user’s count on its own. Each of the <span class="math inline">\(n\)</span> draws picks user <span class="math inline">\(i\)</span> with probability <span class="math inline">\(1/n\)</span>, so the count <span class="math inline">\(w_i\)</span> is Binomial<span class="math inline">\((n, 1/n)\)</span>:</p>
+<p><span class="math display">\[\begin{align}
+P(w_i = m) &amp;= \binom{n}{m}\left(\frac{1}{n}\right)^m\left(1 - \frac{1}{n}\right)^{n-m} \\
+&amp;= \underbrace{\frac{n(n-1)\cdots(n-m+1)}{n^m}}_{\to 1}\,\frac{1}{m!}\,\underbrace{\left(1 - \frac{1}{n}\right)^{n-m}}_{\to e^{-1}} \\
+&amp;\to \frac{e^{-1}}{m!}.
+\end{align}\]</span></p>
+<p>The limit is the Poisson(1) probability weight. The coupling between users is also weak: the covariance of two multinomial counts is <span class="math inline">\(\text{Cov}(w_i, w_j) = -n \cdot \frac{1}{n} \cdot \frac{1}{n} = -\frac{1}{n}\)</span>, which vanishes as <span class="math inline">\(n\)</span> grows. The Poisson bootstrap drops the coupling and draws every weight independently,</p>
+<p><span class="math display">\[
+w_i \overset{\text{iid}}{\sim} \text{Poisson}(1).
+\]</span></p>
+<p>This idea is due to <a href="https://doi.org/10.1016/j.cmpb.2006.04.006">Hanley and MacGibbon (2006)</a>, and <a href="https://research.google/pubs/estimating-uncertainty-for-massive-data-streams/">Chamandy et al.&nbsp;(2012)</a> describe its use at Google for massive data streams. Now each row draws its own weight in each replicate without knowing <span class="math inline">\(n\)</span> or anything about other rows. A machine holding a shard of users can draw their weights on the fly, for example by seeding a random number generator with the user id, and never needs to materialize a resampled dataset. The price is that the size of a replicate, <span class="math inline">\(\sum_i w_i\)</span>, is no longer exactly <span class="math inline">\(n\)</span>. It is Poisson<span class="math inline">\((n)\)</span>, which varies by about <span class="math inline">\(\sqrt{n}\)</span>, or 1% of <span class="math inline">\(n\)</span> for our experiment.</p>
+<p>We check the Poisson limit and the replicate sizes on our experiment by drawing one multinomial count vector and comparing the share of users with each count against a matrix of Poisson weights.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">4</span>)</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>w_multinomial <span class="ot">&lt;-</span> <span class="fu">tabulate</span>(<span class="fu">sample</span>(n, n, <span class="at">replace =</span> <span class="cn">TRUE</span>), <span class="at">nbins =</span> n)</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>w_poisson <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">rpois</span>(n <span class="sc">*</span> B, <span class="at">lambda =</span> <span class="dv">1</span>), <span class="at">nrow =</span> n, <span class="at">ncol =</span> B)</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="fu">tibble</span>(<span class="at">count =</span> <span class="dv">0</span><span class="sc">:</span><span class="dv">4</span>) <span class="sc">|&gt;</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">multinomial =</span> <span class="fu">map_dbl</span>(count, \(m) <span class="fu">mean</span>(w_multinomial <span class="sc">==</span> m)),</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">poisson =</span> <span class="fu">map_dbl</span>(count, \(m) <span class="fu">mean</span>(w_poisson[, <span class="dv">1</span>] <span class="sc">==</span> m)),</span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>    <span class="st">`</span><span class="at">Poisson(1) probability</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">dpois</span>(count, <span class="at">lambda =</span> <span class="dv">1</span>)</span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 5 × 4
+  count multinomial poisson `Poisson(1) probability`
+  &lt;int&gt;       &lt;dbl&gt;   &lt;dbl&gt;                    &lt;dbl&gt;
+1     0      0.365   0.371                    0.368 
+2     1      0.374   0.370                    0.368 
+3     2      0.180   0.184                    0.184 
+4     3      0.0615  0.0587                   0.0613
+5     4      0.0151  0.0134                   0.0153</code></pre>
+</div>
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Replicate sizes: sums of each column of Poisson weights</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(<span class="fu">colSums</span>(w_poisson))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+   9682    9934   10003   10004   10072   10373 </code></pre>
+</div>
+</div>
+<p>The shares match the Poisson(1) probability weights in both columns. About 37% of users get weight zero and drop out of a replicate, and the replicate sizes range from 9,682 to 10,373 around <span class="math inline">\(n = 10{,}000\)</span>. For the 6 users from before, the first three replicates are</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>users_6 <span class="sc">|&gt;</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">`</span><span class="at">w (b = 1)</span><span class="st">`</span> <span class="ot">=</span> w_poisson[<span class="dv">1</span><span class="sc">:</span><span class="dv">6</span>, <span class="dv">1</span>],</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">`</span><span class="at">w (b = 2)</span><span class="st">`</span> <span class="ot">=</span> w_poisson[<span class="dv">1</span><span class="sc">:</span><span class="dv">6</span>, <span class="dv">2</span>],</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">`</span><span class="at">w (b = 3)</span><span class="st">`</span> <span class="ot">=</span> w_poisson[<span class="dv">1</span><span class="sc">:</span><span class="dv">6</span>, <span class="dv">3</span>]</span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 6 × 7
+   user      X     T     y `w (b = 1)` `w (b = 2)` `w (b = 3)`
+  &lt;int&gt;  &lt;dbl&gt; &lt;int&gt; &lt;dbl&gt;       &lt;int&gt;       &lt;int&gt;       &lt;int&gt;
+1     1 11.0       0  8.40           2           2           1
+2     2  2.35      0  3.05           0           3           2
+3     3  0.302     0  2.27           1           3           3
+4     4  3.97      0  4.28           2           0           2
+5     5 10.9       0 13.0            0           1           1
+6     6 15.1       1 18.5            2           5           0</code></pre>
+</div>
+</div>
+</section>
+<section id="any-estimator-that-accepts-weights-works" class="level2">
+<h2 class="anchored" data-anchor-id="any-estimator-that-accepts-weights-works">Any estimator that accepts weights works</h2>
+<p>The Poisson bootstrap never creates a new dataset. Each replicate is the original data with a new column of weights. So any estimator that accepts weights can run inside the Poisson bootstrap: a weighted mean, weighted least squares, weighted logistic regression, gradient boosted trees with sample weights. A weight of 2 means “this user counts twice” and a weight of 0 means “this user is left out”, which are exactly the operations a resample performs.</p>
+</section>
+<section id="least-squares-with-weights" class="level2">
+<h2 class="anchored" data-anchor-id="least-squares-with-weights">Least squares with weights</h2>
+<p>Earlier we computed <span class="math inline">\(\hat\beta = (M^\top M)^{-1}M^\top y\)</span>. Weighted least squares minimizes <span class="math inline">\(\sum_i w_i (y_i - M_i\beta)^2\)</span>, where user <span class="math inline">\(i\)</span>’s squared error counts <span class="math inline">\(w_i\)</span> times. Setting the gradient to zero gives the normal equations <span class="math inline">\(\sum_i w_i M_i^\top (y_i - M_i \beta) = 0\)</span>, and solving them gives replicate <span class="math inline">\(b\)</span>’s estimate</p>
+<p><span class="math display">\[\begin{align}
+\hat\beta^{(b)} &amp;= \big(M^\top \text{diag}(w^{(b)})\, M\big)^{-1} M^\top \text{diag}(w^{(b)})\, y \\
+&amp;= \Big(\sum_{i=1}^n w_i^{(b)} M_i^\top M_i\Big)^{-1} \sum_{i=1}^n w_i^{(b)} M_i^\top y_i,
+\end{align}\]</span></p>
+<p>where <span class="math inline">\(w^{(b)}\)</span> is the weight vector of replicate <span class="math inline">\(b\)</span>. Compared with the sums for <span class="math inline">\(\hat\beta\)</span>, each user’s contribution is multiplied by <span class="math inline">\(w_i^{(b)}\)</span>, which is what counting a user <span class="math inline">\(w_i^{(b)}\)</span> times does. With all weights equal to 1 we get <span class="math inline">\(\hat\beta\)</span> back.</p>
+</section>
+<section id="computing-all-replicates-in-one-pass" class="level2">
+<h2 class="anchored" data-anchor-id="computing-all-replicates-in-one-pass">Computing all replicates in one pass</h2>
+<p>The direct implementation calls a weighted regression <span class="math inline">\(B\)</span> times, rereading <span class="math inline">\(M\)</span> and <span class="math inline">\(y\)</span> every time. But <span class="math inline">\(M\)</span> and <span class="math inline">\(y\)</span> never change across replicates; only <span class="math inline">\(w\)</span> does. We can exploit that.</p>
+<p>Entry <span class="math inline">\((u, v)\)</span> of the <span class="math inline">\(k \times k\)</span> matrix <span class="math inline">\(M^\top \text{diag}(w)\, M\)</span> is</p>
+<p><span class="math display">\[
+\big[M^\top \text{diag}(w)\, M\big]_{uv} = \sum_{i=1}^n w_i\, M_{iu} M_{iv},
+\]</span></p>
+<p>where <span class="math inline">\(M_{iu}\)</span> is entry <span class="math inline">\(u\)</span> of user <span class="math inline">\(i\)</span>’s row. This is a dot product between the weight vector and the elementwise product of columns <span class="math inline">\(u\)</span> and <span class="math inline">\(v\)</span> of <span class="math inline">\(M\)</span>. If we place the <span class="math inline">\(B\)</span> weight vectors side by side as the columns of an <span class="math inline">\(n \times B\)</span> matrix <span class="math inline">\([w^{(1)}, \dots, w^{(B)}]\)</span>, a single product of that matrix with the column <span class="math inline">\((M_{1u}M_{1v}, \dots, M_{nu}M_{nv})\)</span> gives entry <span class="math inline">\((u, v)\)</span> for all <span class="math inline">\(B\)</span> replicates at once. The matrix is symmetric, so there are only <span class="math inline">\(k(k+1)/2 = 6\)</span> distinct entries to compute. In the same way, entry <span class="math inline">\(u\)</span> of <span class="math inline">\(M^\top \text{diag}(w)\, y\)</span> is <span class="math inline">\(\sum_i w_i M_{iu} y_i\)</span>, which is a product of the weight matrix with the column <span class="math inline">\((M_{1u}y_1, \dots, M_{nu}y_n)\)</span>.</p>
+<p>So the whole bootstrap takes three steps.</p>
+<ol type="1">
+<li>Build the <span class="math inline">\(n \times 6\)</span> matrix of column products of <span class="math inline">\(M\)</span>, and the <span class="math inline">\(n \times 3\)</span> matrix whose row <span class="math inline">\(i\)</span> is <span class="math inline">\(M_i y_i\)</span>.</li>
+<li>Multiply each by the <span class="math inline">\(n \times B\)</span> weight matrix. This gives a <span class="math inline">\(6 \times B\)</span> and a <span class="math inline">\(3 \times B\)</span> matrix, and it is the only step that touches all <span class="math inline">\(n\)</span> users, in one pass.</li>
+<li>For each replicate, unpack its 6 entries into a <span class="math inline">\(3 \times 3\)</span> matrix and solve the <span class="math inline">\(3 \times 3\)</span> system.</li>
+</ol>
+<p>The product matrices only contain sums over users, so in a distributed system each machine computes them for its own users and the results add up. These are the same kind of <a href="https://jeffwong.github.io/posts/conditionally_sufficient_statistics/">sufficient statistics</a> we used to compress experiment data, with one set per bootstrap replicate, all computed in the same pass.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>fit_weighted_ols <span class="ot">&lt;-</span> <span class="cf">function</span>(M, y, w) {</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>  k <span class="ot">&lt;-</span> <span class="fu">ncol</span>(M)</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>  pairs <span class="ot">&lt;-</span> <span class="fu">expand_grid</span>(<span class="at">u =</span> <span class="fu">seq_len</span>(k), <span class="at">v =</span> <span class="fu">seq_len</span>(k)) <span class="sc">|&gt;</span></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(u <span class="sc">&lt;=</span> v)</span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Step 1: n x k(k+1)/2 column products, and n x k rows M_i y_i</span></span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>  M_pairs <span class="ot">&lt;-</span> <span class="fu">do.call</span>(cbind, <span class="fu">map2</span>(pairs<span class="sc">$</span>u, pairs<span class="sc">$</span>v, \(u, v) M[, u] <span class="sc">*</span> M[, v]))</span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">colnames</span>(M_pairs) <span class="ot">&lt;-</span> <span class="fu">paste</span>(<span class="fu">colnames</span>(M)[pairs<span class="sc">$</span>u], <span class="fu">colnames</span>(M)[pairs<span class="sc">$</span>v], <span class="at">sep =</span> <span class="st">"·"</span>)</span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a>  My <span class="ot">&lt;-</span> M <span class="sc">*</span> y</span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Step 2: one pass over the n users for all B replicates</span></span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a>  MtwM <span class="ot">&lt;-</span> <span class="fu">crossprod</span>(M_pairs, w)</span>
+<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a>  Mtwy <span class="ot">&lt;-</span> <span class="fu">crossprod</span>(My, w)</span>
+<span id="cb22-12"><a href="#cb22-12" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Step 3: B small k x k solves</span></span>
+<span id="cb22-13"><a href="#cb22-13" aria-hidden="true" tabindex="-1"></a>  beta <span class="ot">&lt;-</span> <span class="fu">do.call</span>(rbind, <span class="fu">map</span>(<span class="fu">seq_len</span>(<span class="fu">ncol</span>(w)), \(b) {</span>
+<span id="cb22-14"><a href="#cb22-14" aria-hidden="true" tabindex="-1"></a>    MtwM_b <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="dv">0</span>, k, k)</span>
+<span id="cb22-15"><a href="#cb22-15" aria-hidden="true" tabindex="-1"></a>    MtwM_b[<span class="fu">cbind</span>(pairs<span class="sc">$</span>u, pairs<span class="sc">$</span>v)] <span class="ot">&lt;-</span> MtwM[, b]</span>
+<span id="cb22-16"><a href="#cb22-16" aria-hidden="true" tabindex="-1"></a>    MtwM_b[<span class="fu">cbind</span>(pairs<span class="sc">$</span>v, pairs<span class="sc">$</span>u)] <span class="ot">&lt;-</span> MtwM[, b]</span>
+<span id="cb22-17"><a href="#cb22-17" aria-hidden="true" tabindex="-1"></a>    <span class="fu">solve</span>(MtwM_b, Mtwy[, b])</span>
+<span id="cb22-18"><a href="#cb22-18" aria-hidden="true" tabindex="-1"></a>  }))</span>
+<span id="cb22-19"><a href="#cb22-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">colnames</span>(beta) <span class="ot">&lt;-</span> <span class="fu">colnames</span>(M)</span>
+<span id="cb22-20"><a href="#cb22-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">M_pairs =</span> M_pairs, <span class="at">MtwM =</span> MtwM, <span class="at">Mtwy =</span> Mtwy, <span class="at">beta =</span> beta)</span>
+<span id="cb22-21"><a href="#cb22-21" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb22-22"><a href="#cb22-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-23"><a href="#cb22-23" aria-hidden="true" tabindex="-1"></a>time_poisson <span class="ot">&lt;-</span> <span class="fu">system.time</span>({</span>
+<span id="cb22-24"><a href="#cb22-24" aria-hidden="true" tabindex="-1"></a>  fit_poisson <span class="ot">&lt;-</span> <span class="fu">fit_weighted_ols</span>(M, y, w_poisson)</span>
+<span id="cb22-25"><a href="#cb22-25" aria-hidden="true" tabindex="-1"></a>})[<span class="st">"elapsed"</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+<p>Here are the column products for our 6 users, followed by the 6 distinct entries of <span class="math inline">\(M^\top\text{diag}(w)\,M\)</span> for the first three replicates.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(fit_poisson<span class="sc">$</span>M_pairs)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>     1·1 1·T        1·X T·T      T·X         X·X
+[1,]   1   0 11.0267102   0  0.00000 121.5883382
+[2,]   1   0  2.3454366   0  0.00000   5.5010726
+[3,]   1   0  0.3022907   0  0.00000   0.0913797
+[4,]   1   0  3.9731932   0  0.00000  15.7862644
+[5,]   1   0 10.8828167   0  0.00000 118.4357000
+[6,]   1   1 15.1349497   1 15.13495 229.0667026</code></pre>
+</div>
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>fit_poisson<span class="sc">$</span>MtwM[, <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>          [,1]       [,2]      [,3]
+1·1    9836.00    9936.00   10050.0
+1·T    1984.00    2076.00    2053.0
+1·X   98842.39  100025.08  102099.6
+T·T    1984.00    2076.00    2053.0
+T·X   19561.61   20691.24   20627.8
+X·X 1498162.76 1506312.63 1556526.0</code></pre>
+</div>
+</div>
+<p>Each column of products has a physical meaning. The column <span class="math inline">\(1 \cdot 1\)</span> is always 1, so its weighted sum is the size of the replicate, 9836 users in replicate 1. The column <span class="math inline">\(T \cdot T\)</span> equals <span class="math inline">\(T\)</span>, because <span class="math inline">\(T\)</span> is 0 or 1, so its weighted sum is the number of treated users in the replicate. The column <span class="math inline">\(1 \cdot X\)</span> adds up pre-period hours. As a check, we solve replicate 1 with R’s weighted <code>lm</code>.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>fit_lm_1 <span class="ot">&lt;-</span> <span class="fu">lm</span>(y <span class="sc">~</span> T <span class="sc">+</span> X, <span class="at">data =</span> users, <span class="at">weights =</span> w_poisson[, <span class="dv">1</span>])</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="fu">rbind</span>(<span class="at">engine =</span> fit_poisson<span class="sc">$</span>beta[<span class="dv">1</span>, ], <span class="at">lm =</span> <span class="fu">coef</span>(fit_lm_1))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>              1         T         X
+engine 1.752896 0.4970831 0.8275943
+lm     1.752896 0.4970831 0.8275943</code></pre>
+</div>
+</div>
+<p>The two agree. The one-pass computation of all 1000 replicates took 0.18 seconds, against 0.52 seconds for the literal resampling loop of the classical bootstrap. At 10,000 users on one machine both are fast. The difference that matters at scale is that the one-pass version reads the data once and never builds a resampled dataset.</p>
+</section>
+<section id="the-poisson-bootstrap-distribution-and-standard-errors" class="level2">
+<h2 class="anchored" data-anchor-id="the-poisson-bootstrap-distribution-and-standard-errors">The Poisson bootstrap distribution and standard errors</h2>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>beta_poisson <span class="ot">&lt;-</span> fit_poisson<span class="sc">$</span>beta</span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a><span class="fu">bind_rows</span>(</span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tibble</span>(<span class="at">method =</span> <span class="st">"Classical"</span>, <span class="at">beta_1 =</span> beta_classical[, <span class="st">"T"</span>]),</span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tibble</span>(<span class="at">method =</span> <span class="st">"Poisson"</span>, <span class="at">beta_1 =</span> beta_poisson[, <span class="st">"T"</span>])</span>
+<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a>) <span class="sc">|&gt;</span></span>
+<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> beta_1, <span class="at">fill =</span> method)) <span class="sc">+</span></span>
+<span id="cb29-8"><a href="#cb29-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_density</span>(<span class="at">alpha =</span> <span class="fl">0.5</span>, <span class="at">color =</span> <span class="cn">NA</span>) <span class="sc">+</span></span>
+<span id="cb29-9"><a href="#cb29-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> beta_hat[<span class="st">"T"</span>], <span class="at">color =</span> <span class="st">"#D55E00"</span>) <span class="sc">+</span></span>
+<span id="cb29-10"><a href="#cb29-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">"#D55E00"</span>, <span class="st">"#009E73"</span>)) <span class="sc">+</span></span>
+<span id="cb29-11"><a href="#cb29-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="fu">expression</span>(<span class="fu">hat</span>(beta)[<span class="dv">1</span>]<span class="sc">^</span>{(b)}), <span class="at">y =</span> <span class="st">"density"</span>, <span class="at">fill =</span> <span class="cn">NULL</span>) <span class="sc">+</span></span>
+<span id="cb29-12"><a href="#cb29-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>(<span class="at">base_size =</span> <span class="dv">16</span>) <span class="sc">+</span></span>
+<span id="cb29-13"><a href="#cb29-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"top"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<div id="fig-poisson" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-poisson-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="index_files/figure-html/fig-poisson-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-poisson-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2: Bootstrap distributions of the estimate of β₁ from the classical (multinomial) and Poisson bootstraps of the same experiment.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><a href="#fig-poisson" class="quarto-xref">Figure&nbsp;2</a> shows that the two bootstraps produce nearly the same distribution. Their standard errors are</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>se_poisson <span class="ot">&lt;-</span> <span class="fu">apply</span>(beta_poisson, <span class="dv">2</span>, sd)</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a><span class="fu">rbind</span>(<span class="at">naive =</span> se_naive, <span class="at">classical =</span> se_classical, <span class="at">poisson =</span> se_poisson)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>                   1          T           X
+naive     0.05630463 0.07680789 0.004375192
+classical 0.07294947 0.10969559 0.008279613
+poisson   0.07723449 0.11318564 0.008820526</code></pre>
+</div>
+</div>
+<p>The Poisson bootstrap standard error of <span class="math inline">\(\beta_1\)</span> is 0.113, against 0.110 for the classical bootstrap and the true 0.110. With <span class="math inline">\(B = 1{,}000\)</span> replicates, a bootstrap standard error has Monte Carlo noise of about <span class="math inline">\(1/\sqrt{2(B-1)} \approx 2\%\)</span>, so these are equal within noise.</p>
+</section>
+<section id="why-both-bootstraps-land-on-the-robust-standard-error" class="level2">
+<h2 class="anchored" data-anchor-id="why-both-bootstraps-land-on-the-robust-standard-error">Why both bootstraps land on the robust standard error</h2>
+<p>Both bootstraps agree with each other and with the truth, and both disagree with the naive formula. We can see why from the algebra of a single replicate. Write <span class="math inline">\(y = M\hat\beta + \hat\varepsilon\)</span> and substitute into the weighted least squares formula:</p>
+<p><span class="math display">\[\begin{align}
+\hat\beta^{(b)} &amp;= \big(M^\top \text{diag}(w)\, M\big)^{-1} M^\top \text{diag}(w)\,(M\hat\beta + \hat\varepsilon) \\
+&amp;= \hat\beta + \big(M^\top \text{diag}(w)\, M\big)^{-1} \sum_{i=1}^n w_i M_i^\top \hat\varepsilon_i.
+\end{align}\]</span></p>
+<p>This identity is exact. The full-sample normal equations say <span class="math inline">\(\sum_i M_i^\top \hat\varepsilon_i = 0\)</span>, so we can subtract that zero from the sum and write it as <span class="math inline">\(\sum_i (w_i - 1)\, M_i^\top \hat\varepsilon_i\)</span>. That sum has mean zero, because <span class="math inline">\(E[w_i] = 1\)</span>, and its size grows like <span class="math inline">\(\sqrt{n}\)</span>. The matrix <span class="math inline">\(M^\top \text{diag}(w)\, M = M^\top M + \sum_i (w_i - 1) M_i^\top M_i\)</span> is <span class="math inline">\(M^\top M\)</span>, which grows like <span class="math inline">\(n\)</span>, plus a mean-zero perturbation that grows like <span class="math inline">\(\sqrt{n}\)</span>. Replacing it by <span class="math inline">\(M^\top M\)</span> changes <span class="math inline">\(\hat\beta^{(b)} - \hat\beta\)</span>, which is of order <span class="math inline">\(1/\sqrt{n}\)</span>, by an amount of order <span class="math inline">\(1/n\)</span>. This gives the linearized replicate</p>
+<p><span class="math display">\[
+\hat\beta^{(b)} - \hat\beta \approx (M^\top M)^{-1} \sum_{i=1}^n (w_i - 1)\, M_i^\top \hat\varepsilon_i.
+\]</span></p>
+<p>For Poisson weights the <span class="math inline">\(w_i\)</span> are independent with <span class="math inline">\(\text{Var}(w_i) = 1\)</span>, so the variance of the sum is the sum of the variances, and</p>
+<p><span class="math display">\[
+\boxed{\text{Var}\big(\hat\beta^{(b)} \mid \text{data}\big) \approx (M^\top M)^{-1}\Big(\sum_{i=1}^n \hat\varepsilon_i^2\, M_i^\top M_i\Big)(M^\top M)^{-1}}
+\]</span></p>
+<p>This is the HC0 sandwich, the <a href="https://jeffwong.github.io/posts/linear_probability_model/">heteroskedasticity robust</a> covariance of Eicker and White.</p>
+<p>For multinomial weights the counts are coupled, with <span class="math inline">\(\text{Var}(w_i) = 1 - \frac{1}{n}\)</span> and <span class="math inline">\(\text{Cov}(w_i, w_j) = -\frac{1}{n}\)</span>. Writing <span class="math inline">\(s_i = M_i^\top \hat\varepsilon_i\)</span> for user <span class="math inline">\(i\)</span>’s contribution to the normal equations,</p>
+<p><span class="math display">\[\begin{align}
+\text{Var}\Big(\sum_i (w_i - 1)\, s_i \,\Big|\, \text{data}\Big)
+&amp;= \Big(1 - \frac{1}{n}\Big)\sum_i s_i s_i^\top - \frac{1}{n}\sum_{i \neq j} s_i s_j^\top \\
+&amp;= \sum_i s_i s_i^\top - \frac{1}{n}\Big(\sum_i s_i\Big)\Big(\sum_i s_i\Big)^\top \\
+&amp;= \sum_i s_i s_i^\top,
+\end{align}\]</span></p>
+<p>where the second line adds and subtracts <span class="math inline">\(\frac{1}{n}\sum_i s_i s_i^\top\)</span> to complete the outer product of the sums, and the last line uses the normal equations again, <span class="math inline">\(\sum_i s_i = 0\)</span>. The coupling between counts cancels exactly, and the classical bootstrap lands on the same sandwich. <a href="https://cemmap.ac.uk/publication/a-note-on-bootstraps-and-robustness/">Lancaster (2006)</a> gives the formal statement: the bootstrap covariance of least squares matches the Eicker–White covariance to order <span class="math inline">\(1/n\)</span>.</p>
+<p>The intuition is that the naive formula assumes one noise variance for everyone, while the sandwich weights each user’s residual by that user’s own <span class="math inline">\(M_i\)</span>. The bootstrap never assumes a common variance. It perturbs how much each user counts, and each user carries their own residual along. The linearized replicate is also the cheapest computation of all: a single product of the <span class="math inline">\(n \times k\)</span> matrix with rows <span class="math inline">\(M_i \hat\varepsilon_i\)</span> and the weight matrix, with no solves.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>beta_linearized <span class="ot">&lt;-</span> <span class="fu">t</span>(beta_hat <span class="sc">+</span> MtM_inv <span class="sc">%*%</span> <span class="fu">crossprod</span>(M <span class="sc">*</span> eps_hat, w_poisson <span class="sc">-</span> <span class="dv">1</span>))</span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>se_linearized <span class="ot">&lt;-</span> <span class="fu">apply</span>(beta_linearized, <span class="dv">2</span>, sd)</span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>se_HC0 <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(<span class="fu">diag</span>(MtM_inv <span class="sc">%*%</span> <span class="fu">crossprod</span>(M <span class="sc">*</span> eps_hat) <span class="sc">%*%</span> MtM_inv))</span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>se_HC0_estimatr <span class="ot">&lt;-</span> <span class="fu">lm_robust</span>(y <span class="sc">~</span> T <span class="sc">+</span> X, <span class="at">data =</span> users, <span class="at">se_type =</span> <span class="st">"HC0"</span>)<span class="sc">$</span>std.error</span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a><span class="fu">rbind</span>(</span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">naive =</span> se_naive,</span>
+<span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">HC0 =</span> se_HC0,</span>
+<span id="cb32-9"><a href="#cb32-9" aria-hidden="true" tabindex="-1"></a>  <span class="st">`</span><span class="at">HC0 (estimatr)</span><span class="st">`</span> <span class="ot">=</span> se_HC0_estimatr,</span>
+<span id="cb32-10"><a href="#cb32-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">classical =</span> se_classical,</span>
+<span id="cb32-11"><a href="#cb32-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">poisson =</span> se_poisson,</span>
+<span id="cb32-12"><a href="#cb32-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">linearized =</span> se_linearized,</span>
+<span id="cb32-13"><a href="#cb32-13" aria-hidden="true" tabindex="-1"></a>  <span class="st">`</span><span class="at">fresh experiments</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">c</span>(<span class="cn">NA</span>, <span class="fu">sd</span>(beta_1_sampling), <span class="cn">NA</span>)</span>
+<span id="cb32-14"><a href="#cb32-14" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>                           1          T           X
+naive             0.05630463 0.07680789 0.004375192
+HC0               0.07594796 0.10957207 0.008628506
+HC0 (estimatr)    0.07594796 0.10957207 0.008628506
+classical         0.07294947 0.10969559 0.008279613
+poisson           0.07723449 0.11318564 0.008820526
+linearized        0.07735109 0.11310415 0.008828739
+fresh experiments         NA 0.10953006          NA</code></pre>
+</div>
+</div>
+<p>Our HC0 matches <code>estimatr</code>. Every bootstrap row sits within Monte Carlo noise of HC0 and of the true standard error of <span class="math inline">\(\beta_1\)</span>, and the naive row is the outlier. For least squares, then, the Poisson bootstrap is a scalable way to get a robust standard error. Its real value is for estimators that have no sandwich formula, where the same weights plug into any weighted fit.</p>
+</section>
+</section>
+<section id="the-bayesian-bootstrap-a-posterior-over-the-population" class="level1">
+<h1>The Bayesian bootstrap: a posterior over the population</h1>
+<section id="the-problem-a-posterior-without-a-likelihood-for-the-model" class="level2">
+<h2 class="anchored" data-anchor-id="the-problem-a-posterior-without-a-likelihood-for-the-model">The problem: a posterior without a likelihood for the model</h2>
+<p>The classical and Poisson bootstraps give sampling distributions. In the <a href="https://jeffwong.github.io/posts/posterior_distribution_effect/">posterior distribution post</a> we wanted a posterior for <span class="math inline">\(\tau\)</span>, and to get one with covariates we wrote a Normal-Inverse-Gamma model: a Gaussian likelihood for <span class="math inline">\(y\)</span>, a conjugate prior for the coefficients, and, for a 0/1 outcome, a quasi-Bayesian patch that replaced the posterior covariance with a sandwich because the Gaussian likelihood was known to be wrong. Every new estimand would need a new likelihood and prior. Can we get a posterior for an arbitrary estimand without writing either one?</p>
+<p>The Bayesian bootstrap says yes. Its trick is to put the prior and the likelihood on the population <span class="math inline">\(F\)</span> rather than on the parameter.</p>
+</section>
+<section id="deriving-the-bayesian-bootstrap" class="level2">
+<h2 class="anchored" data-anchor-id="deriving-the-bayesian-bootstrap">Deriving the Bayesian bootstrap</h2>
+<p>We need three assumptions.</p>
+<p>(A1) <strong><span class="math inline">\(F\)</span> generates users independently.</strong> This is the same assumption the classical bootstrap makes.</p>
+<p>(A2) <strong>The population only contains the kinds of users we observed.</strong> Recall that <span class="math inline">\(F_i\)</span> is the population made only of copies of user <span class="math inline">\(i\)</span>, and that the empirical distribution <span class="math inline">\(\hat F = \sum_i \frac{1}{n}F_i\)</span> mixes our <span class="math inline">\(n\)</span> users in equal shares. (A2) keeps that form but makes the shares unknown:</p>
+<p><span class="math display">\[
+F = \sum_{i=1}^n \pi_i\, F_i, \qquad \pi_i \geq 0, \qquad \sum_{i=1}^n \pi_i = 1.
+\]</span></p>
+<p><span class="math inline">\(F\)</span> is still a population that generates users, and so still a distribution. The sum is the same recipe as before: with probability <span class="math inline">\(\pi_i\)</span>, generate the user from <span class="math inline">\(F_i\)</span>, so the generated user has user <span class="math inline">\(i\)</span>’s row. <span class="math inline">\(\pi_i\)</span> is the share of the population that looks like user <span class="math inline">\(i\)</span>, and the probability weights <span class="math inline">\(\pi = (\pi_1, \dots, \pi_n)\)</span> describe the population completely. The empirical distribution is the special case <span class="math inline">\(\pi_i = 1/n\)</span>. The unknown is no longer <span class="math inline">\(\theta\)</span>; it is <span class="math inline">\(\pi\)</span>.</p>
+<p>Under (A1) and (A2), a generated user has user <span class="math inline">\(i\)</span>’s row with probability <span class="math inline">\(\pi_i\)</span>, and users are generated independently, so the probability of our sample is the product of the probabilities of the observed rows. Each observed row appears once, so the likelihood is</p>
+<p><span class="math display">\[
+p(\text{data} \mid \pi) = \prod_{i=1}^n \pi_i.
+\]</span></p>
+<p>(A3) <strong>The prior on <span class="math inline">\(\pi\)</span> is a Dirichlet distribution with zero pseudo-counts.</strong> A prior on the shares <span class="math inline">\(\pi\)</span> is a distribution over populations. To explain this choice we first describe the Dirichlet distribution, then show why it is the natural family for <span class="math inline">\(\pi\)</span>, and then how to set its parameters.</p>
+<section id="the-dirichlet-distribution" class="level3">
+<h3 class="anchored" data-anchor-id="the-dirichlet-distribution">The Dirichlet distribution</h3>
+<p>The Dirichlet distribution is a distribution over probability weight vectors: every draw is a vector <span class="math inline">\(\pi\)</span> with <span class="math inline">\(\pi_i \geq 0\)</span> and <span class="math inline">\(\sum_i \pi_i = 1\)</span>. Because <span class="math inline">\(F = \sum_i \pi_i F_i\)</span>, every draw is also a population. Its parameters are positive numbers <span class="math inline">\(c_1, \dots, c_n\)</span>, and its probability density is</p>
+<p><span class="math display">\[
+p(\pi) \propto \prod_{i=1}^n \pi_i^{c_i - 1},
+\]</span></p>
+<p>where the omitted constant makes the density integrate to 1 over all probability weight vectors. The parameters are best read as <strong>pseudo-counts</strong>: the distribution behaves as if we had already seen user <span class="math inline">\(i\)</span>’s kind of row <span class="math inline">\(c_i\)</span> times. Two standard properties make that reading concrete.</p>
+<ol type="1">
+<li>The mean share is the pseudo-count’s share of the total, <span class="math inline">\(E[\pi_i] = c_i / \sum_j c_j\)</span>.</li>
+<li>When every pseudo-count equals the same <span class="math inline">\(c\)</span>, the mean share is <span class="math inline">\(\frac{1}{n}\)</span> and <span class="math inline">\(\text{Var}(\pi_i) = \frac{n-1}{n^2(nc + 1)}\)</span>. The total pseudo-count <span class="math inline">\(nc\)</span> sits in the denominator, so more pseudo-counts concentrate the draws around equal shares, as more data would.</li>
+</ol>
+<p>With <span class="math inline">\(n = 2\)</span> the Dirichlet distribution is the Beta distribution, which the <a href="https://jeffwong.github.io/posts/posterior_distribution_effect/">posterior distribution post</a> used for Beta-Binomial conjugacy. To draw from a Dirichlet, draw independent <span class="math inline">\(w_i \sim \text{Gamma}(c_i, 1)\)</span> and normalize, <span class="math inline">\(\pi_i = w_i / \sum_j w_j\)</span>. On our first three users, here are four draws of <span class="math inline">\(\pi\)</span> for each of three values of a common pseudo-count <span class="math inline">\(c\)</span>, together with the mean outcome <span class="math inline">\(\sum_i \pi_i y_i\)</span> of each drawn population.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">8</span>)</span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>y_3 <span class="ot">&lt;-</span> users<span class="sc">$</span>y[<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>]</span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>y_3</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 8.400991 3.052972 2.270614</code></pre>
+</div>
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="fu">expand_grid</span>(<span class="at">c =</span> <span class="fu">c</span>(<span class="fl">0.1</span>, <span class="dv">1</span>, <span class="dv">10</span>), <span class="at">draw =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>) <span class="sc">|&gt;</span></span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">pi =</span> <span class="fu">map</span>(c, \(c) {</span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a>    w <span class="ot">&lt;-</span> <span class="fu">rgamma</span>(<span class="dv">3</span>, <span class="at">shape =</span> c, <span class="at">rate =</span> <span class="dv">1</span>)</span>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a>    w <span class="sc">/</span> <span class="fu">sum</span>(w)</span>
+<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a>  })) <span class="sc">|&gt;</span></span>
+<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb36-7"><a href="#cb36-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">pi_1 =</span> <span class="fu">map_dbl</span>(pi, <span class="dv">1</span>),</span>
+<span id="cb36-8"><a href="#cb36-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">pi_2 =</span> <span class="fu">map_dbl</span>(pi, <span class="dv">2</span>),</span>
+<span id="cb36-9"><a href="#cb36-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">pi_3 =</span> <span class="fu">map_dbl</span>(pi, <span class="dv">3</span>),</span>
+<span id="cb36-10"><a href="#cb36-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean_y =</span> <span class="fu">map_dbl</span>(pi, \(pi) <span class="fu">sum</span>(pi <span class="sc">*</span> y_3))</span>
+<span id="cb36-11"><a href="#cb36-11" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span></span>
+<span id="cb36-12"><a href="#cb36-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>pi)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 12 × 6
+       c  draw     pi_1          pi_2     pi_3 mean_y
+   &lt;dbl&gt; &lt;int&gt;    &lt;dbl&gt;         &lt;dbl&gt;    &lt;dbl&gt;  &lt;dbl&gt;
+ 1   0.1     1 0.00452  0.995         0.000110   3.08
+ 2   0.1     2 0.00688  0.631         0.362      2.81
+ 3   0.1     3 0.000869 0.892         0.107      2.97
+ 4   0.1     4 0.822    0.00000000847 0.178      7.31
+ 5   1       1 0.0382   0.0275        0.934      2.53
+ 6   1       2 0.440    0.233         0.327      5.15
+ 7   1       3 0.856    0.114         0.0296     7.61
+ 8   1       4 0.443    0.360         0.196      5.27
+ 9  10       1 0.393    0.245         0.362      4.87
+10  10       2 0.202    0.466         0.332      3.88
+11  10       3 0.300    0.253         0.448      4.30
+12  10       4 0.263    0.354         0.383      4.16</code></pre>
+</div>
+</div>
+<p>With <span class="math inline">\(c = 10\)</span>, as if we had already seen each kind of user 10 times, the draws stay close to equal shares of <span class="math inline">\(\frac{1}{3}\)</span> and the population means stay close to the sample mean of the three outcomes. With <span class="math inline">\(c = 1\)</span> the draws spread evenly over all possible shares. With <span class="math inline">\(c = 0.1\)</span> the draws pile into the corners: most draws are populations made almost entirely of one kind of user.</p>
+</section>
+<section id="why-the-dirichlet-is-the-natural-family-conjugacy" class="level3">
+<h3 class="anchored" data-anchor-id="why-the-dirichlet-is-the-natural-family-conjugacy">Why the Dirichlet is the natural family: conjugacy</h3>
+<p>Our likelihood is <span class="math inline">\(\prod_i \pi_i\)</span>, because each observed row appears once. A row observed twice would contribute <span class="math inline">\(\pi_i^2\)</span>, so in general each row contributes <span class="math inline">\(\pi_i\)</span> raised to the number of times it was observed. That is the same algebraic form as the Dirichlet density, so multiplying a Dirichlet prior by our likelihood gives</p>
+<p><span class="math display">\[\begin{align}
+p(\pi \mid \text{data}) &amp;\propto \prod_{i=1}^n \pi_i^{c_i - 1} \cdot \prod_{i=1}^n \pi_i \\
+&amp;= \prod_{i=1}^n \pi_i^{(c_i + 1) - 1},
+\end{align}\]</span></p>
+<p>which is again a Dirichlet density, with parameters <span class="math inline">\(c_i + 1\)</span>. <strong>Updating the prior adds each observed row to its pseudo-count.</strong> The posterior stays in the same family and in closed form, which is the same reason we chose the conjugate Normal-Inverse-Gamma prior for the Bayesian linear model.</p>
+</section>
+<section id="choosing-the-pseudo-counts" class="level3">
+<h3 class="anchored" data-anchor-id="choosing-the-pseudo-counts">Choosing the pseudo-counts</h3>
+<p>Two choices remain.</p>
+<ol type="1">
+<li><strong>Equal pseudo-counts, <span class="math inline">\(c_i = c\)</span>.</strong> Under (A1) users are interchangeable before we see their data, so the prior should not favor any one of them.</li>
+<li><strong>How many pseudo-counts.</strong> The prior with pseudo-count <span class="math inline">\(c\)</span> adds <span class="math inline">\(nc\)</span> pseudo-observations to our <span class="math inline">\(n\)</span> real ones. The posterior is Dirichlet<span class="math inline">\((1 + c, \dots, 1 + c)\)</span>, and by property 2 its shares have variance <span class="math inline">\(\frac{n-1}{n^2(n(1+c) + 1)}\)</span>. Compared with <span class="math inline">\(\frac{n-1}{n^2(n + 1)}\)</span> at <span class="math inline">\(c = 0\)</span>, the total count in the denominator grows from <span class="math inline">\(n\)</span> to <span class="math inline">\(n(1 + c)\)</span>: the posterior is as concentrated as if we had <span class="math inline">\(n(1 + c)\)</span> observations instead of <span class="math inline">\(n\)</span>. Any <span class="math inline">\(c &gt; 0\)</span> therefore makes the posterior more certain than the data justify. With <span class="math inline">\(c = 1\)</span> the prior is as strong as the data. The only choice that adds nothing beyond the data is <span class="math inline">\(c \to 0\)</span>.</li>
+</ol>
+<p>The limit <span class="math inline">\(c \to 0\)</span> gives the prior</p>
+<p><span class="math display">\[
+p(\pi) \propto \prod_{i=1}^n \pi_i^{-1}.
+\]</span></p>
+<p>It is improper, because it does not integrate to a finite number, but the posterior is proper:</p>
+<p><span class="math display">\[
+p(\pi \mid \text{data}) \propto \prod_{i=1}^n \pi_i^{-1} \cdot \prod_{i=1}^n \pi_i = 1.
+\]</span></p>
+<p>The posterior is constant over all probability weight vectors <span class="math inline">\(\pi\)</span>. That is the Dirichlet<span class="math inline">\((1, \dots, 1)\)</span> distribution. Its mean share is <span class="math inline">\(E[\pi_i \mid \text{data}] = \frac{1}{n}\)</span>, so on average the posterior population is the empirical distribution <span class="math inline">\(\hat F\)</span>, the same stand-in population the classical bootstrap generates from. The spread around <span class="math inline">\(\hat F\)</span> comes only from the data.</p>
+<p>Two cautions about the word “non-informative”.</p>
+<ol type="1">
+<li>Zero pseudo-counts is not the same as a flat prior. The flat prior, constant density over all <span class="math inline">\(\pi\)</span>, is <span class="math inline">\(c = 1\)</span>; it would give a Dirichlet<span class="math inline">\((2, \dots, 2)\)</span> posterior, which is too narrow. In the Bayesian bootstrap the <em>posterior</em> is flat, not the prior.</li>
+<li>The prior <span class="math inline">\(\prod_i \pi_i^{-1}\)</span> is the limit of the <span class="math inline">\(c = 0.1\)</span> rows of the Dirichlet table: it puts nearly all its weight on populations made of a single kind of user. That is a strange belief to hold before seeing data. Rubin (1981) raised this concern himself. It is harmless here because the data’s one count per row overwhelms zero pseudo-counts.</li>
+</ol>
+<p>(A2) and (A3) can also be derived together. A Dirichlet process prior (<a href="https://doi.org/10.1214/aos/1176342360">Ferguson, 1973</a>) puts a prior on all populations, not only those built from our users. It is specified by a guess for the population and a concentration, the number of pseudo-observations that guess is worth. Its posterior mixes the guess with our <span class="math inline">\(n\)</span> observed users. As the concentration goes to 0 the guess drops out, the posterior contains only the kinds of users we observed, and their shares are Dirichlet<span class="math inline">\((1, \dots, 1)\)</span>: <a href="https://doi.org/10.1214/aos/1176324620">Gasparini (1995)</a> showed this limit is exactly the Bayesian bootstrap.</p>
+</section>
+<section id="sampling-the-posterior" class="level3">
+<h3 class="anchored" data-anchor-id="sampling-the-posterior">Sampling the posterior</h3>
+<p>Setting every <span class="math inline">\(c_i = 1\)</span> in the Gamma recipe gives Gamma<span class="math inline">\((1, 1)\)</span>, which is the Exponential(1) distribution. So a draw from the posterior is</p>
+<p><span class="math display">\[
+\pi_i = \frac{w_i}{\sum_{j=1}^n w_j}, \qquad w_i \overset{\text{iid}}{\sim} \text{Exponential}(1).
+\]</span></p>
+<p>The <span class="math inline">\(w_i\)</span> are weights but not probability weights, because they do not add up to 1; the <span class="math inline">\(\pi_i\)</span> are probability weights. A draw of <span class="math inline">\(\pi\)</span> is a draw of a plausible population <span class="math inline">\(F\)</span>.</p>
+</section>
+</section>
+<section id="a-tiny-example-three-users" class="level2">
+<h2 class="anchored" data-anchor-id="a-tiny-example-three-users">A tiny example: three users</h2>
+<p>The <span class="math inline">\(c = 1\)</span> rows of the Dirichlet table are already posterior draws. To see what a posterior draw means as a population, we draw five more for our first three users, with the Exponential recipe. The mean outcome of a population <span class="math inline">\(F = \sum_i \pi_i F_i\)</span> is the weighted average <span class="math inline">\(\sum_i \pi_i y_i\)</span>, as with <span class="math inline">\(\hat F\)</span> but with weights <span class="math inline">\(\pi_i\)</span> in place of <span class="math inline">\(\frac{1}{n}\)</span>.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">5</span>)</span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a>pi_draws <span class="ot">&lt;-</span> <span class="fu">map</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>, \(d) {</span>
+<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a>  w <span class="ot">&lt;-</span> <span class="fu">rexp</span>(<span class="dv">3</span>)</span>
+<span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a>  w <span class="sc">/</span> <span class="fu">sum</span>(w)</span>
+<span id="cb38-5"><a href="#cb38-5" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb38-6"><a href="#cb38-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-7"><a href="#cb38-7" aria-hidden="true" tabindex="-1"></a><span class="fu">map</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>, \(d) {</span>
+<span id="cb38-8"><a href="#cb38-8" aria-hidden="true" tabindex="-1"></a>  pi <span class="ot">&lt;-</span> pi_draws[[d]]</span>
+<span id="cb38-9"><a href="#cb38-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tibble</span>(<span class="at">draw =</span> d, <span class="at">pi_1 =</span> pi[<span class="dv">1</span>], <span class="at">pi_2 =</span> pi[<span class="dv">2</span>], <span class="at">pi_3 =</span> pi[<span class="dv">3</span>], <span class="at">mean_y =</span> <span class="fu">sum</span>(pi <span class="sc">*</span> y_3))</span>
+<span id="cb38-10"><a href="#cb38-10" aria-hidden="true" tabindex="-1"></a>}) <span class="sc">|&gt;</span></span>
+<span id="cb38-11"><a href="#cb38-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">list_rbind</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 5 × 5
+   draw   pi_1   pi_2   pi_3 mean_y
+  &lt;int&gt;  &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;
+1     1 0.818  0.152  0.0298   7.40
+2     2 0.374  0.0521 0.573    4.61
+3     3 0.0259 0.296  0.678    2.66
+4     4 0.701  0.217  0.0826   6.74
+5     5 0.640  0.342  0.0178   6.46</code></pre>
+</div>
+</div>
+<p>Each row is a different population built from the same three users. In one draw user 1 represents most of the population, in another user 3 does. The mean of each population is a weighted average of the three observed outcomes, so it always lies between the smallest and largest observed <span class="math inline">\(y\)</span>. Across draws the means form the posterior of the population mean.</p>
+<p>Each draw is a population that generates users. Here are 1,000 users generated by the population of draw 1: the first six, and then the share of the 1,000 that copies each of our three users.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>generated <span class="ot">&lt;-</span> users <span class="sc">|&gt;</span></span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice</span>(<span class="fu">sample</span>(<span class="dv">3</span>, <span class="dv">1000</span>, <span class="at">replace =</span> <span class="cn">TRUE</span>, <span class="at">prob =</span> pi_draws[[<span class="dv">1</span>]]))</span>
+<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(generated)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 6 × 4
+   user     X     T     y
+  &lt;int&gt; &lt;dbl&gt; &lt;int&gt; &lt;dbl&gt;
+1     1  11.0     0  8.40
+2     1  11.0     0  8.40
+3     1  11.0     0  8.40
+4     1  11.0     0  8.40
+5     1  11.0     0  8.40
+6     1  11.0     0  8.40</code></pre>
+</div>
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>generated <span class="sc">|&gt;</span></span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(user, <span class="at">name =</span> <span class="st">"generated"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">share =</span> generated <span class="sc">/</span> <span class="fu">sum</span>(generated),</span>
+<span id="cb42-5"><a href="#cb42-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">pi =</span> pi_draws[[<span class="dv">1</span>]][user]</span>
+<span id="cb42-6"><a href="#cb42-6" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 3 × 4
+   user generated share     pi
+  &lt;int&gt;     &lt;int&gt; &lt;dbl&gt;  &lt;dbl&gt;
+1     1       799 0.799 0.818 
+2     2       170 0.17  0.152 
+3     3        31 0.031 0.0298</code></pre>
+</div>
+</div>
+<p>Every generated user is a copy of one of our three users, because <span class="math inline">\(F\)</span> contains only the kinds of users we observed. The share of copies of each user is close to <span class="math inline">\(\pi_i\)</span>, which is what it means for <span class="math inline">\(\pi_i\)</span> to be that user’s share of the population.</p>
+</section>
+<section id="from-a-posterior-over-the-population-to-a-posterior-over-any-estimand" class="level2">
+<h2 class="anchored" data-anchor-id="from-a-posterior-over-the-population-to-a-posterior-over-any-estimand">From a posterior over the population to a posterior over any estimand</h2>
+<p>Once we have posterior draws of <span class="math inline">\(F\)</span>, every estimand <span class="math inline">\(\theta(F)\)</span> gets a posterior for free: compute <span class="math inline">\(\theta\)</span> on each draw. Nothing about <span class="math inline">\(\theta\)</span> entered the prior or the likelihood, so <span class="math inline">\(\theta\)</span> can be anything that is defined for a discrete population.</p>
+<ul>
+<li>The <strong>mean</strong> of <span class="math inline">\(y\)</span> under <span class="math inline">\(F\)</span> is <span class="math inline">\(\sum_i \pi_i y_i\)</span>.</li>
+<li>The <strong>least squares coefficient</strong> under <span class="math inline">\(F\)</span> is the best linear fit in the population, <span class="math inline">\(\beta(F) = \arg\min_\beta E_F[(y_i - M_i\beta)^2]\)</span>, where the expectation is over a user <span class="math inline">\(i\)</span> generated by <span class="math inline">\(F\)</span>. For <span class="math inline">\(F = \sum_i \pi_i F_i\)</span>, the expectation is the weighted average of the squared errors of our users, <span class="math inline">\(\sum_i \pi_i (y_i - M_i\beta)^2\)</span>, which is weighted least squares with weights <span class="math inline">\(\pi_i\)</span>:</li>
+</ul>
+<p><span class="math display">\[
+\beta(F) = \Big(\sum_{i=1}^n \pi_i M_i^\top M_i\Big)^{-1}\sum_{i=1}^n \pi_i M_i^\top y_i.
+\]</span></p>
+<p>Multiplying every <span class="math inline">\(\pi_i\)</span> by the same constant <span class="math inline">\(\sum_j w_j\)</span> cancels between the inverse and the second sum, so we can use the unnormalized <span class="math inline">\(w_i\)</span> directly. <strong>The Bayesian bootstrap of least squares is the weighted fit from the Poisson bootstrap section with Exponential(1) weights in place of Poisson(1) weights.</strong> - The <strong>median</strong> of <span class="math inline">\(y\)</span> among treated users under <span class="math inline">\(F\)</span> is the smallest observed <span class="math inline">\(y_i\)</span> among treated users at which the cumulative weight <span class="math inline">\(\sum \pi_i\)</span> over treated users, ordered by <span class="math inline">\(y\)</span>, reaches half of their total weight.</p>
+<p>This answers the surprise of getting a posterior for an arbitrary model with no prior and no likelihood for that model. There <em>is</em> a prior and a likelihood, on <span class="math inline">\(\pi\)</span>. The “model”, least squares in our case, is not used as a likelihood at all. It is only a definition of which summary of the population we care about. <span class="math inline">\(\beta(F)\)</span> is the coefficient of the best linear fit in the population whether or not the population is linear or Gaussian, just as a mean is defined whether or not the population is normal. This is the pseudo-true parameter <span class="math inline">\(\theta^*\)</span> from the quasi-Bayesian section of the <a href="https://jeffwong.github.io/posts/posterior_distribution_effect/">posterior distribution post</a>, the minimizer of the expected squared error under the true population, which we reached there by arguing that a wrong Gaussian likelihood still targets it. The Bayesian bootstrap puts a posterior on it directly.</p>
+</section>
+<section id="sanity-check-the-posterior-of-a-mean" class="level2">
+<h2 class="anchored" data-anchor-id="sanity-check-the-posterior-of-a-mean">Sanity check: the posterior of a mean</h2>
+<p>For the population mean we can compute the posterior variance exactly. By property 2 with <span class="math inline">\(c = 1\)</span>, a Dirichlet<span class="math inline">\((1, \dots, 1)\)</span> draw has <span class="math inline">\(\text{Var}(\pi_i) = \frac{n-1}{n^2(n+1)}\)</span>. The shares add up to 1, so <span class="math inline">\(\text{Var}(\sum_i \pi_i) = n\,\text{Var}(\pi_i) + n(n-1)\,\text{Cov}(\pi_i, \pi_j) = 0\)</span>, which gives <span class="math inline">\(\text{Cov}(\pi_i, \pi_j) = -\frac{1}{n^2(n+1)}\)</span>. Expanding the variance of a weighted sum,</p>
+<p><span class="math display">\[\begin{align}
+\text{Var}\Big(\sum_i \pi_i y_i \,\Big|\, \text{data}\Big)
+&amp;= \sum_i y_i^2\, \text{Var}(\pi_i) + \sum_{i \neq j} y_i y_j\, \text{Cov}(\pi_i, \pi_j) \\
+&amp;= \frac{(n-1)\sum_i y_i^2 - \sum_{i \neq j} y_i y_j}{n^2(n+1)} \\
+&amp;= \frac{n\sum_i y_i^2 - \big(\sum_i y_i\big)^2}{n^2(n+1)} \\
+&amp;= \frac{\sum_i (y_i - \bar y)^2}{n(n+1)},
+\end{align}\]</span></p>
+<p>where the second line substitutes the Dirichlet variance and covariance, and the third line adds and subtracts <span class="math inline">\(\sum_i y_i^2\)</span> to complete <span class="math inline">\(\big(\sum_i y_i\big)^2\)</span>. Repeating the same steps for the Dirichlet<span class="math inline">\((1 + c, \dots, 1 + c)\)</span> posterior of a prior with pseudo-count <span class="math inline">\(c\)</span> gives <span class="math inline">\(\frac{\sum_i (y_i - \bar y)^2}{n(n(1+c) + 1)}\)</span>, so the flat prior <span class="math inline">\(c = 1\)</span> would cut the posterior variance of the mean almost in half, as we argued when choosing the pseudo-counts. The squared standard error of a sample mean is <span class="math inline">\(\frac{\sum_i (y_i - \bar y)^2}{n(n-1)}\)</span>. The two differ by the factor <span class="math inline">\(\frac{n-1}{n+1}\)</span>, which is 0.9998 for our experiment. On our 10,000 users, with the same number of draws as before,</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">6</span>)</span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a>w_bayes <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">rexp</span>(n <span class="sc">*</span> B), <span class="at">nrow =</span> n, <span class="at">ncol =</span> B)</span>
+<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a>mean_y_bayes <span class="ot">&lt;-</span> <span class="fu">colSums</span>(w_bayes <span class="sc">*</span> y) <span class="sc">/</span> <span class="fu">colSums</span>(w_bayes)</span>
+<span id="cb44-4"><a href="#cb44-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-5"><a href="#cb44-5" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(</span>
+<span id="cb44-6"><a href="#cb44-6" aria-hidden="true" tabindex="-1"></a>  <span class="st">`</span><span class="at">posterior sd (draws)</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">sd</span>(mean_y_bayes),</span>
+<span id="cb44-7"><a href="#cb44-7" aria-hidden="true" tabindex="-1"></a>  <span class="st">`</span><span class="at">posterior sd (exact)</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">sqrt</span>(<span class="fu">sum</span>((y <span class="sc">-</span> <span class="fu">mean</span>(y))<span class="sc">^</span><span class="dv">2</span>) <span class="sc">/</span> (n <span class="sc">*</span> (n <span class="sc">+</span> <span class="dv">1</span>))),</span>
+<span id="cb44-8"><a href="#cb44-8" aria-hidden="true" tabindex="-1"></a>  <span class="st">`</span><span class="at">posterior sd, flat prior c = 1 (exact)</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">sqrt</span>(<span class="fu">sum</span>((y <span class="sc">-</span> <span class="fu">mean</span>(y))<span class="sc">^</span><span class="dv">2</span>) <span class="sc">/</span> (n <span class="sc">*</span> (<span class="dv">2</span> <span class="sc">*</span> n <span class="sc">+</span> <span class="dv">1</span>))),</span>
+<span id="cb44-9"><a href="#cb44-9" aria-hidden="true" tabindex="-1"></a>  <span class="st">`</span><span class="at">standard error of the mean</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">sd</span>(y) <span class="sc">/</span> <span class="fu">sqrt</span>(n)</span>
+<span id="cb44-10"><a href="#cb44-10" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>                  posterior sd (draws)                   posterior sd (exact) 
+                            0.06410441                             0.06557242 
+posterior sd, flat prior c = 1 (exact)             standard error of the mean 
+                            0.04636786                             0.06557898 </code></pre>
+</div>
+</div>
+<p>The draws agree with the exact posterior standard deviation within the Monte Carlo noise of about 2% that <span class="math inline">\(B = 1{,}000\)</span> draws carry, and the exact posterior standard deviation matches the standard error of the mean to three significant digits. The flat prior would report a posterior standard deviation about <span class="math inline">\(1/\sqrt{2}\)</span> times as large.</p>
+</section>
+<section id="how-the-bayesian-bootstrap-differs-from-the-classical-bootstrap" class="level2">
+<h2 class="anchored" data-anchor-id="how-the-bayesian-bootstrap-differs-from-the-classical-bootstrap">How the Bayesian bootstrap differs from the classical bootstrap</h2>
+<p>Mechanically, the two bootstraps differ only in the weights. Classical weights are integer counts, and about 37% of users get a count of zero in each replicate. Bayesian bootstrap weights are continuous and strictly positive: every user stays in every draw, with more or less influence. All three kinds of weights have mean 1 and nearly unit variance: <span class="math inline">\(n\pi_i\)</span> has variance <span class="math inline">\(\frac{n-1}{n+1}\)</span>, the multinomial count has <span class="math inline">\(1 - \frac{1}{n}\)</span>, and the Poisson weight has exactly 1. These shared first two moments are why their histograms nearly coincide, and the argument we made for the sandwich goes through, to first order, for <span class="math inline">\(n\pi_i\)</span> as well. Lancaster shows the classical and Bayesian bootstrap covariances agree to order <span class="math inline">\(1/n\)</span>.</p>
+<p>The meaning is different. The classical bootstrap holds the population fixed at <span class="math inline">\(\hat F\)</span> and varies hypothetical datasets, so it gives a sampling distribution. The Bayesian bootstrap holds the data fixed and varies the population <span class="math inline">\(F\)</span> according to its posterior, so it gives <span class="math inline">\(p(\theta(F) \mid \text{data})\)</span>. The numbers come out nearly the same, but only the second justifies probability statements about <span class="math inline">\(\theta\)</span>, and only because we wrote down (A1)–(A3). The difference between the two is the probability model, not the arithmetic.</p>
+</section>
+<section id="a-posterior-for-the-treatment-effect" class="level2">
+<h2 class="anchored" data-anchor-id="a-posterior-for-the-treatment-effect">A posterior for the treatment effect</h2>
+<p>In a randomized experiment, the coefficient on <span class="math inline">\(T\)</span> in the population’s best linear fit is the treatment effect, <span class="math inline">\(\beta_1(F) = \tau\)</span>, even when the outcome is not linear in <span class="math inline">\(X\)</span> and the effect varies across users; the covariate only reduces the variance, as in CUPED. So <strong>the posterior distribution of <span class="math inline">\(\beta_1\)</span>, derived from weighted least squares with Exponential weights, is the posterior distribution of the treatment effect.</strong> We compute it with the same one-pass function as the Poisson bootstrap, feeding it the Exponential weights we just drew.</p>
+<p>For comparison we also compute the posterior of the <a href="https://jeffwong.github.io/posts/posterior_distribution_effect/">Normal-Inverse-Gamma model</a> with a flat prior. Letting the prior become flat in that post’s posterior formulas, the marginal posterior of the coefficients is a <span class="math inline">\(t\)</span> distribution with <span class="math inline">\(n\)</span> degrees of freedom, centered at <span class="math inline">\(\hat\beta\)</span>, with scale matrix <span class="math inline">\(\frac{1}{n}\sum_i \hat\varepsilon_i^2\,(M^\top M)^{-1}\)</span>. A <span class="math inline">\(t\)</span> distribution with <span class="math inline">\(n\)</span> degrees of freedom has variance <span class="math inline">\(\frac{n}{n-2}\)</span> times its squared scale, so the posterior standard deviations are <span class="math inline">\(\sqrt{\frac{\sum_i \hat\varepsilon_i^2}{n - 2}\,[(M^\top M)^{-1}]_{uu}}\)</span>, nearly the naive standard error.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a>beta_bayes <span class="ot">&lt;-</span> <span class="fu">fit_weighted_ols</span>(M, y, w_bayes)<span class="sc">$</span>beta</span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a>tau_bayes <span class="ot">&lt;-</span> beta_bayes[, <span class="st">"T"</span>]</span>
+<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a>sd_NIG <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(<span class="fu">diag</span>(<span class="fu">sum</span>(eps_hat<span class="sc">^</span><span class="dv">2</span>) <span class="sc">/</span> (n <span class="sc">-</span> <span class="dv">2</span>) <span class="sc">*</span> MtM_inv))</span>
+<span id="cb46-4"><a href="#cb46-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb46-5"><a href="#cb46-5" aria-hidden="true" tabindex="-1"></a><span class="fu">tibble</span>(</span>
+<span id="cb46-6"><a href="#cb46-6" aria-hidden="true" tabindex="-1"></a>  <span class="st">`</span><span class="at">posterior mean</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">mean</span>(tau_bayes),</span>
+<span id="cb46-7"><a href="#cb46-7" aria-hidden="true" tabindex="-1"></a>  <span class="st">`</span><span class="at">posterior sd</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">sd</span>(tau_bayes),</span>
+<span id="cb46-8"><a href="#cb46-8" aria-hidden="true" tabindex="-1"></a>  <span class="st">`</span><span class="at">2.5%</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">quantile</span>(tau_bayes, <span class="fl">0.025</span>),</span>
+<span id="cb46-9"><a href="#cb46-9" aria-hidden="true" tabindex="-1"></a>  <span class="st">`</span><span class="at">97.5%</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">quantile</span>(tau_bayes, <span class="fl">0.975</span>),</span>
+<span id="cb46-10"><a href="#cb46-10" aria-hidden="true" tabindex="-1"></a>  <span class="st">`</span><span class="at">P(tau &gt; 0)</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">mean</span>(tau_bayes <span class="sc">&gt;</span> <span class="dv">0</span>)</span>
+<span id="cb46-11"><a href="#cb46-11" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 1 × 5
+  `posterior mean` `posterior sd` `2.5%` `97.5%` `P(tau &gt; 0)`
+             &lt;dbl&gt;          &lt;dbl&gt;  &lt;dbl&gt;   &lt;dbl&gt;        &lt;dbl&gt;
+1            0.395          0.109  0.176   0.619            1</code></pre>
+</div>
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb48"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a><span class="fu">rbind</span>(</span>
+<span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">`</span><span class="at">NIG posterior sd (flat prior)</span><span class="st">`</span> <span class="ot">=</span> sd_NIG,</span>
+<span id="cb48-3"><a href="#cb48-3" aria-hidden="true" tabindex="-1"></a>  <span class="st">`</span><span class="at">Bayesian bootstrap posterior sd</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">apply</span>(beta_bayes, <span class="dv">2</span>, sd),</span>
+<span id="cb48-4"><a href="#cb48-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">HC0 =</span> se_HC0</span>
+<span id="cb48-5"><a href="#cb48-5" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>                                         1          T           X
+NIG posterior sd (flat prior)   0.05630181 0.07680405 0.004374973
+Bayesian bootstrap posterior sd 0.07415540 0.10903538 0.008631767
+HC0                             0.07594796 0.10957207 0.008628506</code></pre>
+</div>
+</div>
+<p>The Bayesian bootstrap posterior of <span class="math inline">\(\tau\)</span> has mean 0.395 and standard deviation 0.109, and 1000 of its 1000 draws are positive, so the posterior probability of a positive effect is essentially 1. Its standard deviation matches HC0, while the flat-prior Normal-Inverse-Gamma posterior is 30% narrower, because its Gaussian likelihood assumes every user has the same noise variance. <a href="#fig-posterior" class="quarto-xref">Figure&nbsp;3</a> shows the difference.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb50"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a>tau_grid <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="fu">min</span>(tau_bayes), <span class="fu">max</span>(tau_bayes), <span class="at">length.out =</span> <span class="dv">300</span>)</span>
+<span id="cb50-2"><a href="#cb50-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-3"><a href="#cb50-3" aria-hidden="true" tabindex="-1"></a><span class="fu">tibble</span>(<span class="at">tau =</span> tau_bayes) <span class="sc">|&gt;</span></span>
+<span id="cb50-4"><a href="#cb50-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> tau)) <span class="sc">+</span></span>
+<span id="cb50-5"><a href="#cb50-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_histogram</span>(<span class="fu">aes</span>(<span class="at">y =</span> <span class="fu">after_stat</span>(density)), <span class="at">bins =</span> <span class="dv">40</span>, <span class="at">fill =</span> <span class="st">"grey75"</span>, <span class="at">color =</span> <span class="st">"white"</span>) <span class="sc">+</span></span>
+<span id="cb50-6"><a href="#cb50-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(</span>
+<span id="cb50-7"><a href="#cb50-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">data =</span> <span class="fu">bind_rows</span>(</span>
+<span id="cb50-8"><a href="#cb50-8" aria-hidden="true" tabindex="-1"></a>      <span class="fu">tibble</span>(<span class="at">curve =</span> <span class="st">"NIG, flat prior"</span>, <span class="at">tau =</span> tau_grid,</span>
+<span id="cb50-9"><a href="#cb50-9" aria-hidden="true" tabindex="-1"></a>             <span class="at">density =</span> <span class="fu">dnorm</span>(tau_grid, beta_hat[<span class="st">"T"</span>], sd_NIG[<span class="st">"T"</span>])),</span>
+<span id="cb50-10"><a href="#cb50-10" aria-hidden="true" tabindex="-1"></a>      <span class="fu">tibble</span>(<span class="at">curve =</span> <span class="st">"Normal with HC0 sd"</span>, <span class="at">tau =</span> tau_grid,</span>
+<span id="cb50-11"><a href="#cb50-11" aria-hidden="true" tabindex="-1"></a>             <span class="at">density =</span> <span class="fu">dnorm</span>(tau_grid, beta_hat[<span class="st">"T"</span>], se_HC0[<span class="st">"T"</span>]))</span>
+<span id="cb50-12"><a href="#cb50-12" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb50-13"><a href="#cb50-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">aes</span>(<span class="at">y =</span> density, <span class="at">color =</span> curve),</span>
+<span id="cb50-14"><a href="#cb50-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">linewidth =</span> <span class="dv">1</span></span>
+<span id="cb50-15"><a href="#cb50-15" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb50-16"><a href="#cb50-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">"#0072B2"</span>, <span class="st">"#D55E00"</span>)) <span class="sc">+</span></span>
+<span id="cb50-17"><a href="#cb50-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="fu">expression</span>(tau), <span class="at">y =</span> <span class="st">"posterior density"</span>, <span class="at">color =</span> <span class="cn">NULL</span>) <span class="sc">+</span></span>
+<span id="cb50-18"><a href="#cb50-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>(<span class="at">base_size =</span> <span class="dv">16</span>) <span class="sc">+</span></span>
+<span id="cb50-19"><a href="#cb50-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"top"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<div id="fig-posterior" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-posterior-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="index_files/figure-html/fig-posterior-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-posterior-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;3: Posterior of τ from the Bayesian bootstrap (histogram), against the normal approximation of the flat-prior Normal-Inverse-Gamma posterior and a normal centered at the estimate with the HC0 standard error.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>In the earlier post, getting a robust posterior took a quasi-Bayesian argument and a hand-built sandwich. The Bayesian bootstrap produces it from the weighted least squares fit alone.</p>
+</section>
+<section id="a-posterior-for-an-estimand-with-no-likelihood-the-difference-in-medians" class="level2">
+<h2 class="anchored" data-anchor-id="a-posterior-for-an-estimand-with-no-likelihood-the-difference-in-medians">A posterior for an estimand with no likelihood: the difference in medians</h2>
+<p>Least squares at least has a familiar Gaussian likelihood next to it. The difference in medians does not: the median of hours streamed among treated users minus the median among control users, which is a different estimand from <span class="math inline">\(\tau\)</span>. Under a population <span class="math inline">\(F = \sum_i \pi_i F_i\)</span>, the median among treated users is the weighted median of the treated users’ outcomes, with weights <span class="math inline">\(\pi_i\)</span>. Since a weighted median does not change when every weight is multiplied by the same constant, we can again use the <span class="math inline">\(w_i\)</span> directly. We reuse the same Exponential weights, so each draw of the population gives one draw of each estimand.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb51"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a>weighted_median <span class="ot">&lt;-</span> <span class="cf">function</span>(y, w) {</span>
+<span id="cb51-2"><a href="#cb51-2" aria-hidden="true" tabindex="-1"></a>  ord <span class="ot">&lt;-</span> <span class="fu">order</span>(y)</span>
+<span id="cb51-3"><a href="#cb51-3" aria-hidden="true" tabindex="-1"></a>  cum_w <span class="ot">&lt;-</span> <span class="fu">apply</span>(w[ord, , <span class="at">drop =</span> <span class="cn">FALSE</span>], <span class="dv">2</span>, cumsum)</span>
+<span id="cb51-4"><a href="#cb51-4" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Count the users whose cumulative weight is below half the total; the median is the next one</span></span>
+<span id="cb51-5"><a href="#cb51-5" aria-hidden="true" tabindex="-1"></a>  below_half <span class="ot">&lt;-</span> <span class="fu">sweep</span>(cum_w, <span class="dv">2</span>, cum_w[<span class="fu">nrow</span>(cum_w), ] <span class="sc">/</span> <span class="dv">2</span>, <span class="st">`</span><span class="at">&lt;</span><span class="st">`</span>)</span>
+<span id="cb51-6"><a href="#cb51-6" aria-hidden="true" tabindex="-1"></a>  y[ord][<span class="fu">colSums</span>(below_half) <span class="sc">+</span> <span class="dv">1</span>]</span>
+<span id="cb51-7"><a href="#cb51-7" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb51-8"><a href="#cb51-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb51-9"><a href="#cb51-9" aria-hidden="true" tabindex="-1"></a>treated <span class="ot">&lt;-</span> users<span class="sc">$</span>T <span class="sc">==</span> <span class="dv">1</span></span>
+<span id="cb51-10"><a href="#cb51-10" aria-hidden="true" tabindex="-1"></a>median_diff_bayes <span class="ot">&lt;-</span> <span class="fu">weighted_median</span>(y[treated], w_bayes[treated, ]) <span class="sc">-</span></span>
+<span id="cb51-11"><a href="#cb51-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">weighted_median</span>(y[<span class="sc">!</span>treated], w_bayes[<span class="sc">!</span>treated, ])</span>
+<span id="cb51-12"><a href="#cb51-12" aria-hidden="true" tabindex="-1"></a>median_diff_hat <span class="ot">&lt;-</span> <span class="fu">median</span>(y[treated]) <span class="sc">-</span> <span class="fu">median</span>(y[<span class="sc">!</span>treated])</span>
+<span id="cb51-13"><a href="#cb51-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb51-14"><a href="#cb51-14" aria-hidden="true" tabindex="-1"></a><span class="co"># The true difference in medians, from a very large draw of the same population</span></span>
+<span id="cb51-15"><a href="#cb51-15" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">7</span>)</span>
+<span id="cb51-16"><a href="#cb51-16" aria-hidden="true" tabindex="-1"></a>population <span class="ot">&lt;-</span> <span class="fu">simulate_users</span>(<span class="fl">1e6</span>)</span>
+<span id="cb51-17"><a href="#cb51-17" aria-hidden="true" tabindex="-1"></a>median_diff_true <span class="ot">&lt;-</span> <span class="fu">median</span>(population<span class="sc">$</span>y[population<span class="sc">$</span>T <span class="sc">==</span> <span class="dv">1</span>]) <span class="sc">-</span></span>
+<span id="cb51-18"><a href="#cb51-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">median</span>(population<span class="sc">$</span>y[population<span class="sc">$</span>T <span class="sc">==</span> <span class="dv">0</span>])</span>
+<span id="cb51-19"><a href="#cb51-19" aria-hidden="true" tabindex="-1"></a><span class="co"># The same population with the mean effect removed: only the wider noise remains</span></span>
+<span id="cb51-20"><a href="#cb51-20" aria-hidden="true" tabindex="-1"></a>y_no_effect <span class="ot">&lt;-</span> population<span class="sc">$</span>y <span class="sc">-</span> tau <span class="sc">*</span> population<span class="sc">$</span>T</span>
+<span id="cb51-21"><a href="#cb51-21" aria-hidden="true" tabindex="-1"></a>median_diff_no_effect <span class="ot">&lt;-</span> <span class="fu">median</span>(y_no_effect[population<span class="sc">$</span>T <span class="sc">==</span> <span class="dv">1</span>]) <span class="sc">-</span></span>
+<span id="cb51-22"><a href="#cb51-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">median</span>(y_no_effect[population<span class="sc">$</span>T <span class="sc">==</span> <span class="dv">0</span>])</span>
+<span id="cb51-23"><a href="#cb51-23" aria-hidden="true" tabindex="-1"></a><span class="fu">rm</span>(population, y_no_effect)</span>
+<span id="cb51-24"><a href="#cb51-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb51-25"><a href="#cb51-25" aria-hidden="true" tabindex="-1"></a><span class="fu">tibble</span>(</span>
+<span id="cb51-26"><a href="#cb51-26" aria-hidden="true" tabindex="-1"></a>  <span class="st">`</span><span class="at">sample estimate</span><span class="st">`</span> <span class="ot">=</span> median_diff_hat,</span>
+<span id="cb51-27"><a href="#cb51-27" aria-hidden="true" tabindex="-1"></a>  <span class="st">`</span><span class="at">posterior mean</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">mean</span>(median_diff_bayes),</span>
+<span id="cb51-28"><a href="#cb51-28" aria-hidden="true" tabindex="-1"></a>  <span class="st">`</span><span class="at">posterior sd</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">sd</span>(median_diff_bayes),</span>
+<span id="cb51-29"><a href="#cb51-29" aria-hidden="true" tabindex="-1"></a>  <span class="st">`</span><span class="at">2.5%</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">quantile</span>(median_diff_bayes, <span class="fl">0.025</span>),</span>
+<span id="cb51-30"><a href="#cb51-30" aria-hidden="true" tabindex="-1"></a>  <span class="st">`</span><span class="at">97.5%</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">quantile</span>(median_diff_bayes, <span class="fl">0.975</span>),</span>
+<span id="cb51-31"><a href="#cb51-31" aria-hidden="true" tabindex="-1"></a>  <span class="at">truth =</span> median_diff_true,</span>
+<span id="cb51-32"><a href="#cb51-32" aria-hidden="true" tabindex="-1"></a>  <span class="st">`</span><span class="at">truth without the mean effect</span><span class="st">`</span> <span class="ot">=</span> median_diff_no_effect</span>
+<span id="cb51-33"><a href="#cb51-33" aria-hidden="true" tabindex="-1"></a>) <span class="sc">|&gt;</span></span>
+<span id="cb51-34"><a href="#cb51-34" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(<span class="fu">everything</span>(), <span class="at">names_to =</span> <span class="st">"quantity"</span>, <span class="at">values_to =</span> <span class="st">"difference in medians"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 7 × 2
+  quantity                      `difference in medians`
+  &lt;chr&gt;                                           &lt;dbl&gt;
+1 sample estimate                               -0.335 
+2 posterior mean                                -0.378 
+3 posterior sd                                   0.172 
+4 2.5%                                          -0.707 
+5 97.5%                                         -0.0441
+6 truth                                         -0.315 
+7 truth without the mean effect                 -0.515 </code></pre>
+</div>
+</div>
+<p>The posterior of the difference in medians has mean -0.378 and a 95% credible interval from -0.707 to -0.044. The true difference is -0.315, which the interval covers.</p>
+<p>The difference in medians is negative although treatment raises mean hours by <span class="math inline">\(\tau = 0.2\)</span>. The last row explains why: removing the mean effect from the same population leaves a difference in medians of -0.515, which comes entirely from treatment doubling the noise. A change in the noise leaves the mean alone but can move the median, and here it moves it down by more than the mean effect moves it up.</p>
+<p>A team that reports median hours would conclude that treatment hurts, while a team that reports mean hours would conclude it helps. Neither is wrong; they are asking about different summaries of the population. We never wrote a likelihood for medians. The posterior came from the same draws of <span class="math inline">\(\pi\)</span> as the posterior of <span class="math inline">\(\tau\)</span>.</p>
+</section>
+<section id="assumptions-and-when-the-bayesian-bootstrap-breaks" class="level2">
+<h2 class="anchored" data-anchor-id="assumptions-and-when-the-bayesian-bootstrap-breaks">Assumptions, and when the Bayesian bootstrap breaks</h2>
+<p>The posterior is only as good as (A1)–(A3), and each has a practical consequence.</p>
+<ol type="1">
+<li><strong>(A1), independent users.</strong> The unit that receives a weight must be the unit of independence. If an experiment randomizes accounts and we analyze profiles, the weights must be drawn per account and shared by its profiles, exactly as with a cluster-robust standard error.</li>
+<li><strong>(A2), support on the observed values.</strong> Every posterior draw is a reweighting of the users we saw. A population can never contain a user more extreme than our most extreme user. With heavy tails, such as a few “whales” who stream far more than everyone else, or with small samples, the posterior is too narrow, because it cannot imagine the whale we have not yet seen. The classical bootstrap has the same weakness.</li>
+<li><strong>(A3), the prior.</strong> The prior is a specific improper prior on <span class="math inline">\(\pi\)</span>, not a statement about <span class="math inline">\(\tau\)</span>. It cannot encode what we already know, for example that most effects in past experiments were small. The Normal-Inverse-Gamma model can, with a prior mean and variance on the coefficients that shrink a noisy estimate. With the Bayesian bootstrap, informative priors and shrinkage across experiments are not available.</li>
+<li><strong>The estimand is a population summary.</strong> <span class="math inline">\(\beta_1(F) = \tau\)</span> is the effect in the population that generated the users, not the effect on the specific <span class="math inline">\(n\)</span> users in the experiment. The prior also does not know that <span class="math inline">\(T\)</span> was randomized, so some draws of <span class="math inline">\(F\)</span> have a small chance correlation between <span class="math inline">\(T\)</span> and <span class="math inline">\(X\)</span>; least squares adjusts for it in each draw.</li>
+</ol>
+</section>
+<section id="so-can-we-skip-the-bayesian-linear-model" class="level2">
+<h2 class="anchored" data-anchor-id="so-can-we-skip-the-bayesian-linear-model">So can we skip the Bayesian linear model?</h2>
+<p>For the most common case, yes. If we want a posterior for the average treatment effect, adjusted for covariates, with a variance that does not assume a common noise level, the Bayesian bootstrap of least squares delivers it. It is the same weighted fit as the Poisson bootstrap and runs in the same single pass over the data, even with data spread across machines, because Exponential weights, like Poisson weights, are drawn independently per user. The same posterior draws also give posteriors for estimands that have no convenient likelihood, such as the difference in medians.</p>
+<p>We still need the Bayesian linear model when we want an informative prior, for example to shrink effects toward what past experiments have shown, or when the sample is small or heavy-tailed enough that (A2) bites.</p>
+</section>
+</section>
+<section id="putting-it-together" class="level1">
+<h1>Putting it together</h1>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+</colgroup>
+<thead>
+<tr class="header">
+<th></th>
+<th>Weights <span class="math inline">\(w_i\)</span></th>
+<th>Drawn independently per user?</th>
+<th>The distribution is</th>
+<th>Answers</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Classical</td>
+<td>Multinomial<span class="math inline">\((n; \frac{1}{n}, \dots, \frac{1}{n})\)</span> counts</td>
+<td>No, they add up to <span class="math inline">\(n\)</span></td>
+<td>The sampling distribution of <span class="math inline">\(\hat\theta\)</span></td>
+<td>How much the estimate moves across datasets</td>
+</tr>
+<tr class="even">
+<td>Poisson</td>
+<td>Poisson(1)</td>
+<td>Yes</td>
+<td>Approximately the same sampling distribution</td>
+<td>The same, at scale and in one pass</td>
+</tr>
+<tr class="odd">
+<td>Bayesian</td>
+<td>Exponential(1), normalized to Dirichlet<span class="math inline">\((1, \dots, 1)\)</span></td>
+<td>Yes</td>
+<td>The posterior of <span class="math inline">\(\theta(F)\)</span></td>
+<td>What we believe about the estimand, given the data</td>
+</tr>
+</tbody>
+</table>
+<p>All three bootstraps refit the same weighted estimator; they differ in how the weights are drawn and in what the resulting distribution means. For least squares in an AB test, all three give the robust sandwich variance rather than the naive one. The classical and Poisson bootstraps give a confidence interval. The Bayesian bootstrap, with its assumptions written down, gives a posterior for <span class="math inline">\(\tau\)</span> without a likelihood for <span class="math inline">\(y\)</span>. For a team at scale, the practical recipe is one pass over the data with independently drawn weights per user: Poisson weights for a standard error, Exponential weights for a posterior.</p>
+<p><em>The examples in this post are simulations for education, not production systems.</em></p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/jeffwong\.github\.io");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

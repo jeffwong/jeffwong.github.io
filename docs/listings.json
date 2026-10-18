@@ -3,6 +3,7 @@
     "listing": "/index.html",
     "items": [
       "/posts/ai_benchmarks/index.html",
+      "/posts/conditionally_sufficient_statistics/index.html",
       "/posts/rankers/index.html",
       "/posts/what_is_an_average/index.html",
       "/posts/ratio_metrics/index.html",

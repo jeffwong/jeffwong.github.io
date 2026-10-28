@@ -1,0 +1,69 @@
+---
+title: "Sustainable Data Science Systems"
+author: "Jeffrey Wong"
+date: 2026-10-27
+categories: [data science]
+format:
+  html:
+    toc: true
+    code-fold: show
+---
+
+A data scientist's first unique value add is in generating actionable insights for a business.
+Later, they might scale their work by embedding it into a platform system, for example by
+algorithmically setting marketing campaign budgets that optimizes spend. Or they may turn a 
+heterogeneous effects model into a personalization policy. Or they may use an LTV model for
+audience targeting. Eventually, a data scientist has to become an engineer, or work with one.
+
+But the process and the stack that created success for those insights is unlikely to be what creates success for a platform system.
+In data science, we tailor our models specifically to a problem. We leverage the latest libraries. We make use of domain knowledge.
+We use phd training to assert confidence in assumptions. But these are not sustainable practices as we transition
+from one use case to building a platform. This blog post will describe important pivots in the way a data scientist
+should operate.
+
+---
+
+# Maintainability
+
+Maintainability is the most important thing to think about when building a platform system. This requires us to think about
+
+1. Simplicity and explainability in the model
+2. Debugability
+3. External dependencies
+
+**Simplicity and explainability**: The work is transitioning from a 1 person operation to a team. The team collectively
+needs to understand every part of the model. This is what motivates the need for simplicity. In addition, the platform
+system is going to be offering a service to customers. To build trust with those customers, we need models that are explainable.
+
+**Debugability**: A data scientist built the first set of insights by hand. Now, it needs to become a daily and reliable operation.
+The engineering around the model must be debugable in order to maintain trust with the customers. In many cases, this is a difficult transition.
+In data science we use the latest libraries and latest models that are meant specifically for one type of problem, and they may not generalize.
+As a result, they can run into a lot of bugs regarding input types, assumptions, and extreme outliers. The entire team needs to be trained
+in how to debug the model. It is best to install easy code paths into the model to get intermediate calculations in order to know if it is performing correctly. In experimentation platforms, we build entire suites of health checks to know if an experiment is balanced and running properly.
+
+**External dependencies**: External code needs to be minimized. This is what it means to build a good platform. Every external dependency is a risk to the system. If external dependencies become incompatible with each other, the system breaks. This is another big culture shift, where data science
+is meant to build on top of the latest research, which will come from open source systems, publications, and university labs. It can become very difficult to execute the project without these dependencies. The best thing a data scientist can do is to be very selective on what dependencies are used, and only
+use ones that are well established. If a necessary dependency comes from a very recent publication, and is not a battle hardened library, 
+then it is best to identify the minimal necessary functions for the platform, study them, and dissect them until the team has a full understanding of them.
+
+# Scalability
+
+As we open up a platform, we will be processing many use cases at one time. Some of those use cases might have very large inputs.
+The amount of compute being run on the platform can be orders of magnitude larger than what the data scientist did for the first few insights.
+To help with platform scalability, we need to think about compute and memory costs.
+
+To optimize for scalability, we should first think about whether data can be pre aggregated before it is trained on. Next, for linear algebra functions
+that are part of the model we should take advantage of dense and sparse data structures. These two optimizations will land a double win
+for both compute as well as memory costs.
+
+For compute, we should think about vectorizing the mathematical operations of the model. If we can collapse loops in favor of single-shot compute, that can dramatically improve the performance of a model. One simple example is in multi outcome regression: in this situation we have multiple outcomes, $Y$, in a regression where we want to regress all outcomes on $X$. Instead of looping through each outcome and invoking the regression function, we can batch all of the outcomes and process them in one run.
+
+For memory costs, we want to pay attention to deep copies of input data that are being made. A function might make multiple deep copies as it manipulates data, blowing up memory costs. For example this can happen when somebody wants to add columns to a dataframe and will make a copy of the input before making modifications. Sometimes, the copies are made for you behind the scenes due to copy-on-write patterns. Operating on the minimal subset of data needed can reduce memory costs. 
+
+# Future proofing
+
+Building a platform is expensive. It will be important to think ahead and anticipate customer asks before they become pressure.
+Say that a data scientist is working in experimentation. Part of the DS team is working on variance reduction. Part of the team is working on heterogeneous effects. Part of the team is working on multiarm bandits. Each individual is making progress and the work on heterogeneous effects lands in the system.
+Then, when variance reduction is ready to land, it must be rethought to be compatible with heterogeneous effects. When multiarm bandits land, the previous
+two must be thought of in a bayesian way in order to gain their posteriors. Future proofing can be very hard as we think about combinations of use cases!
+It's more important than ever to make sure everyone understands their parts from first principles, so that a solution can be invented. 

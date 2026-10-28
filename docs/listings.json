@@ -2,6 +2,7 @@
   {
     "listing": "/index.html",
     "items": [
+      "/posts/sustainable_data_science/index.html",
       "/posts/bayesian_universal_model/index.html",
       "/posts/bootstrap/index.html",
       "/posts/ai_benchmarks/index.html",

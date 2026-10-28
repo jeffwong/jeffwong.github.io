@@ -5,36 +5,44 @@
     <lastmod>2026-07-12T05:21:21.907Z</lastmod>
   </url>
   <url>
-    <loc>https://jeffwong.github.io/posts/statistical_power/index.html</loc>
+    <loc>https://jeffwong.github.io/posts/sustainable_data_science/index.html</loc>
+    <lastmod>2026-10-28T06:47:53.703Z</lastmod>
+  </url>
+  <url>
+    <loc>https://jeffwong.github.io/posts/robust_cuped/index.html</loc>
     <lastmod>2026-07-12T05:09:05.495Z</lastmod>
   </url>
   <url>
-    <loc>https://jeffwong.github.io/posts/relative_effects/index.html</loc>
-    <lastmod>2026-07-12T05:21:43.824Z</lastmod>
+    <loc>https://jeffwong.github.io/posts/ratio_metrics/index.html</loc>
+    <lastmod>2026-10-01T06:38:35.131Z</lastmod>
   </url>
   <url>
-    <loc>https://jeffwong.github.io/posts/rankers/index.html</loc>
-    <lastmod>2026-10-12T06:07:00.333Z</lastmod>
+    <loc>https://jeffwong.github.io/posts/power_noncompliance/index.html</loc>
+    <lastmod>2026-07-12T05:09:05.495Z</lastmod>
   </url>
   <url>
-    <loc>https://jeffwong.github.io/posts/posthoc_mde/index.html</loc>
+    <loc>https://jeffwong.github.io/posts/posterior_distribution_effect/index.html</loc>
+    <lastmod>2026-07-16T06:30:00.931Z</lastmod>
+  </url>
+  <url>
+    <loc>https://jeffwong.github.io/posts/linear_probability_model/index.html</loc>
+    <lastmod>2026-07-16T06:29:05.693Z</lastmod>
+  </url>
+  <url>
+    <loc>https://jeffwong.github.io/posts/errors_in_experiments/index.html</loc>
+    <lastmod>2026-07-12T05:20:48.689Z</lastmod>
+  </url>
+  <url>
+    <loc>https://jeffwong.github.io/posts/cuped_from_fwl/index.html</loc>
     <lastmod>2026-07-12T05:09:05.494Z</lastmod>
   </url>
   <url>
-    <loc>https://jeffwong.github.io/posts/ols_to_deep_learning/index.html</loc>
-    <lastmod>2026-09-24T07:27:55.923Z</lastmod>
+    <loc>https://jeffwong.github.io/posts/conditionally_sufficient_statistics/index.html</loc>
+    <lastmod>2026-10-18T03:57:42.404Z</lastmod>
   </url>
   <url>
-    <loc>https://jeffwong.github.io/posts/l2_gaussian_prior/index.html</loc>
-    <lastmod>2026-07-12T05:09:05.494Z</lastmod>
-  </url>
-  <url>
-    <loc>https://jeffwong.github.io/posts/elastic_net/index.html</loc>
-    <lastmod>2026-07-12T05:09:05.494Z</lastmod>
-  </url>
-  <url>
-    <loc>https://jeffwong.github.io/posts/controlled_randomization/index.html</loc>
-    <lastmod>2026-07-12T05:09:05.493Z</lastmod>
+    <loc>https://jeffwong.github.io/posts/bootstrap/index.html</loc>
+    <lastmod>2026-10-18T06:36:25.480Z</lastmod>
   </url>
   <url>
     <loc>https://jeffwong.github.io/posts/anytime_valid_inference_ols/index.html</loc>
@@ -50,58 +58,54 @@
   </url>
   <url>
     <loc>https://jeffwong.github.io/index.html</loc>
-    <lastmod>2026-07-12T05:09:05.492Z</lastmod>
+    <lastmod>2026-10-28T05:22:30.736Z</lastmod>
   </url>
   <url>
     <loc>https://jeffwong.github.io/posts/ai_benchmarks/index.html</loc>
-    <lastmod>2026-10-14T21:18:15.543Z</lastmod>
+    <lastmod>2026-10-28T05:23:40.427Z</lastmod>
+  </url>
+  <url>
+    <loc>https://jeffwong.github.io/posts/bayesian_universal_model/index.html</loc>
+    <lastmod>2026-10-18T21:32:45.892Z</lastmod>
   </url>
   <url>
     <loc>https://jeffwong.github.io/posts/composite_metric/index.html</loc>
     <lastmod>2026-07-12T05:09:05.493Z</lastmod>
   </url>
   <url>
-    <loc>https://jeffwong.github.io/posts/cuped_from_fwl/index.html</loc>
+    <loc>https://jeffwong.github.io/posts/controlled_randomization/index.html</loc>
+    <lastmod>2026-07-12T05:09:05.493Z</lastmod>
+  </url>
+  <url>
+    <loc>https://jeffwong.github.io/posts/elastic_net/index.html</loc>
     <lastmod>2026-07-12T05:09:05.494Z</lastmod>
   </url>
   <url>
-    <loc>https://jeffwong.github.io/posts/errors_in_experiments/index.html</loc>
-    <lastmod>2026-07-12T05:20:48.689Z</lastmod>
+    <loc>https://jeffwong.github.io/posts/l2_gaussian_prior/index.html</loc>
+    <lastmod>2026-07-12T05:09:05.494Z</lastmod>
   </url>
   <url>
-    <loc>https://jeffwong.github.io/posts/linear_probability_model/index.html</loc>
-    <lastmod>2026-07-16T06:29:05.693Z</lastmod>
+    <loc>https://jeffwong.github.io/posts/ols_to_deep_learning/index.html</loc>
+    <lastmod>2026-09-24T07:27:55.923Z</lastmod>
   </url>
   <url>
-    <loc>https://jeffwong.github.io/posts/posterior_distribution_effect/index.html</loc>
-    <lastmod>2026-07-16T06:30:00.931Z</lastmod>
+    <loc>https://jeffwong.github.io/posts/posthoc_mde/index.html</loc>
+    <lastmod>2026-07-12T05:09:05.494Z</lastmod>
   </url>
   <url>
-    <loc>https://jeffwong.github.io/posts/power_noncompliance/index.html</loc>
-    <lastmod>2026-07-12T05:09:05.495Z</lastmod>
+    <loc>https://jeffwong.github.io/posts/rankers/index.html</loc>
+    <lastmod>2026-10-12T06:07:00.333Z</lastmod>
   </url>
   <url>
-    <loc>https://jeffwong.github.io/posts/ratio_metrics/index.html</loc>
-    <lastmod>2026-10-01T06:38:35.131Z</lastmod>
+    <loc>https://jeffwong.github.io/posts/relative_effects/index.html</loc>
+    <lastmod>2026-07-12T05:21:43.824Z</lastmod>
   </url>
   <url>
-    <loc>https://jeffwong.github.io/posts/robust_cuped/index.html</loc>
+    <loc>https://jeffwong.github.io/posts/statistical_power/index.html</loc>
     <lastmod>2026-07-12T05:09:05.495Z</lastmod>
   </url>
   <url>
     <loc>https://jeffwong.github.io/posts/what_is_an_average/index.html</loc>
     <lastmod>2026-10-08T19:11:51.836Z</lastmod>
-  </url>
-  <url>
-    <loc>https://jeffwong.github.io/posts/conditionally_sufficient_statistics/index.html</loc>
-    <lastmod>2026-10-18T03:57:42.404Z</lastmod>
-  </url>
-  <url>
-    <loc>https://jeffwong.github.io/posts/bootstrap/index.html</loc>
-    <lastmod>2026-10-18T06:36:25.480Z</lastmod>
-  </url>
-  <url>
-    <loc>https://jeffwong.github.io/posts/bayesian_universal_model/index.html</loc>
-    <lastmod>2026-10-18T21:32:45.892Z</lastmod>
   </url>
 </urlset>
